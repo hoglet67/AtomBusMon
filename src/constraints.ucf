@@ -1,0 +1,77 @@
+
+NET "clock49"  LOC="P89" | IOSTANDARD = LVCMOS33 | PERIOD = 20.35ns  ; # 49.152 MHz Oscillator
+
+NET "lcd_rs"     LOC="P95" | IOSTANDARD = LVCMOS33 ; # 6847 pin 2
+NET "lcd_rw"     LOC="P18" | IOSTANDARD = LVCMOS33 ; # 6847 pin 3
+NET "lcd_e"      LOC="P17" | IOSTANDARD = LVCMOS33 ; # 6847 pin 4
+NET "lcd_db<4>"  LOC="P94" | IOSTANDARD = LVCMOS33 ; # 6847 pin 5
+NET "lcd_db<5>"  LOC="P22" | IOSTANDARD = LVCMOS33 ; # 6847 pin 6
+NET "lcd_db<6>"  LOC="P23" | IOSTANDARD = LVCMOS33 ; # 6847 pin 7
+NET "lcd_db<7>"  LOC="P33" | IOSTANDARD = LVCMOS33 ; # 6847 pin 8
+NET "avr_RxD"    LOC="P32" | IOSTANDARD = LVCMOS33 ; # 6847 pin 9
+NET "avr_TxD"    LOC="P34" | IOSTANDARD = LVCMOS33 ; # 6847 pin 10
+NET "nreset"     LOC="P40" | IOSTANDARD = LVCMOS33 ; # 6847 pin 11
+
+
+NET "Addr<0>"    LOC="P67" | IOSTANDARD = LVCMOS33 ; # 6847 pin 21
+NET "Addr<1>"    LOC="P68" | IOSTANDARD = LVCMOS33 ; # 6847 pin 22
+NET "Addr<2>"    LOC="P70" | IOSTANDARD = LVCMOS33 ; # 6847 pin 23
+NET "Addr<3>"    LOC="P71" | IOSTANDARD = LVCMOS33 ; # 6847 pin 24
+NET "Addr<4>"    LOC="P86" | IOSTANDARD = LVCMOS33 ; # 6847 pin 25
+NET "Addr<5>"    LOC="P84" | IOSTANDARD = LVCMOS33 ; # 6847 pin 26
+NET "Addr<6>"    LOC="P83" | IOSTANDARD = LVCMOS33 ; # 6847 pin 27
+NET "Addr<7>"    LOC="P78" | IOSTANDARD = LVCMOS33 ; # 6847 pin 28
+NET "Addr<8>"    LOC="P79" | IOSTANDARD = LVCMOS33 ; # 6847 pin 29
+NET "Addr<9>"    LOC="P85" | IOSTANDARD = LVCMOS33 ; # 6847 pin 30
+NET "Addr<10>"   LOC="P92" | IOSTANDARD = LVCMOS33 ; # 6847 pin 31
+NET "Addr<11>"   LOC="P98" | IOSTANDARD = LVCMOS33 ; # 6847 pin 32
+NET "Addr<12>"   LOC="P3"  | IOSTANDARD = LVCMOS33 ; # 6847 pin 33
+NET "Addr<13>"   LOC="P2"  | IOSTANDARD = LVCMOS33 ; # 6847 pin 34
+NET "Addr<14>"   LOC="P4"  | IOSTANDARD = LVCMOS33 ; # 6847 pin 35
+NET "Addr<15>"   LOC="P5"  | IOSTANDARD = LVCMOS33 ; # 6847 pin 36
+
+NET "Phi2"       LOC="P90" | IOSTANDARD = LVCMOS33 ; # 6847 pin 37
+NET "RNW"        LOC="P9"  | IOSTANDARD = LVCMOS33 ; # 6847 pin 38
+NET "Sync"       LOC="P10" | IOSTANDARD = LVCMOS33 ; # 6847 pin 39
+NET "Rdy"        LOC="P11" | IOSTANDARD = LVCMOS33 ; # 6847 pin 40
+
+
+NET "led3"       LOC="P43" | IOSTANDARD = LVCMOS33 ; # Red LED (near SW1)
+NET "led6"       LOC="P25" | IOSTANDARD = LVCMOS33 ; # Red LED (just left of FPGA)
+NET "led8"       LOC="P47" | IOSTANDARD = LVCMOS33 ; # Green LED (near SW1)
+NET "sw1"        LOC="P39" | IOSTANDARD = LVCMOS33 ; # Bottom Switch
+NET "nsw2"       LOC="P69" | IOSTANDARD = LVCMOS33 | PULLUP ; # Top Switch
+
+
+# I/O's for test connector
+#NET tvs1                      LOC=P48 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+#NET tvs0                      LOC=P49 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+NET tmosi                     LOC=P27 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+NET tdin                      LOC=P44 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+NET tcclk                     LOC=P50 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+#NET tm1                       LOC=P42 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+#NET thsw                      LOC=P99 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+
+
+
+
+# NET ""  LOC="P41" | IOSTANDARD = LVCMOS33 ; # 6847 pin 12
+# NET ""  LOC="P36" | IOSTANDARD = LVCMOS33 ; # 6847 pin 13
+# NET ""  LOC="P35" | IOSTANDARD = LVCMOS33 ; # 6847 pin 14
+# NET ""  LOC="P53" | IOSTANDARD = LVCMOS33 ; # 6847 pin 15
+# NET ""  LOC="P54" | IOSTANDARD = LVCMOS33 ; # 6847 pin 16
+# NET ""  LOC="P58" | IOSTANDARD = LVCMOS33 ; # 6847 pin 18
+# NET ""  LOC="P60" | IOSTANDARD = LVCMOS33 ; # 6847 pin 19
+# NET ""  LOC="P61" | IOSTANDARD = LVCMOS33 ; # 6847 pin 20
+
+
+# NET ""  LOC="P48" | IOSTANDARD = LVCMOS33 ; # connector pin E2 
+# NET ""  LOC="P49" | IOSTANDARD = LVCMOS33 ; # connector pin E3
+# NET ""  LOC="P27" | IOSTANDARD = LVCMOS33 ; # connector pin E4
+# NET ""  LOC="P44" | IOSTANDARD = LVCMOS33 ; # connector pin E5
+# NET ""  LOC="P50" | IOSTANDARD = LVCMOS33 ; # connector pin E6
+# NET ""  LOC="P42" | IOSTANDARD = LVCMOS33 ; # connector pin E7
+# NET ""  LOC="P99" | IOSTANDARD = LVCMOS33 ; # connector pin E8
+
+
+ 
