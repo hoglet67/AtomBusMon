@@ -7,10 +7,20 @@
 
 #define CTRL_PORT PORTB
 #define CTRL_DDR  DDRB
+#define CTRL_DIN  PINB
+
+// Outputs
 #define STEP_MASK 0x01
 #define SINGLE_MASK 0x02
 #define RESET_MASK 0x04
-#define CTRL_MASK (SINGLE_MASK | STEP_MASK | RESET_MASK)
+#define BRKPT_ENABLE_MASK 0x08
+#define BRKPT_CLOCK_MASK 0x10
+#define BRKPT_DATA_MASK  0x20
+// Inputs
+#define BRKPT_INTERRUPTED_MASK  0x40
+#define BRKPT_ACTIVE_MASK  0x80
+
+#define CTRL_MASK (SINGLE_MASK | STEP_MASK | RESET_MASK | BRKPT_ENABLE_MASK | BRKPT_CLOCK_MASK | BRKPT_DATA_MASK)
 
 #define AL_PORT PORTD
 #define AL_DIN  PIND
@@ -22,7 +32,7 @@
 #define AH_MASK 0x00
 #define AH_DDR  DDRE
 
-#define VERSION "0.10"
+#define VERSION "0.11"
 
 #define NUMCMDS 10
 #define MAXBKPTS 4
@@ -43,14 +53,14 @@ unsigned int breakpoints[MAXBKPTS] = {
 char *cmdStrings[NUMCMDS] = {
   "help",
   "reset",
-  "break",
-  "continue",
+  "interrupt",
   "address",
   "step",
   "trace",
   "blist",
-  "bset",
-  "bclear"
+  "break",
+  "bclear",
+  "continue",
 };
 
 #define Delay_us(__us) \
@@ -105,34 +115,33 @@ void setSingle(int i) {
   single = i;
   if (single) {
     CTRL_PORT |= SINGLE_MASK;
-    log0("Single stepping enabled\n");
   } else {
     CTRL_PORT &= ~SINGLE_MASK;
-    log0("Single stepping disabled\n");
   }
+  Delay_us(10);
 }
 
 void setTrace(long i) {
   trace = i;
   if (trace) {
-    log0("Tracing every %ld instructions\n", trace);
+    log0("Tracing every %ld instructions while single stepping\n", trace);
   } else {
     log0("Tracing disabled\n");
   }
 }
 
+void version() {
+  log0("Atom Bus Monitor version %s\n", VERSION);
+  log0("Compiled at %s on %s\n",__TIME__,__DATE__);
+}
 
 /*******************************************
  * Commands
  *******************************************/
 
-void notImplemented() {
-  log0("Not implemented\n");
-}
-
 void doCmdHelp(char *params) {
   int i;
-  log0("Atom Bus Monitor version %s\n", VERSION);
+  version();
   log0("Commands:\n");
   for (i = 0; i < NUMCMDS; i++) {
     log0("    %s\n", cmdStrings[i]);
@@ -168,10 +177,11 @@ void doCmdStep(char *params) {
   for (i = 1; i <= instructions; i++) {
     // Step the 6502
     CTRL_PORT &= ~STEP_MASK;
-    Delay_us(1);
+    Delay_us(2);
     CTRL_PORT |= STEP_MASK;
-    Delay_us(1);
+    Delay_us(2);
     if (i == instructions || (trace && (--j == 0))) {
+      Delay_us(10);
       doCmdAddr();
       j = trace;
     }
@@ -185,13 +195,9 @@ void doCmdReset(char *params) {
   CTRL_PORT &= ~RESET_MASK;
 }
 
-void doCmdBreak(char *params) {
-  setSingle(true);
+void doCmdInterrupt(char *params) {
+  setSingle(1);
   doCmdAddr();
-}
-
-void doCmdContinue(char *params) {
-  setSingle(false);
 }
 
 
@@ -212,7 +218,7 @@ void doCmdBList(char *params) {
   }
 }
 
-void doCmdBSet(char *params) {
+void doCmdBreak(char *params) {
   int i;
   unsigned int addr;
   sscanf(params, "%x", &addr);
@@ -221,15 +227,19 @@ void doCmdBSet(char *params) {
     doCmdBList(NULL);
     return;
   }
+  for (i = 0; i < numbkpts; i++) {
+    if (breakpoints[i] == addr) {
+      log0("Breakpoint already set at %04X\n", addr);
+      doCmdBList(NULL);
+      return;
+    }
+  }
+
   numbkpts++;
   for (i = numbkpts - 2; i >= -1; i--) {
     if (i == -1 || breakpoints[i] < addr) {
       log0("Setting breakpoint at %04X\n", addr);
       breakpoints[i + 1] = addr;
-      doCmdBList(NULL);
-      return;
-    } else if (breakpoints[i] == addr) {
-      log0("Breakpoint already set at %04X\n", addr);
       doCmdBList(NULL);
       return;
     } else {
@@ -240,7 +250,7 @@ void doCmdBSet(char *params) {
 
 void doCmdBClear(char *params) {
   int i;
-  int n;
+  int n = 0;
   sscanf(params, "%d", &n);
   if (n >= numbkpts) {
     log0("Breakpoint %d not set\n", n);
@@ -254,30 +264,89 @@ void doCmdBClear(char *params) {
   doCmdBList(NULL);
 }
 
+void shiftBreakpointRegister(unsigned int addr) {
+  int i;
+  for (i = 0; i < 16; i++) {
+    CTRL_PORT &= ~BRKPT_CLOCK_MASK;
+    if (addr & 1) {
+      CTRL_PORT |= BRKPT_DATA_MASK;
+    } else {
+      CTRL_PORT &= ~BRKPT_DATA_MASK;
+    }
+    Delay_us(10);
+    CTRL_PORT |= BRKPT_CLOCK_MASK;
+    Delay_us(10);
+    addr >>= 1;
+  }
+}
+
+void doCmdContinue(char *params) {
+  int i;
+  int status;
+  doCmdBList(NULL);
+
+  // Disable breakpoints to allow loading
+  CTRL_PORT &= ~BRKPT_ENABLE_MASK;
+
+  // Load breakpoints into comparators
+  for (i = 0; i < MAXBKPTS; i++) {
+    shiftBreakpointRegister(i < numbkpts ? breakpoints[i] : 0);
+  }
+
+  // Enable breakpoints
+  CTRL_PORT |= BRKPT_ENABLE_MASK;
+
+  // Disable single stepping
+  setSingle(0);
+
+  // Wait for breakpoint to become active
+  log0("6502 free running...\n");
+  do {
+    status = CTRL_DIN;
+  } while (!(status & BRKPT_ACTIVE_MASK) && !(status && BRKPT_INTERRUPTED_MASK));
+
+  // Output cause
+  if (status & BRKPT_ACTIVE_MASK) {
+    log0("Breakpoint hit at ");
+  } else {
+    log0("Interrupted at ");
+  }
+  doCmdAddr();
+
+  // Enable single stepping
+  setSingle(1);
+
+  // Disable breakpoints
+  CTRL_PORT &= ~BRKPT_ENABLE_MASK;
+}
+
+
 void initialize() {
   CTRL_DDR = CTRL_MASK;
   AL_DDR  = AL_MASK;
   AH_DDR  = AH_MASK;
-  CTRL_PORT &= ~STEP_MASK;
+  CTRL_PORT &= 0;
   Serial_Init(57600,57600);
   lcd_init();
   lcd_puts("Addr: xxxx");
-  log0("Atom Bus Monitor\n");
-  setSingle(false);
-  setTrace(0);
+  version();
+  setSingle(1);
+  setTrace(1);
+  log0("6502 paused...\n");
+  doCmdAddr();
 }
 
 void (*cmdFuncs[NUMCMDS])(char *params) = {
   doCmdHelp,
   doCmdReset,
-  doCmdBreak,
-  doCmdContinue,
+  doCmdInterrupt,
   doCmdAddr,
   doCmdStep,
   doCmdTrace,
   doCmdBList,
-  doCmdBSet,
-  doCmdBClear
+  doCmdBreak,
+  doCmdBClear,
+  doCmdContinue
 };
 
 

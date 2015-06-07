@@ -77,7 +77,21 @@ architecture behavioral of AtomBusMon is
     signal step   : std_logic;
     signal step1  : std_logic;
     signal step2  : std_logic;
+    
+    signal brkpt_enable  : std_logic;
+    signal brkpt_clock   : std_logic;
+    signal brkpt_clock1  : std_logic;
+    signal brkpt_clock2  : std_logic;
+    signal brkpt_data    : std_logic;
+    signal brkpt_active  : std_logic;
+    signal brkpt_active1 : std_logic;
 
+    signal brkpt_0   : std_logic_vector(15 downto 0);
+    signal brkpt_1   : std_logic_vector(15 downto 0);
+    signal brkpt_2   : std_logic_vector(15 downto 0);
+    signal brkpt_3   : std_logic_vector(15 downto 0);
+    signal brkpt_reg : std_logic_vector(63 downto 0);
+    
 begin
 
     inst_dcm5 : entity work.DCM0 port map(
@@ -125,11 +139,23 @@ begin
         portaout(6)          => lcd_db_out(6),
         portaout(7)          => lcd_db_out(7),
 
-        portbin              => (others => '0'),
+        portbin(0)           => '0',
+        portbin(1)           => '0',
+        portbin(2)           => '0',
+        portbin(3)           => '0',
+        portbin(4)           => '0',
+        portbin(5)           => '0',
+        portbin(6)           => sw1,
+        portbin(7)           => brkpt_active1,
         portbout(0)          => step,
         portbout(1)          => single,
         portbout(2)          => reset,
-        portbout(7 downto 3) => open,
+        portbout(3)          => brkpt_enable,
+        portbout(4)          => brkpt_clock,
+        portbout(5)          => brkpt_data,
+        portbout(6)          => open,
+        portbout(7)          => open,
+        
         
         portdin              => addr_inst(7 downto 0),
         portdout             => open,
@@ -149,9 +175,9 @@ begin
     lcd_db    <= lcd_db_out when lcd_rw_int = '0' else (others => 'Z');
     lcd_db_in <= lcd_db;
 
-    led3 <= dy_counter(24); -- red
-    led6 <= dy_counter(24); -- red
-    led8 <= not sw1;        -- green
+    led3 <= '0';               -- red
+    led6 <= '0';               -- red
+    led8 <= not brkpt_active;  -- green
 
     nrst_avr <= nsw2;
     
@@ -160,25 +186,45 @@ begin
     dy_data(1) <= hex & "0000" & Addr(7 downto 4);
     dy_data(2) <= hex & "0000" & "00" & (not nsw2) & sw1;
   
+    brkpt_0 <= brkpt_reg(15 downto 0);
+    brkpt_1 <= brkpt_reg(31 downto 16);
+    brkpt_2 <= brkpt_reg(47 downto 32);
+    brkpt_3 <= brkpt_reg(63 downto 48);
+
+
+    brkpt_active <= '1' when brkpt_enable = '1' and Sync = '1' and
+        ((Addr = brkpt_0) or (Addr = brkpt_1) or (Addr = brkpt_2) or (Addr = brkpt_3))
+        else '0';
+        
     -- 6502 Control
     syncProcess: process (Phi2)
     begin
         if rising_edge(Phi2) then
-            step1 <= step;
-            step2 <= step1;
-            if ((single = '0') or (step2 = '0' and step1 = '1')) then
-                Rdy <= '1';
-            else
-                Rdy <= not Sync;
-            end if;
+            -- Address monitoring
             addr_sync <= Addr;          
             if (Sync = '1') then
                 addr_inst <= Addr;
             end if;
+            -- Reset
             if (reset = '1') then
                 nRST <= '0';
             else
                 nRST <= 'Z';
+            end if;
+            -- Breakpoints
+            brkpt_clock1 <= brkpt_clock;
+            brkpt_clock2 <= brkpt_clock1;
+            if (brkpt_enable = '0' and brkpt_clock2 = '0' and brkpt_clock1 = '1') then
+                brkpt_reg <= brkpt_data & brkpt_reg(63 downto 1);
+            end if;
+            brkpt_active1 <= brkpt_active;
+            -- Single Stepping
+            step1 <= step;
+            step2 <= step1;
+            if ((single = '0') or (step2 = '0' and step1 = '1')) then
+                Rdy <= (not brkpt_active);
+            else
+                Rdy <= (not Sync);
             end if;
         end if;
     end process;

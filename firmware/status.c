@@ -185,11 +185,9 @@ void Serial_Init(const uint32_t BaudRate0,
 	cls(0);
 	cls(1);
 	
-	log0("stdio initialised\n");
-	log0("compiled at %s on %s\n",__TIME__,__DATE__);
-	
-	log0("SerialPort0\n");
-	log1("SerialPort1\n");
+	// log0("stdio initialised\n");
+	// log0("SerialPort0\n");
+	// log1("SerialPort1\n");
 }
 
 #ifdef USE_HEXDUMP
