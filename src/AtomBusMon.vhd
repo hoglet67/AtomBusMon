@@ -24,7 +24,6 @@ use work.OhoPack.all ;
 
 entity AtomBusMon is
     port (clock49         : in    std_logic;
-          nreset          : in    std_logic;
           
           -- 6502 Signals
           Addr            : in    std_logic_vector(15 downto 0);
@@ -32,6 +31,7 @@ entity AtomBusMon is
           RNW             : in    std_logic;
           Sync            : in    std_logic;
           Rdy             : out   std_logic;
+          nRST            : inout std_logic;
                     
           -- HD44780 LCD
           lcd_rs          : out   std_logic;
@@ -62,10 +62,10 @@ end AtomBusMon;
 architecture behavioral of AtomBusMon is
 
     signal clock_avr   : std_logic;
+    signal nrst_avr    : std_logic;
     signal lcd_rw_int  : std_logic;
     signal lcd_db_in   : std_logic_vector(7 downto 4);
     signal lcd_db_out  : std_logic_vector(7 downto 4);
-    signal nrst        : std_logic;
     signal dy_counter  : std_logic_vector(31 downto 0);
     signal dy_data     : y2d_type ;
 
@@ -73,6 +73,7 @@ architecture behavioral of AtomBusMon is
     signal addr_inst   : std_logic_vector(15 downto 0);
 
     signal single : std_logic;
+    signal reset  : std_logic;
     signal step   : std_logic;
     signal step1  : std_logic;
     signal step2  : std_logic;
@@ -104,7 +105,7 @@ begin
     
     Inst_AVR8: entity work.AVR8 port map(
         clk16M               => clock_avr,
-        nrst                 => nrst,
+        nrst                 => nrst_avr,
 
         portain(0)           => '0',
         portain(1)           => '0',
@@ -127,7 +128,8 @@ begin
         portbin              => (others => '0'),
         portbout(0)          => step,
         portbout(1)          => single,
-        portbout(7 downto 2) => open,
+        portbout(2)          => reset,
+        portbout(7 downto 3) => open,
         
         portdin              => addr_inst(7 downto 0),
         portdout             => open,
@@ -151,7 +153,7 @@ begin
     led6 <= dy_counter(24); -- red
     led8 <= not sw1;        -- green
 
-    nrst <= nsw2;
+    nrst_avr <= nsw2;
     
     -- OHO DY1 Display for Testing
     dy_data(0) <= hex & "0000" & Addr(3 downto 0);
@@ -172,6 +174,11 @@ begin
             addr_sync <= Addr;          
             if (Sync = '1') then
                 addr_inst <= Addr;
+            end if;
+            if (reset = '1') then
+                nRST <= '0';
+            else
+                nRST <= 'Z';
             end if;
         end if;
     end process;

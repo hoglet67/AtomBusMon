@@ -10,9 +10,8 @@ NET "lcd_db<6>"  LOC="P23" | IOSTANDARD = LVCMOS33 ; # 6847 pin 7
 NET "lcd_db<7>"  LOC="P33" | IOSTANDARD = LVCMOS33 ; # 6847 pin 8
 NET "avr_RxD"    LOC="P32" | IOSTANDARD = LVCMOS33 ; # 6847 pin 9
 NET "avr_TxD"    LOC="P34" | IOSTANDARD = LVCMOS33 ; # 6847 pin 10
-NET "nreset"     LOC="P40" | IOSTANDARD = LVCMOS33 ; # 6847 pin 11
 
-
+NET "nRST"       LOC="P61" | IOSTANDARD = LVCMOS33 ; # 6847 pin 20
 NET "Addr<0>"    LOC="P67" | IOSTANDARD = LVCMOS33 ; # 6847 pin 21
 NET "Addr<1>"    LOC="P68" | IOSTANDARD = LVCMOS33 ; # 6847 pin 22
 NET "Addr<2>"    LOC="P70" | IOSTANDARD = LVCMOS33 ; # 6847 pin 23
@@ -54,7 +53,7 @@ NET tcclk                     LOC=P50 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
 
 
 
-
+# NET ""  LOC="P40" | IOSTANDARD = LVCMOS33 ; # 6847 pin 11
 # NET ""  LOC="P41" | IOSTANDARD = LVCMOS33 ; # 6847 pin 12
 # NET ""  LOC="P36" | IOSTANDARD = LVCMOS33 ; # 6847 pin 13
 # NET ""  LOC="P35" | IOSTANDARD = LVCMOS33 ; # 6847 pin 14
@@ -62,7 +61,6 @@ NET tcclk                     LOC=P50 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
 # NET ""  LOC="P54" | IOSTANDARD = LVCMOS33 ; # 6847 pin 16
 # NET ""  LOC="P58" | IOSTANDARD = LVCMOS33 ; # 6847 pin 18
 # NET ""  LOC="P60" | IOSTANDARD = LVCMOS33 ; # 6847 pin 19
-# NET ""  LOC="P61" | IOSTANDARD = LVCMOS33 ; # 6847 pin 20
 
 
 # NET ""  LOC="P48" | IOSTANDARD = LVCMOS33 ; # connector pin E2 

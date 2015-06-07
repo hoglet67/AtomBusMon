@@ -7,9 +7,10 @@
 
 #define CTRL_PORT PORTB
 #define CTRL_DDR  DDRB
-#define SINGLE_MASK 0x02
 #define STEP_MASK 0x01
-#define CTRL_MASK (SINGLE_MASK | STEP_MASK)
+#define SINGLE_MASK 0x02
+#define RESET_MASK 0x04
+#define CTRL_MASK (SINGLE_MASK | STEP_MASK | RESET_MASK)
 
 #define AL_PORT PORTD
 #define AL_DIN  PIND
@@ -178,7 +179,10 @@ void doCmdStep(char *params) {
 }
 
 void doCmdReset(char *params) {
-  notImplemented();
+  log0("Resetting 6502\n");
+  CTRL_PORT |= RESET_MASK;
+  Delay_us(100);
+  CTRL_PORT &= ~RESET_MASK;
 }
 
 void doCmdBreak(char *params) {
