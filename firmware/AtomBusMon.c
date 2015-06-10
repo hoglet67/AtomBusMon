@@ -176,12 +176,24 @@ void doCmdHelp(char *params) {
   }
 }
 
+
 void doCmdAddr() {
+  int i, nibble;
   unsigned int addr = AH_DIN << 8 | AL_DIN;
-  sprintf(message, "%04X", addr);
+  // Update the serial port
+  log0("%04X\n", addr);
+  // Update the LCD display
   lcd_goto(6);
-  lcd_puts(message);
-  log0("%s\n", message);
+  // Avoid using sprintf, as it adds quite a lot of code
+  for (i = 3; i >= 0; i--) {
+    nibble = addr >> (i * 4);
+    nibble &= 0x0F;
+    nibble += '0';
+    if (nibble > '9') {
+      nibble += 'A' - '9' - 1;
+    }
+    lcd_putc(nibble);
+  }
 }
 
 void doCmdStep(char *params) {
@@ -304,7 +316,7 @@ void doCmdBClear(char *params) {
   if (n >= numbkpts) {
     log0("Breakpoint %d not set\n", n);
   } else {
-    log0("Removing %s at %04X\n", brkptStrings[modes[n], breakpoints[n]);
+    log0("Removing %s at %04X\n", brkptStrings[modes[n]], breakpoints[n]);
     for (i = n; i < numbkpts; i++) {
       breakpoints[i] = breakpoints[i + 1];
       modes[i] = modes[i + 1];
