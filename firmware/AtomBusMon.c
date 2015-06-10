@@ -9,14 +9,43 @@
 #define CTRL_DDR  DDRB
 #define CTRL_DIN  PINB
 
-// Outputs
-#define STEP_MASK 0x01
-#define SINGLE_MASK 0x02
-#define RESET_MASK 0x04
-#define BRKPT_ENABLE_MASK 0x08
-#define BRKPT_CLOCK_MASK 0x10
-#define BRKPT_DATA_MASK  0x20
-// Inputs
+#define STATUS_PORT PORTD
+#define STATUS_DDR  DDRD
+#define STATUS_DIN  PIND
+
+#define MUX_PORT PORTE
+#define MUX_DDR  DDRE
+#define MUX_DIN  PINE
+
+#define OFFSET_IAL 0
+#define OFFSET_IAH 1
+#define OFFSET_BAL 2
+#define OFFSET_BAH 3
+#define OFFSET_WAL 4
+#define OFFSET_WAH 5
+#define OFFSET_BAM 7
+#define OFFSET_WAM 8
+
+// Commands
+// 000x Enable/Disable single strpping
+// 001x Enable/Disable breakpoints / watches
+// 010x Load register
+// 011x Reset
+// 1000 Singe Step
+
+#define CMD_SINGLE_ENABLE 0x00
+#define CMD_BRKPT_ENABLE  0x02
+#define CMD_LOAD_REG      0x04
+#define CMD_RESET         0x06
+#define CMD_STEP          0x08
+
+// Control bits
+#define CMD_MASK 0x1F
+#define CMD_EDGE 0x10
+#define MUX_SEL_MASK 0xE0
+#define MUX_SEL_BIT 5
+
+// Status bits
 #define BRKPT_INTERRUPTED_MASK  0x40
 #define BRKPT_ACTIVE_MASK  0x80
 
@@ -35,19 +64,6 @@ char *brkptStrings[8] = {
    "Read, write breakpoints",
    "Instruction, read, write breakpoints"
 };
-
-
-#define CTRL_MASK (SINGLE_MASK | STEP_MASK | RESET_MASK | BRKPT_ENABLE_MASK | BRKPT_CLOCK_MASK | BRKPT_DATA_MASK)
-
-#define AL_PORT PORTD
-#define AL_DIN  PIND
-#define AL_MASK 0x00
-#define AL_DDR  DDRD
-
-#define AH_PORT PORTE
-#define AH_DIN  PINE
-#define AH_MASK 0x00
-#define AH_DDR  DDRE
 
 #define VERSION "0.11"
 
@@ -140,14 +156,36 @@ void readCmd(char *cmd) {
   }
 }
 
+void hwCmd(unsigned int cmd, unsigned int param) {
+  cmd |= param;
+  CTRL_PORT &= ~CMD_MASK;
+  CTRL_PORT |= cmd;
+  Delay_us(2);
+  CTRL_PORT |= CMD_EDGE;
+  Delay_us(2);
+}
+
+unsigned int hwRead8(unsigned int offset) {
+  CTRL_PORT &= ~MUX_SEL_MASK;
+  CTRL_PORT |= offset << MUX_SEL_BIT;
+  Delay_us(1);
+  return MUX_DIN;
+}
+
+unsigned int hwRead16(unsigned int offset) {
+  unsigned int lsb;
+  CTRL_PORT &= ~MUX_SEL_MASK;
+  CTRL_PORT |= offset << MUX_SEL_BIT;
+  Delay_us(1);
+  lsb = MUX_DIN;
+  CTRL_PORT |= 1 << MUX_SEL_BIT;
+  Delay_us(1);
+  return (MUX_DIN << 8) | lsb;
+}
+
 void setSingle(int i) {
   single = i;
-  if (single) {
-    CTRL_PORT |= SINGLE_MASK;
-  } else {
-    CTRL_PORT &= ~SINGLE_MASK;
-  }
-  Delay_us(10);
+  hwCmd(CMD_SINGLE_ENABLE, single ? 1 : 0);
 }
 
 void setTrace(long i) {
@@ -163,6 +201,7 @@ void version() {
   log0("Atom Bus Monitor version %s\n", VERSION);
   log0("Compiled at %s on %s\n",__TIME__,__DATE__);
 }
+
 
 
 /*******************************************
@@ -181,7 +220,8 @@ void doCmdHelp(char *params) {
 
 void doCmdAddr() {
   int i, nibble;
-  unsigned int addr = AH_DIN << 8 | AL_DIN;
+  unsigned int addr = hwRead16(OFFSET_IAL);
+
   // Update the serial port
   log0("%04X\n", addr);
   // Update the LCD display
@@ -218,10 +258,7 @@ void doCmdStep(char *params) {
   j = trace;
   for (i = 1; i <= instructions; i++) {
     // Step the 6502
-    CTRL_PORT &= ~STEP_MASK;
-    Delay_us(2);
-    CTRL_PORT |= STEP_MASK;
-    Delay_us(2);
+    hwCmd(CMD_STEP, 0);
     if (i == instructions || (trace && (--j == 0))) {
       Delay_us(10);
       doCmdAddr();
@@ -232,9 +269,9 @@ void doCmdStep(char *params) {
 
 void doCmdReset(char *params) {
   log0("Resetting 6502\n");
-  CTRL_PORT |= RESET_MASK;
+  hwCmd(CMD_RESET, 1);
   Delay_us(100);
-  CTRL_PORT &= ~RESET_MASK;
+  hwCmd(CMD_RESET, 0);
 }
 
 void doCmdInterrupt(char *params) {
@@ -360,15 +397,7 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mode) {
   reg <<= 16;
   reg |= addr;
   for (i = 0; i < 20; i++) {
-    CTRL_PORT &= ~BRKPT_CLOCK_MASK;
-    if (reg & 1) {
-      CTRL_PORT |= BRKPT_DATA_MASK;
-    } else {
-      CTRL_PORT &= ~BRKPT_DATA_MASK;
-    }
-    Delay_us(10);
-    CTRL_PORT |= BRKPT_CLOCK_MASK;
-    Delay_us(10);
+    hwCmd(CMD_LOAD_REG, reg & 1);
     reg >>= 1;
   }
 }
@@ -379,7 +408,7 @@ void doCmdContinue(char *params) {
   doCmdBList(NULL);
 
   // Disable breakpoints to allow loading
-  CTRL_PORT &= ~BRKPT_ENABLE_MASK;
+  hwCmd(CMD_BRKPT_ENABLE, 0);
 
   // Load breakpoints into comparators
   for (i = 0; i < numbkpts; i++) {
@@ -389,8 +418,8 @@ void doCmdContinue(char *params) {
     shiftBreakpointRegister(0, 0);
   }
 
-  // Enable breakpoints
-  CTRL_PORT |= BRKPT_ENABLE_MASK;
+  // Enable breakpoints 
+  hwCmd(CMD_BRKPT_ENABLE, 1);
 
   // Disable single stepping
   setSingle(0);
@@ -398,7 +427,7 @@ void doCmdContinue(char *params) {
   // Wait for breakpoint to become active
   log0("6502 free running...\n");
   do {
-    status = CTRL_DIN;
+    status = STATUS_DIN;
   } while (!(status & BRKPT_ACTIVE_MASK) && !(status && BRKPT_INTERRUPTED_MASK));
 
   // Output cause
@@ -413,19 +442,20 @@ void doCmdContinue(char *params) {
   setSingle(1);
 
   // Disable breakpoints
-  CTRL_PORT &= ~BRKPT_ENABLE_MASK;
+  hwCmd(CMD_BRKPT_ENABLE, 0);
 }
 
 
 void initialize() {
-  CTRL_DDR = CTRL_MASK;
-  AL_DDR  = AL_MASK;
-  AH_DDR  = AH_MASK;
-  CTRL_PORT &= 0;
+  CTRL_DDR = 255;
+  STATUS_DDR = 0;
+  MUX_DDR = 0;
+  CTRL_PORT = 0;
   Serial_Init(57600,57600);
   lcd_init();
   lcd_puts("Addr: xxxx");
   version();
+  hwCmd(CMD_RESET, 0);
   setSingle(1);
   setTrace(1);
   log0("6502 paused...\n");

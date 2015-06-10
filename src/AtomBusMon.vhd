@@ -69,20 +69,26 @@ architecture behavioral of AtomBusMon is
     signal dy_counter  : std_logic_vector(31 downto 0);
     signal dy_data     : y2d_type ;
 
+    signal mux         : std_logic_vector(7 downto 0);
+    signal muxsel      : std_logic_vector(2 downto 0);
+    signal cmd_edge    : std_logic;
+    signal cmd_edge1   : std_logic;
+    signal cmd_edge2   : std_logic;
+    signal cmd         : std_logic_vector(3 downto 0);
+
     signal addr_sync   : std_logic_vector(15 downto 0);
+
     signal addr_inst   : std_logic_vector(15 downto 0);
+    signal addr_break  : std_logic_vector(15 downto 0);
+    signal mode_break  : std_logic_vector(7 downto 0);
+    signal addr_watch  : std_logic_vector(15 downto 0);
+    signal mode_watch  : std_logic_vector(7 downto 0);
 
     signal single : std_logic;
     signal reset  : std_logic;
     signal step   : std_logic;
-    signal step1  : std_logic;
-    signal step2  : std_logic;
     
     signal brkpt_enable  : std_logic;
-    signal brkpt_clock   : std_logic;
-    signal brkpt_clock1  : std_logic;
-    signal brkpt_clock2  : std_logic;
-    signal brkpt_data    : std_logic;
     signal brkpt_active  : std_logic;
     signal brkpt_active1 : std_logic;
 
@@ -135,28 +141,37 @@ begin
         portaout(6)          => lcd_db_out(6),
         portaout(7)          => lcd_db_out(7),
 
+        -- Command Port
         portbin(0)           => '0',
         portbin(1)           => '0',
         portbin(2)           => '0',
         portbin(3)           => '0',
         portbin(4)           => '0',
         portbin(5)           => '0',
-        portbin(6)           => sw1,
-        portbin(7)           => brkpt_active1,
-        portbout(0)          => step,
-        portbout(1)          => single,
-        portbout(2)          => reset,
-        portbout(3)          => brkpt_enable,
-        portbout(4)          => brkpt_clock,
-        portbout(5)          => brkpt_data,
-        portbout(6)          => open,
-        portbout(7)          => open,
+        portbin(6)           => '0',
+        portbin(7)           => '0',
+        portbout(0)          => cmd(0),
+        portbout(1)          => cmd(1),
+        portbout(2)          => cmd(2),
+        portbout(3)          => cmd(3),
+        portbout(4)          => cmd_edge,
+        portbout(5)          => muxsel(0),
+        portbout(6)          => muxsel(1),
+        portbout(7)          => muxsel(2),
         
-        
-        portdin              => addr_inst(7 downto 0),
+        -- Status Port
+        portdin(0)           => '0',
+        portdin(1)           => '0',
+        portdin(2)           => '0',
+        portdin(3)           => '0',
+        portdin(4)           => '0',
+        portdin(5)           => '0',
+        portdin(6)           => sw1,
+        portdin(7)           => brkpt_active1,
         portdout             => open,
 
-        portein              => addr_inst(15 downto 8),
+        -- Mux Port
+        portein              => mux,
         porteout             => open,
                 
         spi_mosio            => open,
@@ -171,8 +186,8 @@ begin
     lcd_db    <= lcd_db_out when lcd_rw_int = '0' else (others => 'Z');
     lcd_db_in <= lcd_db;
 
-    led3 <= '0';               -- red
-    led6 <= '0';               -- red
+    led3 <= nRST;              -- red
+    led6 <= not single;        -- red
     led8 <= not brkpt_active;  -- green
 
     nrst_avr <= nsw2;
@@ -181,9 +196,18 @@ begin
     dy_data(0) <= hex & "0000" & Addr(3 downto 0);
     dy_data(1) <= hex & "0000" & Addr(7 downto 4);
     dy_data(2) <= hex & "0000" & "00" & (not nsw2) & sw1;
-  
 
-    brkpr_active: process (brkpt_reg, brkpt_enable, Addr, Sync)
+    mux <= addr_inst(7 downto 0)   when muxsel = 0 else
+           addr_inst(15 downto 8)  when muxsel = 1 else
+           addr_break(7 downto 0)  when muxsel = 2 else
+           addr_break(15 downto 8) when muxsel = 3 else
+           addr_watch(7 downto 0)  when muxsel = 4 else
+           addr_watch(15 downto 8) when muxsel = 5 else
+           mode_break              when muxsel = 6 else
+           mode_watch              when muxsel = 7 else
+           "10101010";
+           
+    brkpt_active_process: process (brkpt_reg, brkpt_enable, Addr, Sync)
         variable tmp : std_logic;
         variable i  : integer;
         variable brkpt_addr : std_logic_vector(15 downto 0);
@@ -224,28 +248,49 @@ begin
     syncProcess: process (Phi2)
     begin
         if rising_edge(Phi2) then
+            -- Command processing
+            cmd_edge1 <= cmd_edge;
+            cmd_edge2 <= cmd_edge1;
+            if (cmd_edge2 = '0' and cmd_edge1 = '1') then
+                -- 000x Enable/Disable single strpping
+                -- 001x Enable/Disable breakpoints / watches
+                -- 010x Load register
+                -- 011x Reset
+                -- 1000 Singe Step
+                
+                if (cmd(3 downto 1) = "000") then
+                    single <= cmd(0);
+                end if;
+                
+                if (cmd(3 downto 1) = "001") then
+                    brkpt_enable <= cmd(0);
+                end if;
+                
+                if (cmd(3 downto 1) = "010") then
+                    brkpt_reg <= cmd(0) & brkpt_reg(brkpt_reg'length - 1 downto 1);
+                end if;
+                
+                if (cmd(3 downto 1) = "011") then
+                    reset <= cmd(0);
+                end if;
+            end if;
+
+            if (reset = '1') then
+                 nRST <= '0';
+            else
+                 nRST <= 'Z';
+            end if;
+            
             -- Address monitoring
             addr_sync <= Addr;          
             if (Sync = '1') then
                 addr_inst <= Addr;
             end if;
-            -- Reset
-            if (reset = '1') then
-                nRST <= '0';
-            else
-                nRST <= 'Z';
-            end if;
-            -- Breakpoints
-            brkpt_clock1 <= brkpt_clock;
-            brkpt_clock2 <= brkpt_clock1;
-            if (brkpt_enable = '0' and brkpt_clock2 = '0' and brkpt_clock1 = '1') then
-                brkpt_reg <= brkpt_data & brkpt_reg(brkpt_reg'length - 1 downto 1);
-            end if;
+            
             brkpt_active1 <= brkpt_active;
+            
             -- Single Stepping
-            step1 <= step;
-            step2 <= step1;
-            if ((single = '0') or (step2 = '0' and step1 = '1')) then
+            if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "1000")) then
                 Rdy <= (not brkpt_active);
             else
                 Rdy <= (not Sync);
