@@ -20,6 +20,23 @@
 #define BRKPT_INTERRUPTED_MASK  0x40
 #define BRKPT_ACTIVE_MASK  0x80
 
+// Breakpoint Modes
+#define BRKPT_INSTR 0x01
+#define BRKPT_READ 0x02
+#define BRKPT_WRITE 0x04
+
+char *brkptStrings[8] = {
+   "No breakpoint",
+   "Instruction breakpoint",
+   "Read breakpoint",
+   "Instruction, read breakpoints",
+   "Write breakpoint",
+   "Instruction, write breakpoints",
+   "Read, write breakpoints",
+   "Instruction, read, write breakpoints"
+};
+
+
 #define CTRL_MASK (SINGLE_MASK | STEP_MASK | RESET_MASK | BRKPT_ENABLE_MASK | BRKPT_CLOCK_MASK | BRKPT_DATA_MASK)
 
 #define AL_PORT PORTD
@@ -34,7 +51,7 @@
 
 #define VERSION "0.11"
 
-#define NUMCMDS 10
+#define NUMCMDS 12
 #define MAXBKPTS 4
 
 int numbkpts = 0;
@@ -50,6 +67,14 @@ unsigned int breakpoints[MAXBKPTS] = {
   0
 };
 
+unsigned int modes[MAXBKPTS] = {
+  0,
+  0,
+  0,
+  0
+};
+
+
 char *cmdStrings[NUMCMDS] = {
   "help",
   "reset",
@@ -58,7 +83,9 @@ char *cmdStrings[NUMCMDS] = {
   "step",
   "trace",
   "blist",
-  "break",
+  "breaki",
+  "breakr",
+  "breakw",
   "bclear",
   "continue",
 };
@@ -134,6 +161,7 @@ void version() {
   log0("Atom Bus Monitor version %s\n", VERSION);
   log0("Compiled at %s on %s\n",__TIME__,__DATE__);
 }
+
 
 /*******************************************
  * Commands
@@ -211,41 +239,62 @@ void doCmdBList(char *params) {
   int i;
   if (numbkpts) {
     for (i = 0; i < numbkpts; i++) {
-      log0("%d: %04X\n", i, breakpoints[i]);
+      log0("%d: %04X %s\n", i, breakpoints[i], brkptStrings[modes[i]]);
     }
   } else {
       log0("No breakpoints set\n");
   }
 }
 
-void doCmdBreak(char *params) {
+void setBreakpoint(int i, int addr, int mode) {
+  log0("%s set at %04X\n", brkptStrings[mode], addr);
+  breakpoints[i] = addr;
+  modes[i] = mode;
+}
+
+void doCmdBreak(char *params, unsigned int mode) {
   int i;
   unsigned int addr;
   sscanf(params, "%x", &addr);
+  for (i = 0; i < numbkpts; i++) {
+    if (breakpoints[i] == addr) {
+      if (modes[i] & mode) {
+	log0("%s already set at %04X\n", brkptStrings[mode], addr);
+      } else {
+	setBreakpoint(i, addr, modes[i] | mode);
+      }
+      doCmdBList(NULL);
+      return;
+    }
+  }
   if (numbkpts == MAXBKPTS) {
     log0("All breakpoints are already set\n");
     doCmdBList(NULL);
     return;
   }
-  for (i = 0; i < numbkpts; i++) {
-    if (breakpoints[i] == addr) {
-      log0("Breakpoint already set at %04X\n", addr);
-      doCmdBList(NULL);
-      return;
-    }
-  }
-
   numbkpts++;
   for (i = numbkpts - 2; i >= -1; i--) {
     if (i == -1 || breakpoints[i] < addr) {
-      log0("Setting breakpoint at %04X\n", addr);
-      breakpoints[i + 1] = addr;
+      setBreakpoint(i + 1, addr, mode);
       doCmdBList(NULL);
       return;
     } else {
       breakpoints[i + 1] = breakpoints[i];
+      modes[i + 1] = modes[i];
     }
   }
+}
+
+void doCmdBreakI(char *params) {
+  doCmdBreak(params, BRKPT_INSTR);
+}
+
+void doCmdBreakR(char *params) {
+  doCmdBreak(params, BRKPT_READ);
+}
+
+void doCmdBreakW(char *params) {
+  doCmdBreak(params, BRKPT_WRITE);
 }
 
 void doCmdBClear(char *params) {
@@ -255,20 +304,24 @@ void doCmdBClear(char *params) {
   if (n >= numbkpts) {
     log0("Breakpoint %d not set\n", n);
   } else {
-    log0("Removing breakpoint at %04X\n", breakpoints[n]);
+    log0("Removing %s at %04X\n", brkptStrings[modes[n], breakpoints[n]);
     for (i = n; i < numbkpts; i++) {
       breakpoints[i] = breakpoints[i + 1];
+      modes[i] = modes[i + 1];
     }
     numbkpts--;
   }
   doCmdBList(NULL);
 }
 
-void shiftBreakpointRegister(unsigned int addr) {
+void shiftBreakpointRegister(unsigned int addr, unsigned int mode) {
   int i;
-  for (i = 0; i < 16; i++) {
+  long reg = mode;
+  reg <<= 16;
+  reg |= addr;
+  for (i = 0; i < 20; i++) {
     CTRL_PORT &= ~BRKPT_CLOCK_MASK;
-    if (addr & 1) {
+    if (reg & 1) {
       CTRL_PORT |= BRKPT_DATA_MASK;
     } else {
       CTRL_PORT &= ~BRKPT_DATA_MASK;
@@ -276,7 +329,7 @@ void shiftBreakpointRegister(unsigned int addr) {
     Delay_us(10);
     CTRL_PORT |= BRKPT_CLOCK_MASK;
     Delay_us(10);
-    addr >>= 1;
+    reg >>= 1;
   }
 }
 
@@ -289,8 +342,11 @@ void doCmdContinue(char *params) {
   CTRL_PORT &= ~BRKPT_ENABLE_MASK;
 
   // Load breakpoints into comparators
-  for (i = 0; i < MAXBKPTS; i++) {
-    shiftBreakpointRegister(i < numbkpts ? breakpoints[i] : 0);
+  for (i = 0; i < numbkpts; i++) {
+    shiftBreakpointRegister(breakpoints[i], modes[i]);
+  }
+  for (i = numbkpts; i < MAXBKPTS; i++) {
+    shiftBreakpointRegister(0, 0);
   }
 
   // Enable breakpoints
@@ -344,7 +400,9 @@ void (*cmdFuncs[NUMCMDS])(char *params) = {
   doCmdStep,
   doCmdTrace,
   doCmdBList,
-  doCmdBreak,
+  doCmdBreakI,
+  doCmdBreakR,
+  doCmdBreakW,
   doCmdBClear,
   doCmdContinue
 };

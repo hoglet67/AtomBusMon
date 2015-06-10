@@ -86,11 +86,7 @@ architecture behavioral of AtomBusMon is
     signal brkpt_active  : std_logic;
     signal brkpt_active1 : std_logic;
 
-    signal brkpt_0   : std_logic_vector(15 downto 0);
-    signal brkpt_1   : std_logic_vector(15 downto 0);
-    signal brkpt_2   : std_logic_vector(15 downto 0);
-    signal brkpt_3   : std_logic_vector(15 downto 0);
-    signal brkpt_reg : std_logic_vector(63 downto 0);
+    signal brkpt_reg : std_logic_vector(79 downto 0);
     
 begin
 
@@ -186,15 +182,43 @@ begin
     dy_data(1) <= hex & "0000" & Addr(7 downto 4);
     dy_data(2) <= hex & "0000" & "00" & (not nsw2) & sw1;
   
-    brkpt_0 <= brkpt_reg(15 downto 0);
-    brkpt_1 <= brkpt_reg(31 downto 16);
-    brkpt_2 <= brkpt_reg(47 downto 32);
-    brkpt_3 <= brkpt_reg(63 downto 48);
 
-
-    brkpt_active <= '1' when brkpt_enable = '1' and Sync = '1' and
-        ((Addr = brkpt_0) or (Addr = brkpt_1) or (Addr = brkpt_2) or (Addr = brkpt_3))
-        else '0';
+    brkpr_active: process (brkpt_reg, brkpt_enable, Addr, Sync)
+        variable tmp : std_logic;
+        variable i  : integer;
+        variable brkpt_addr : std_logic_vector(15 downto 0);
+        variable brkpt_mode_i : std_logic;
+        variable brkpt_mode_ar : std_logic;
+        variable brkpt_mode_aw : std_logic;
+    begin
+        tmp := '0';
+        if (brkpt_enable = '1') then
+            for i in 0 to 3 loop
+                brkpt_addr := brkpt_reg(i * 20 + 15 downto i * 20);
+                brkpt_mode_i := brkpt_reg(i * 20 + 16);
+                brkpt_mode_ar := brkpt_reg(i * 20 + 17);
+                brkpt_mode_aw := brkpt_reg(i * 20 + 18);
+                if (Addr = brkpt_addr) then                
+                    if (Sync = '1') then
+                        if (brkpt_mode_i = '1') then
+                            tmp := '1';
+                        end if;
+                    else
+                        if (RNW = '1') then
+                            if (brkpt_mode_ar = '1') then
+                                tmp := '1';
+                            end if;
+                        else
+                            if (brkpt_mode_aw = '1') then
+                                tmp := '1';
+                            end if;
+                        end if;
+                     end if;
+                end if;
+            end loop;
+        end if;
+        brkpt_active <= tmp;
+    end process;
         
     -- 6502 Control
     syncProcess: process (Phi2)
@@ -215,7 +239,7 @@ begin
             brkpt_clock1 <= brkpt_clock;
             brkpt_clock2 <= brkpt_clock1;
             if (brkpt_enable = '0' and brkpt_clock2 = '0' and brkpt_clock1 = '1') then
-                brkpt_reg <= brkpt_data & brkpt_reg(63 downto 1);
+                brkpt_reg <= brkpt_data & brkpt_reg(brkpt_reg'length - 1 downto 1);
             end if;
             brkpt_active1 <= brkpt_active;
             -- Single Stepping
