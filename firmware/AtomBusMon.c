@@ -19,12 +19,11 @@
 
 #define OFFSET_IAL 0
 #define OFFSET_IAH 1
-#define OFFSET_BAL 2
-#define OFFSET_BAH 3
-#define OFFSET_WAL 4
-#define OFFSET_WAH 5
-#define OFFSET_BM  6
-#define OFFSET_WM  7
+#define OFFSET_BW_IAL 2
+#define OFFSET_BW_IAH 3
+#define OFFSET_BW_BAL 4
+#define OFFSET_BW_BAH 5
+#define OFFSET_BW_M  6
 
 // Commands
 // 000x Enable/Disable single strpping
@@ -38,6 +37,7 @@
 #define CMD_LOAD_REG      0x04
 #define CMD_RESET         0x06
 #define CMD_STEP          0x08
+#define CMD_WATCH_READ    0x09
 
 // Control bits
 #define CMD_MASK 0x1F
@@ -46,28 +46,33 @@
 #define MUX_SEL_BIT 5
 
 // Status bits
-#define BRKPT_INTERRUPTED_MASK  0x40
-#define BRKPT_ACTIVE_MASK  0x80
+#define INTERRUPTED_MASK  0x40
+#define BW_ACTIVE_MASK  0x80
 
 // Breakpoint Modes
-#define BRKPT_INSTR 0x01
-#define BRKPT_READ 0x02
-#define BRKPT_WRITE 0x04
+#define BRKPT_INSTR 0
+#define BRKPT_READ  1
+#define BRKPT_WRITE 2
+#define WATCH_INSTR 3
+#define WATCH_READ  4
+#define WATCH_WRITE 5
+#define UNDEFINED   6
 
-char *brkptStrings[8] = {
-   "No breakpoint",
-   "Instruction breakpoint",
-   "Read breakpoint",
-   "Instruction, read breakpoints",
-   "Write breakpoint",
-   "Instruction, write breakpoints",
-   "Read, write breakpoints",
-   "Instruction, read, write breakpoints"
+#define BW_MEM_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE) | (1<<WATCH_READ) | (1<<WATCH_WRITE))
+
+char *modeStrings[7] = {
+  "Instruction breakpoint",
+  "Read breakpoint",
+  "Write breakpoint",
+  "Instruction watch",
+  "Read watch",
+  "Write watch",
+  "Undefined",
 };
 
 #define VERSION "0.11"
 
-#define NUMCMDS 14
+#define NUMCMDS 20
 #define MAXBKPTS 4
 
 int numbkpts = 0;
@@ -102,9 +107,15 @@ char *cmdStrings[NUMCMDS] = {
   "breaki",
   "breakr",
   "breakw",
+  "watchi",
+  "watchr",
+  "watchw",
   "bcleari",
   "bclearr",
   "bclearw",
+  "wcleari",
+  "wclearr",
+  "wclearw",
   "continue",
 };
 
@@ -220,6 +231,40 @@ void lcdAddr(unsigned int addr) {
 
 }
 
+void logMode(unsigned int mode) {
+  int i;
+  int first = 1;
+  for (i = 0; i < UNDEFINED; i++) {
+    if (mode & 1) {
+      if (!first) {
+	log0(",");
+	first = 0;
+      }
+      log0("%s", modeStrings[i]);
+    }
+    mode >>= 1;
+  }
+}
+
+int logDetails() {
+  unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
+  unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
+  unsigned int mode   = hwRead8(OFFSET_BW_M);
+  unsigned int watch = mode & 8;
+  // Convert from 4-bit compressed to 6 bit expanded mode representation
+  if (watch) {
+    mode = (mode & 7) << 3;
+  }
+  // Update the serial console
+  logMode(mode);
+  log0(" hit at %04X", i_addr);
+  if (mode & BW_MEM_MASK) {
+    log0(" accessing %04X", b_addr);
+  }
+  log0("\n");
+  return watch;
+}
+
 /*******************************************
  * Commands
  *******************************************/
@@ -238,23 +283,10 @@ void doCmdAddr() {
   // Update the LCD display
   lcdAddr(i_addr);
   // Update the serial console
-  log0("%04X %04X %02X\n", i_addr);
+  log0("%04X\n", i_addr);
 }
 
 
-void doCmdAddrDetail() {
-  unsigned int i_addr = hwRead16(OFFSET_IAL);
-  unsigned int b_addr = hwRead16(OFFSET_BAL);
-  unsigned int b_mode = hwRead8(OFFSET_BM);
-  // Update the LCD display
-  lcdAddr(i_addr);
-  // Update the serial console
-  log0("%s hit at %04X", brkptStrings[b_mode], i_addr);
-  if (b_mode != BRKPT_INSTR) {
-    log0(" accessing %04X", b_addr);
-  }
-  log0("\n");
-}
 
 void doCmdStep(char *params) {
   long i;
@@ -308,7 +340,9 @@ void doCmdBList(char *params) {
   int i;
   if (numbkpts) {
     for (i = 0; i < numbkpts; i++) {
-      log0("%d: %04X %s\n", i, breakpoints[i], brkptStrings[modes[i]]);
+      log0("%d: %04X: ", i, breakpoints[i]);
+      logMode(modes[i]);
+      log0("\n");
     }
   } else {
       log0("No breakpoints set\n");
@@ -316,7 +350,8 @@ void doCmdBList(char *params) {
 }
 
 void setBreakpoint(int i, int addr, int mode) {
-  log0("%s set at %04X\n", brkptStrings[mode], addr);
+  logMode(mode);
+  log0(" set at %04X\n", addr);
   breakpoints[i] = addr;
   modes[i] = mode;
 }
@@ -328,7 +363,8 @@ void doCmdBreak(char *params, unsigned int mode) {
   for (i = 0; i < numbkpts; i++) {
     if (breakpoints[i] == addr) {
       if (modes[i] & mode) {
-	log0("%s already set at %04X\n", brkptStrings[mode], addr);
+	logMode(mode);
+	log0(" already set at %04X\n", addr);
       } else {
 	setBreakpoint(i, addr, modes[i] | mode);
       }
@@ -355,15 +391,27 @@ void doCmdBreak(char *params, unsigned int mode) {
 }
 
 void doCmdBreakI(char *params) {
-  doCmdBreak(params, BRKPT_INSTR);
+  doCmdBreak(params, 1 << BRKPT_INSTR);
 }
 
 void doCmdBreakR(char *params) {
-  doCmdBreak(params, BRKPT_READ);
+  doCmdBreak(params, 1 << BRKPT_READ);
 }
 
 void doCmdBreakW(char *params) {
-  doCmdBreak(params, BRKPT_WRITE);
+  doCmdBreak(params, 1 << BRKPT_WRITE);
+}
+
+void doCmdWatchI(char *params) {
+  doCmdBreak(params, 1 << WATCH_INSTR);
+}
+
+void doCmdWatchR(char *params) {
+  doCmdBreak(params, 1 << WATCH_READ);
+}
+
+void doCmdWatchW(char *params) {
+  doCmdBreak(params, 1 << WATCH_WRITE);
 }
 
 void doCmdBClear(char *params, unsigned int mode) {
@@ -379,7 +427,9 @@ void doCmdBClear(char *params, unsigned int mode) {
   }
   if (n < numbkpts) {
     if (modes[n] & mode) {
-      log0("Removing %s at %04X\n", brkptStrings[mode], breakpoints[n]);
+      log0("Removing ");
+      logMode(mode);
+      log0(" at %04X\n", breakpoints[n]);
       modes[n] &= ~mode;
       if (modes[n] == 0) {
 	for (i = n; i < numbkpts; i++) {
@@ -389,24 +439,38 @@ void doCmdBClear(char *params, unsigned int mode) {
 	numbkpts--;
       }
     } else {
-      log0("%s not set at %04X\n", brkptStrings[mode], breakpoints[n]);
+      logMode(mode);
+      log0(" not set at %04X\n", breakpoints[n]);
     }
   } else {
-    log0("%s not set at %04X\n", brkptStrings[mode], n);
+    logMode(mode);
+    log0(" not set at %04X\n", n);
   }
   doCmdBList(NULL);
 }
 
 void doCmdBClearI(char *params) {
-  doCmdBClear(params, BRKPT_INSTR);
+  doCmdBClear(params, 1 << BRKPT_INSTR);
 }
 
 void doCmdBClearR(char *params) {
-  doCmdBClear(params, BRKPT_READ);
+  doCmdBClear(params, 1 << BRKPT_READ);
 }
 
 void doCmdBClearW(char *params) {
-  doCmdBClear(params, BRKPT_WRITE);
+  doCmdBClear(params, 1 << BRKPT_WRITE);
+}
+
+void doCmdWClearI(char *params) {
+  doCmdBClear(params, 1 << WATCH_INSTR);
+}
+
+void doCmdWClearR(char *params) {
+  doCmdBClear(params, 1 << WATCH_READ);
+}
+
+void doCmdWClearW(char *params) {
+  doCmdBClear(params, 1 << WATCH_WRITE);
 }
 
 void shiftBreakpointRegister(unsigned int addr, unsigned int mode) {
@@ -414,7 +478,7 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mode) {
   long reg = mode;
   reg <<= 16;
   reg |= addr;
-  for (i = 0; i < 20; i++) {
+  for (i = 0; i <= 21; i++) {
     hwCmd(CMD_LOAD_REG, reg & 1);
     reg >>= 1;
   }
@@ -444,12 +508,19 @@ void doCmdContinue(char *params) {
 
   // Wait for breakpoint to become active
   log0("6502 free running...\n");
+  int cont = 1;
   do {
     status = STATUS_DIN;
-  } while (!(status & BRKPT_ACTIVE_MASK) && !(status && BRKPT_INTERRUPTED_MASK));
-
-  // Output cause
-  doCmdAddrDetail();
+    if (status & BW_ACTIVE_MASK) {
+      cont = logDetails();
+      hwCmd(CMD_WATCH_READ, 0);
+    }
+    if (status & INTERRUPTED_MASK) {
+      log0("Interrupted at ");
+      doCmdAddr();
+      cont = 0;
+    }
+  } while (cont);
 
   // Enable single stepping
   setSingle(1);
@@ -486,9 +557,15 @@ void (*cmdFuncs[NUMCMDS])(char *params) = {
   doCmdBreakI,
   doCmdBreakR,
   doCmdBreakW,
+  doCmdWatchI,
+  doCmdWatchR,
+  doCmdWatchW,
   doCmdBClearI,
   doCmdBClearR,
   doCmdBClearW,
+  doCmdWClearI,
+  doCmdWClearR,
+  doCmdWClearW,
   doCmdContinue
 };
 
