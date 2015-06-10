@@ -51,7 +51,7 @@ char *brkptStrings[8] = {
 
 #define VERSION "0.11"
 
-#define NUMCMDS 12
+#define NUMCMDS 14
 #define MAXBKPTS 4
 
 int numbkpts = 0;
@@ -86,7 +86,9 @@ char *cmdStrings[NUMCMDS] = {
   "breaki",
   "breakr",
   "breakw",
-  "bclear",
+  "bcleari",
+  "bclearr",
+  "bclearw",
   "continue",
 };
 
@@ -309,21 +311,47 @@ void doCmdBreakW(char *params) {
   doCmdBreak(params, BRKPT_WRITE);
 }
 
-void doCmdBClear(char *params) {
+void doCmdBClear(char *params, unsigned int mode) {
   int i;
   int n = 0;
-  sscanf(params, "%d", &n);
-  if (n >= numbkpts) {
-    log0("Breakpoint %d not set\n", n);
-  } else {
-    log0("Removing %s at %04X\n", brkptStrings[modes[n]], breakpoints[n]);
-    for (i = n; i < numbkpts; i++) {
-      breakpoints[i] = breakpoints[i + 1];
-      modes[i] = modes[i + 1];
+  sscanf(params, "%x", &n);
+  // First, look assume n is an address, and try to map to an index
+  for (i = 0; i < numbkpts; i++) {
+    if (breakpoints[i] == n) {
+      n = i;
+      break;
     }
-    numbkpts--;
+  }
+  if (n < numbkpts) {
+    if (modes[n] & mode) {
+      log0("Removing %s at %04X\n", brkptStrings[mode], breakpoints[n]);
+      modes[n] &= ~mode;
+      if (modes[n] == 0) {
+	for (i = n; i < numbkpts; i++) {
+	  breakpoints[i] = breakpoints[i + 1];
+	  modes[i] = modes[i + 1];
+	}
+	numbkpts--;
+      }
+    } else {
+      log0("%s not set at %04X\n", brkptStrings[mode], breakpoints[n]);
+    }
+  } else {
+    log0("%s not set at %04X\n", brkptStrings[mode], n);
   }
   doCmdBList(NULL);
+}
+
+void doCmdBClearI(char *params) {
+  doCmdBClear(params, BRKPT_INSTR);
+}
+
+void doCmdBClearR(char *params) {
+  doCmdBClear(params, BRKPT_READ);
+}
+
+void doCmdBClearW(char *params) {
+  doCmdBClear(params, BRKPT_WRITE);
 }
 
 void shiftBreakpointRegister(unsigned int addr, unsigned int mode) {
@@ -415,7 +443,9 @@ void (*cmdFuncs[NUMCMDS])(char *params) = {
   doCmdBreakI,
   doCmdBreakR,
   doCmdBreakW,
-  doCmdBClear,
+  doCmdBClearI,
+  doCmdBClearR,
+  doCmdBClearW,
   doCmdContinue
 };
 
