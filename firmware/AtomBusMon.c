@@ -23,8 +23,8 @@
 #define OFFSET_BAH 3
 #define OFFSET_WAL 4
 #define OFFSET_WAH 5
-#define OFFSET_BAM 7
-#define OFFSET_WAM 8
+#define OFFSET_BM  6
+#define OFFSET_WM  7
 
 // Commands
 // 000x Enable/Disable single strpping
@@ -203,6 +203,22 @@ void version() {
 }
 
 
+void lcdAddr(unsigned int addr) {
+  int i;
+  int nibble;
+  lcd_goto(6);
+  // Avoid using sprintf, as it adds quite a lot of code
+  for (i = 3; i >= 0; i--) {
+    nibble = addr >> (i * 4);
+    nibble &= 0x0F;
+    nibble += '0';
+    if (nibble > '9') {
+      nibble += 'A' - '9' - 1;
+    }
+    lcd_putc(nibble);
+  }
+
+}
 
 /*******************************************
  * Commands
@@ -217,25 +233,27 @@ void doCmdHelp(char *params) {
   }
 }
 
-
 void doCmdAddr() {
-  int i, nibble;
-  unsigned int addr = hwRead16(OFFSET_IAL);
-
-  // Update the serial port
-  log0("%04X\n", addr);
+  unsigned int i_addr = hwRead16(OFFSET_IAL);
   // Update the LCD display
-  lcd_goto(6);
-  // Avoid using sprintf, as it adds quite a lot of code
-  for (i = 3; i >= 0; i--) {
-    nibble = addr >> (i * 4);
-    nibble &= 0x0F;
-    nibble += '0';
-    if (nibble > '9') {
-      nibble += 'A' - '9' - 1;
-    }
-    lcd_putc(nibble);
+  lcdAddr(i_addr);
+  // Update the serial console
+  log0("%04X %04X %02X\n", i_addr);
+}
+
+
+void doCmdAddrDetail() {
+  unsigned int i_addr = hwRead16(OFFSET_IAL);
+  unsigned int b_addr = hwRead16(OFFSET_BAL);
+  unsigned int b_mode = hwRead8(OFFSET_BM);
+  // Update the LCD display
+  lcdAddr(i_addr);
+  // Update the serial console
+  log0("%s hit at %04X", brkptStrings[b_mode], i_addr);
+  if (b_mode != BRKPT_INSTR) {
+    log0(" accessing %04X", b_addr);
   }
+  log0("\n");
 }
 
 void doCmdStep(char *params) {
@@ -431,12 +449,7 @@ void doCmdContinue(char *params) {
   } while (!(status & BRKPT_ACTIVE_MASK) && !(status && BRKPT_INTERRUPTED_MASK));
 
   // Output cause
-  if (status & BRKPT_ACTIVE_MASK) {
-    log0("Breakpoint hit at ");
-  } else {
-    log0("Interrupted at ");
-  }
-  doCmdAddr();
+  doCmdAddrDetail();
 
   // Enable single stepping
   setSingle(1);

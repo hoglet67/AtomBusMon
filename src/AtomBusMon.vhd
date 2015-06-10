@@ -79,8 +79,6 @@ architecture behavioral of AtomBusMon is
     signal addr_sync   : std_logic_vector(15 downto 0);
 
     signal addr_inst   : std_logic_vector(15 downto 0);
-    signal addr_break  : std_logic_vector(15 downto 0);
-    signal mode_break  : std_logic_vector(7 downto 0);
     signal addr_watch  : std_logic_vector(15 downto 0);
     signal mode_watch  : std_logic_vector(7 downto 0);
 
@@ -91,8 +89,10 @@ architecture behavioral of AtomBusMon is
     signal brkpt_enable  : std_logic;
     signal brkpt_active  : std_logic;
     signal brkpt_active1 : std_logic;
-
     signal brkpt_reg : std_logic_vector(79 downto 0);
+
+    signal brkpt_status : std_logic_vector(19 downto 0);
+    signal brkpt_status_latched : std_logic_vector(19 downto 0);
     
 begin
 
@@ -199,23 +199,25 @@ begin
 
     mux <= addr_inst(7 downto 0)   when muxsel = 0 else
            addr_inst(15 downto 8)  when muxsel = 1 else
-           addr_break(7 downto 0)  when muxsel = 2 else
-           addr_break(15 downto 8) when muxsel = 3 else
+           brkpt_status_latched(7 downto 0)  when muxsel = 2 else
+           brkpt_status_latched(15 downto 8) when muxsel = 3 else
            addr_watch(7 downto 0)  when muxsel = 4 else
            addr_watch(15 downto 8) when muxsel = 5 else
-           mode_break              when muxsel = 6 else
+           "0000" & brkpt_status_latched(19 downto 16) when muxsel = 6 else
            mode_watch              when muxsel = 7 else
            "10101010";
            
     brkpt_active_process: process (brkpt_reg, brkpt_enable, Addr, Sync)
-        variable tmp : std_logic;
+        variable active : std_logic;
+        variable status : std_logic_vector(19 downto 0);
         variable i  : integer;
         variable brkpt_addr : std_logic_vector(15 downto 0);
         variable brkpt_mode_i : std_logic;
         variable brkpt_mode_ar : std_logic;
         variable brkpt_mode_aw : std_logic;
     begin
-        tmp := '0';
+        active := '0';
+        status := (others => '0');
         if (brkpt_enable = '1') then
             for i in 0 to 3 loop
                 brkpt_addr := brkpt_reg(i * 20 + 15 downto i * 20);
@@ -225,23 +227,27 @@ begin
                 if (Addr = brkpt_addr) then                
                     if (Sync = '1') then
                         if (brkpt_mode_i = '1') then
-                            tmp := '1';
+                            active := '1';
+                            status := "0001" & brkpt_reg(i * 20 + 15 downto i * 20);
                         end if;
                     else
                         if (RNW = '1') then
                             if (brkpt_mode_ar = '1') then
-                                tmp := '1';
+                                active := '1';
+                                status := "0010" & brkpt_reg(i * 20 + 15 downto i * 20);
                             end if;
                         else
                             if (brkpt_mode_aw = '1') then
-                                tmp := '1';
+                                active := '1';
+                                status := "0100" & brkpt_reg(i * 20 + 15 downto i * 20);                                
                             end if;
                         end if;
                      end if;
                 end if;
             end loop;
         end if;
-        brkpt_active <= tmp;
+        brkpt_active <= active;
+        brkpt_status <= status;
     end process;
         
     -- 6502 Control
@@ -287,6 +293,9 @@ begin
                 addr_inst <= Addr;
             end if;
             
+            if (brkpt_active = '1') then
+                brkpt_status_latched <= brkpt_status;
+            end if;
             brkpt_active1 <= brkpt_active;
             
             -- Single Stepping
