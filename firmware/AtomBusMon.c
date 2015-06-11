@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <avr/pgmspace.h>
 
 #include "hd44780.h"
@@ -73,7 +74,7 @@ char *modeStrings[7] = {
 #define VERSION "0.11"
 
 #define NUMCMDS 20
-#define MAXBKPTS 4
+#define MAXBKPTS 8
 
 int numbkpts = 0;
 
@@ -236,11 +237,12 @@ void logMode(unsigned int mode) {
   int first = 1;
   for (i = 0; i < UNDEFINED; i++) {
     if (mode & 1) {
-      if (!first) {
-	log0(",");
-	first = 0;
+      if (first) {
+	log0("%s", modeStrings[i]);
+      } else {
+	log0(", %c%s", tolower(*modeStrings[i]), modeStrings[i] + 1);
       }
-      log0("%s", modeStrings[i]);
+      first = 0;
     }
     mode >>= 1;
   }
@@ -368,20 +370,17 @@ void doCmdBreak(char *params, unsigned int mode) {
       } else {
 	setBreakpoint(i, addr, modes[i] | mode);
       }
-      doCmdBList(NULL);
       return;
     }
   }
   if (numbkpts == MAXBKPTS) {
-    log0("All breakpoints are already set\n");
-    doCmdBList(NULL);
+    log0("All %d breakpoints are already set\n", numbkpts);
     return;
   }
   numbkpts++;
   for (i = numbkpts - 2; i >= -1; i--) {
     if (i == -1 || breakpoints[i] < addr) {
       setBreakpoint(i + 1, addr, mode);
-      doCmdBList(NULL);
       return;
     } else {
       breakpoints[i + 1] = breakpoints[i];
@@ -446,7 +445,6 @@ void doCmdBClear(char *params, unsigned int mode) {
     logMode(mode);
     log0(" not set at %04X\n", n);
   }
-  doCmdBList(NULL);
 }
 
 void doCmdBClearI(char *params) {
@@ -487,7 +485,9 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mode) {
 void doCmdContinue(char *params) {
   int i;
   int status;
-  doCmdBList(NULL);
+
+  // Step the 6502, otherwise the breakpoint happends again immediately
+  hwCmd(CMD_STEP, 0);
 
   // Disable breakpoints to allow loading
   hwCmd(CMD_BRKPT_ENABLE, 0);
@@ -520,6 +520,7 @@ void doCmdContinue(char *params) {
       doCmdAddr();
       cont = 0;
     }
+    Delay_us(10);
   } while (cont);
 
   // Enable single stepping
@@ -542,8 +543,6 @@ void initialize() {
   hwCmd(CMD_RESET, 0);
   setSingle(1);
   setTrace(1);
-  log0("6502 paused...\n");
-  doCmdAddr();
 }
 
 void (*cmdFuncs[NUMCMDS])(char *params) = {
@@ -597,6 +596,7 @@ void dispatchCmd(char *cmd) {
 
 int main(void) {
   initialize();
+  doCmdContinue(NULL);
   while (1) {
     readCmd(command);
     dispatchCmd(command);
