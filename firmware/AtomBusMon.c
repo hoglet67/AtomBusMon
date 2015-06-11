@@ -6,25 +6,25 @@
 #include "hd44780.h"
 #include "status.h"
 
-#define CTRL_PORT PORTB
-#define CTRL_DDR  DDRB
-#define CTRL_DIN  PINB
+#define CTRL_PORT     PORTB
+#define CTRL_DDR      DDRB
+#define CTRL_DIN      PINB
 
-#define STATUS_PORT PORTD
-#define STATUS_DDR  DDRD
-#define STATUS_DIN  PIND
+#define STATUS_PORT   PORTD
+#define STATUS_DDR    DDRD
+#define STATUS_DIN    PIND
 
-#define MUX_PORT PORTE
-#define MUX_DDR  DDRE
-#define MUX_DIN  PINE
+#define MUX_PORT      PORTE
+#define MUX_DDR       DDRE
+#define MUX_DIN       PINE
 
-#define OFFSET_IAL 0
-#define OFFSET_IAH 1
+#define OFFSET_IAL    0
+#define OFFSET_IAH    1
 #define OFFSET_BW_IAL 2
 #define OFFSET_BW_IAH 3
 #define OFFSET_BW_BAL 4
 #define OFFSET_BW_BAH 5
-#define OFFSET_BW_M  6
+#define OFFSET_BW_M   6
 
 // Commands
 // 000x Enable/Disable single strpping
@@ -41,14 +41,14 @@
 #define CMD_WATCH_READ    0x09
 
 // Control bits
-#define CMD_MASK 0x1F
-#define CMD_EDGE 0x10
-#define MUX_SEL_MASK 0xE0
-#define MUX_SEL_BIT 5
+#define CMD_MASK          0x1F
+#define CMD_EDGE          0x10
+#define MUX_SEL_MASK      0xE0
+#define MUX_SEL_BIT          5
 
 // Status bits
 #define INTERRUPTED_MASK  0x40
-#define BW_ACTIVE_MASK  0x80
+#define BW_ACTIVE_MASK    0x80
 
 // Breakpoint Modes
 #define BRKPT_INSTR 0
@@ -71,9 +71,9 @@ char *modeStrings[7] = {
   "Undefined",
 };
 
-#define VERSION "0.11"
+#define VERSION "0.20"
 
-#define NUMCMDS 20
+#define NUMCMDS 18
 #define MAXBKPTS 8
 
 int numbkpts = 0;
@@ -100,8 +100,6 @@ unsigned int modes[MAXBKPTS] = {
 char *cmdStrings[NUMCMDS] = {
   "help",
   "reset",
-  "interrupt",
-  "address",
   "step",
   "trace",
   "blist",
@@ -326,12 +324,6 @@ void doCmdReset(char *params) {
   hwCmd(CMD_RESET, 0);
 }
 
-void doCmdInterrupt(char *params) {
-  setSingle(1);
-  doCmdAddr();
-}
-
-
 void doCmdTrace(char *params) {
   long i;
   sscanf(params, "%ld", &i);
@@ -485,6 +477,7 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mode) {
 void doCmdContinue(char *params) {
   int i;
   int status;
+  unsigned int i_addr;
 
   // Step the 6502, otherwise the breakpoint happends again immediately
   hwCmd(CMD_STEP, 0);
@@ -510,6 +503,10 @@ void doCmdContinue(char *params) {
   log0("6502 free running...\n");
   int cont = 1;
   do {
+    // Update the LCD display
+    i_addr = hwRead16(OFFSET_IAL);
+    lcdAddr(i_addr);
+
     status = STATUS_DIN;
     if (status & BW_ACTIVE_MASK) {
       cont = logDetails();
@@ -548,8 +545,6 @@ void initialize() {
 void (*cmdFuncs[NUMCMDS])(char *params) = {
   doCmdHelp,
   doCmdReset,
-  doCmdInterrupt,
-  doCmdAddr,
   doCmdStep,
   doCmdTrace,
   doCmdBList,
