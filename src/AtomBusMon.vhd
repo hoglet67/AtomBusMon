@@ -103,6 +103,7 @@ architecture behavioral of AtomBusMon is
     signal fifo_empty    : std_logic;
     signal fifo_rd       : std_logic;
     signal fifo_wr       : std_logic;
+    signal fifo_rst      : std_logic;
 
 begin
 
@@ -193,7 +194,8 @@ begin
     );
 
     WatchEvents_inst : entity work.WatchEvents port map(
-        clk => Phi2,
+        clk    => Phi2,
+        srst   => fifo_rst,
         din    => fifo_din,
         wr_en  => fifo_wr,
         rd_en  => fifo_rd,
@@ -300,7 +302,8 @@ begin
     -- 010x Load register
     -- 011x Reset
     -- 1000 Single Step
-    -- 1001 Watch Read
+    -- 1001 FIFO Read
+    -- 1010 FIFO Reset
     syncProcess: process (Phi2)
     begin
         if rising_edge(Phi2) then
@@ -308,8 +311,9 @@ begin
             -- Command processing
             cmd_edge1 <= cmd_edge;
             cmd_edge2 <= cmd_edge1;
-            fifo_rd <= '0';
-            fifo_wr <= '0';
+            fifo_rd   <= '0';
+            fifo_wr   <= '0';
+            fifo_rst  <= '0';
             if (cmd_edge2 = '0' and cmd_edge1 = '1') then
                 if (cmd(3 downto 1) = "000") then
                     single <= cmd(0);
@@ -329,6 +333,10 @@ begin
 
                 if (cmd(3 downto 0) = "1001") then
                     fifo_rd <= '1';
+                end if;                
+
+                if (cmd(3 downto 0) = "1010") then
+                    fifo_rst <= '1';
                 end if;                
             end if;
 

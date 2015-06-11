@@ -43,6 +43,7 @@ LIBRARY XilinxCoreLib;
 ENTITY WatchEvents IS
   PORT (
     clk : IN STD_LOGIC;
+    srst : IN STD_LOGIC;
     din : IN STD_LOGIC_VECTOR(35 DOWNTO 0);
     wr_en : IN STD_LOGIC;
     rd_en : IN STD_LOGIC;
@@ -57,6 +58,7 @@ ARCHITECTURE WatchEvents_a OF WatchEvents IS
 COMPONENT wrapped_WatchEvents
   PORT (
     clk : IN STD_LOGIC;
+    srst : IN STD_LOGIC;
     din : IN STD_LOGIC_VECTOR(35 DOWNTO 0);
     wr_en : IN STD_LOGIC;
     rd_en : IN STD_LOGIC;
@@ -155,7 +157,7 @@ END COMPONENT;
       c_has_rd_rst => 0,
       c_has_rst => 0,
       c_has_slave_ce => 0,
-      c_has_srst => 0,
+      c_has_srst => 1,
       c_has_underflow => 0,
       c_has_valid => 0,
       c_has_wr_ack => 0,
@@ -225,7 +227,7 @@ END COMPONENT;
       c_use_common_overflow => 0,
       c_use_common_underflow => 0,
       c_use_default_settings => 0,
-      c_use_dout_rst => 0,
+      c_use_dout_rst => 1,
       c_use_ecc => 0,
       c_use_ecc_axis => 0,
       c_use_ecc_rach => 0,
@@ -265,6 +267,7 @@ BEGIN
 U0 : wrapped_WatchEvents
   PORT MAP (
     clk => clk,
+    srst => srst,
     din => din,
     wr_en => wr_en,
     rd_en => rd_en,

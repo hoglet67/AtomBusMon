@@ -39,6 +39,7 @@
 #define CMD_RESET         0x06
 #define CMD_STEP          0x08
 #define CMD_WATCH_READ    0x09
+#define CMD_FIFO_RST      0x0A
 
 // Control bits
 #define CMD_MASK          0x1F
@@ -71,7 +72,7 @@ char *modeStrings[7] = {
   "Undefined",
 };
 
-#define VERSION "0.20"
+#define VERSION "0.21"
 
 #define NUMCMDS 18
 #define MAXBKPTS 8
@@ -538,6 +539,7 @@ void initialize() {
   lcd_puts("Addr: xxxx");
   version();
   hwCmd(CMD_RESET, 0);
+  hwCmd(CMD_FIFO_RST, 0);
   setSingle(1);
   setTrace(1);
 }
