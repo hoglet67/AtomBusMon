@@ -25,7 +25,7 @@ use work.OhoPack.all ;
 entity AtomBusMon is
     generic (
         num_comparators : integer := 8;
-        reg_width       : integer := 22;
+        reg_width       : integer := 26;
         fifo_width      : integer := 36
     );
     port (
@@ -38,6 +38,9 @@ entity AtomBusMon is
         Sync             : in    std_logic;
         Rdy              : out   std_logic;
         nRST             : inout std_logic;
+        
+        -- External trigger inputs
+        trig             : in    std_logic_vector(1 downto 0);
                     
         -- HD44780 LCD
         lcd_rs           : out   std_logic;
@@ -211,8 +214,8 @@ begin
     lcd_db    <= lcd_db_out when lcd_rw_int = '0' else (others => 'Z');
     lcd_db_in <= lcd_db;
 
-    led3 <= nRST;              -- red
-    led6 <= not single;        -- red
+    led3 <= not trig(0);       -- red
+    led6 <= not trig(1);       -- red
     led8 <= not brkpt_active;  -- green
 
     nrst_avr <= nsw2;
@@ -244,6 +247,7 @@ begin
         variable bactive      : std_logic;
         variable wactive      : std_logic;
         variable status       : std_logic_vector(19 downto 0);
+        variable trigval      : std_logic;
     begin
         bactive := '0';
         wactive := '0';
@@ -257,7 +261,10 @@ begin
                 reg_mode_wi  := brkpt_reg(i * reg_width + 19);
                 reg_mode_war := brkpt_reg(i * reg_width + 20);
                 reg_mode_waw := brkpt_reg(i * reg_width + 21);
-                if (Addr = reg_addr) then
+                trigval      := brkpt_reg(i * reg_width + 22 + to_integer(unsigned(trig)));
+                if (trigval = '1' and (Addr = reg_addr or
+                   (reg_mode_bi = '0' and reg_mode_bar = '0' and reg_mode_baw = '0' and
+                   (reg_mode_wi = '0' and reg_mode_war = '0' and reg_mode_waw = '0')))) then
                     if (Sync = '1') then
                         if (reg_mode_bi = '1') then
                             bactive := '1';

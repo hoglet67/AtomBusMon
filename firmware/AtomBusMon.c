@@ -69,12 +69,35 @@ char *modeStrings[7] = {
   "Instruction watch",
   "Read watch",
   "Write watch",
-  "Undefined",
+  "Undefined"
 };
 
-#define VERSION "0.21"
+#define NUM_TRIGGERS 16
+#define TRIGGER_ALWAYS 15
 
-#define NUMCMDS 18
+char *triggerStrings[NUM_TRIGGERS] = {
+  "Never",
+  "~T0 and ~T1",
+  "T0 and ~T1",
+  "~T1",
+  "~T0 and T1",
+  "~T0",
+  "T0 xor T1",
+  "~T0 or ~T1",
+  "T0 and T1",
+  "T0 xnor T1",
+  "T0",
+  "T0 or ~T1",
+  "T1",
+  "~T0 or T1",
+  "T0 or T1",
+  "Always",
+};
+
+
+#define VERSION "0.22"
+
+#define NUM_CMDS 19
 #define MAXBKPTS 8
 
 int numbkpts = 0;
@@ -87,6 +110,10 @@ unsigned int breakpoints[MAXBKPTS] = {
   0,
   0,
   0,
+  0,
+  0,
+  0,
+  0,
   0
 };
 
@@ -94,11 +121,26 @@ unsigned int modes[MAXBKPTS] = {
   0,
   0,
   0,
+  0,
+  0,
+  0,
+  0,
+  0
+};
+
+unsigned int triggers[MAXBKPTS] = {
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
   0
 };
 
 
-char *cmdStrings[NUMCMDS] = {
+char *cmdStrings[NUM_CMDS] = {
   "help",
   "reset",
   "step",
@@ -116,7 +158,8 @@ char *cmdStrings[NUMCMDS] = {
   "wcleari",
   "wclearr",
   "wclearw",
-  "continue",
+  "trigger",
+  "continue"
 };
 
 #define Delay_us(__us) \
@@ -247,6 +290,14 @@ void logMode(unsigned int mode) {
   }
 }
 
+void logTrigger(unsigned int trigger) {
+  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
+    log0("trigger: %s", triggerStrings[trigger]);
+  } else {
+    log0("trigger: ILLEGAL");
+  }
+}
+
 int logDetails() {
   unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
   unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
@@ -266,6 +317,25 @@ int logDetails() {
   return watch;
 }
 
+int lookupBreakpoint(char *params) {
+  int i;
+  int n = 0;
+  sscanf(params, "%x", &n);
+  // First, look assume n is an address, and try to map to an index
+  for (i = 0; i < numbkpts; i++) {
+    if (breakpoints[i] == n) {
+      n = i;
+      break;
+    }
+  }
+  if (n < numbkpts) {
+    return n;
+  }
+  log0("Breakpoint/watch not set at %04X\n", n);
+  return -1;
+}
+
+
 /*******************************************
  * Commands
  *******************************************/
@@ -274,8 +344,12 @@ void doCmdHelp(char *params) {
   int i;
   version();
   log0("Commands:\n");
-  for (i = 0; i < NUMCMDS; i++) {
+  for (i = 0; i < NUM_CMDS; i++) {
     log0("    %s\n", cmdStrings[i]);
+  }
+  log0("Trigger Codes:\n");
+  for (i = 0; i < NUM_TRIGGERS; i++) {
+    log0("    %X = %s\n", i, triggerStrings[i]);
   }
 }
 
@@ -286,8 +360,6 @@ void doCmdAddr() {
   // Update the serial console
   log0("%04X\n", i_addr);
 }
-
-
 
 void doCmdStep(char *params) {
   long i;
@@ -337,31 +409,39 @@ void doCmdBList(char *params) {
     for (i = 0; i < numbkpts; i++) {
       log0("%d: %04X: ", i, breakpoints[i]);
       logMode(modes[i]);
-      log0("\n");
+      log0(" (");
+      logTrigger(triggers[i]);
+      log0(")\n");
     }
   } else {
       log0("No breakpoints set\n");
   }
 }
 
-void setBreakpoint(int i, int addr, int mode) {
+void setBreakpoint(int i, unsigned int addr, unsigned int mode, unsigned int trigger) {
   logMode(mode);
   log0(" set at %04X\n", addr);
   breakpoints[i] = addr;
   modes[i] = mode;
+  triggers[i] = trigger;
 }
 
 void doCmdBreak(char *params, unsigned int mode) {
   int i;
   unsigned int addr;
-  sscanf(params, "%x", &addr);
+  unsigned int trigger = -1;
+  sscanf(params, "%x %x", &addr, &trigger);
   for (i = 0; i < numbkpts; i++) {
     if (breakpoints[i] == addr) {
       if (modes[i] & mode) {
 	logMode(mode);
 	log0(" already set at %04X\n", addr);
       } else {
-	setBreakpoint(i, addr, modes[i] | mode);
+	// Preserve the existing trigger, unless it is overridden
+	if (trigger == -1) {
+	  trigger = triggers[i];
+	}
+	setBreakpoint(i, addr, modes[i] | mode, trigger);
       }
       return;
     }
@@ -371,13 +451,18 @@ void doCmdBreak(char *params, unsigned int mode) {
     return;
   }
   numbkpts++;
+  // New breakpoint, so if trigger not specified, set to ALWAYS
+  if (trigger == -1) {
+    trigger = TRIGGER_ALWAYS;
+  }
   for (i = numbkpts - 2; i >= -1; i--) {
     if (i == -1 || breakpoints[i] < addr) {
-      setBreakpoint(i + 1, addr, mode);
+      setBreakpoint(i + 1, addr, mode, trigger);
       return;
     } else {
       breakpoints[i + 1] = breakpoints[i];
       modes[i + 1] = modes[i];
+      triggers[i + 1] = triggers[i];
     }
   }
 }
@@ -408,35 +493,26 @@ void doCmdWatchW(char *params) {
 
 void doCmdBClear(char *params, unsigned int mode) {
   int i;
-  int n = 0;
-  sscanf(params, "%x", &n);
-  // First, look assume n is an address, and try to map to an index
-  for (i = 0; i < numbkpts; i++) {
-    if (breakpoints[i] == n) {
-      n = i;
-      break;
-    }
+  int n = lookupBreakpoint(params);
+  if (n < 0) {
+    return;
   }
-  if (n < numbkpts) {
-    if (modes[n] & mode) {
-      log0("Removing ");
-      logMode(mode);
-      log0(" at %04X\n", breakpoints[n]);
-      modes[n] &= ~mode;
-      if (modes[n] == 0) {
-	for (i = n; i < numbkpts; i++) {
-	  breakpoints[i] = breakpoints[i + 1];
-	  modes[i] = modes[i + 1];
-	}
-	numbkpts--;
+  if (modes[n] & mode) {
+    log0("Removing ");
+    logMode(mode);
+    log0(" at %04X\n", breakpoints[n]);
+    modes[n] &= ~mode;
+    if (modes[n] == 0) {
+      for (i = n; i < numbkpts; i++) {
+	breakpoints[i] = breakpoints[i + 1];
+	modes[i] = modes[i + 1];
+	triggers[i] = triggers[i + 1];
       }
-    } else {
-      logMode(mode);
-      log0(" not set at %04X\n", breakpoints[n]);
+      numbkpts--;
     }
   } else {
     logMode(mode);
-    log0(" not set at %04X\n", n);
+    log0(" not set at %04X\n", breakpoints[n]);
   }
 }
 
@@ -464,12 +540,32 @@ void doCmdWClearW(char *params) {
   doCmdBClear(params, 1 << WATCH_WRITE);
 }
 
-void shiftBreakpointRegister(unsigned int addr, unsigned int mode) {
+void doCmdTrigger(char *params) {
+  unsigned int trigger = -1;
+  int n = lookupBreakpoint(params);
+  if (n < 0) {
+    return;
+  }
+  sscanf(params, "%*x %x", &trigger);
+  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
+    triggers[n] = trigger;
+  } else {
+    log0("Illegal trigger code (see help for trigger codes)\n"); 
+  }
+}
+
+void shiftBreakpointRegister(unsigned int addr, unsigned int mode, unsigned int trigger) {
   int i;
-  long reg = mode;
+  // Trigger is 4 bits
+  long reg = trigger;
+  // Mode is 6 bits
+  reg <<= 6;
+  reg |= mode;
+  // Address is 16 bits
   reg <<= 16;
   reg |= addr;
-  for (i = 0; i <= 21; i++) {
+  // Total size is 26 bits
+  for (i = 0; i <= 25; i++) {
     hwCmd(CMD_LOAD_REG, reg & 1);
     reg >>= 1;
   }
@@ -488,10 +584,10 @@ void doCmdContinue(char *params) {
 
   // Load breakpoints into comparators
   for (i = 0; i < numbkpts; i++) {
-    shiftBreakpointRegister(breakpoints[i], modes[i]);
+    shiftBreakpointRegister(breakpoints[i], modes[i], triggers[i]);
   }
   for (i = numbkpts; i < MAXBKPTS; i++) {
-    shiftBreakpointRegister(0, 0);
+    shiftBreakpointRegister(0, 0, 0);
   }
 
   // Enable breakpoints 
@@ -544,7 +640,7 @@ void initialize() {
   setTrace(1);
 }
 
-void (*cmdFuncs[NUMCMDS])(char *params) = {
+void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdHelp,
   doCmdReset,
   doCmdStep,
@@ -562,6 +658,7 @@ void (*cmdFuncs[NUMCMDS])(char *params) = {
   doCmdWClearI,
   doCmdWClearR,
   doCmdWClearW,
+  doCmdTrigger,
   doCmdContinue
 };
 
@@ -569,17 +666,13 @@ void (*cmdFuncs[NUMCMDS])(char *params) = {
 void dispatchCmd(char *cmd) {
   int i;
   char *cmdString;
-
-
   int minLen;
   int cmdStringLen;
-
   int cmdLen = 0;
   while (cmd[cmdLen] >= 'a' && cmd[cmdLen] <= 'z') {
     cmdLen++;
   }
-
-  for (i = 0; i < NUMCMDS; i++) {
+  for (i = 0; i < NUM_CMDS; i++) {
     cmdString = cmdStrings[i];
     cmdStringLen = strlen(cmdString);    
     minLen = cmdLen < cmdStringLen ? cmdLen : cmdStringLen;
@@ -600,6 +693,3 @@ int main(void) {
   }
   return 0;
 }
-
-
-
