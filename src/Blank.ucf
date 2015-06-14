@@ -1,0 +1,2 @@
+NET "led8"       LOC="P47" | IOSTANDARD = LVCMOS33 ; # Green LED (near SW1)
+NET "sw1"        LOC="P39" | IOSTANDARD = LVCMOS33 ; # Bottom Switch
