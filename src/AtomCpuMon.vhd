@@ -27,7 +27,7 @@ entity AtomCpuMon is
         clock49         : in    std_logic;
           
         -- 6502 Signals
-        Rdy             : in    std_logic;
+        --Rdy             : in    std_logic;
         Phi0            : in    std_logic;
         Phi1            : out   std_logic;
         Phi2            : out   std_logic;
@@ -38,7 +38,14 @@ entity AtomCpuMon is
         R_W_n           : out    std_logic;
         Data            : inout std_logic_vector(7 downto 0);
         SO_n            : in    std_logic;
-        Res_n           : in    std_logic;
+        Res_n           : inout std_logic;
+
+        -- External trigger inputs
+        trig             : in    std_logic_vector(1 downto 0);
+
+        -- Serial Console
+        avr_RxD         : in     std_logic;
+        avr_TxD         : out    std_logic;
         
         -- GODIL Switches
         sw1              : in    std_logic;
@@ -57,73 +64,99 @@ entity AtomCpuMon is
 end AtomCpuMon;
 
 architecture behavioral of AtomCpuMon is
-
     
-
     signal Din           : std_logic_vector(7 downto 0);
     signal Dout          : std_logic_vector(7 downto 0);
-    signal dy_counter    : std_logic_vector(31 downto 0);
-    signal dy_data       : y2d_type ;
     signal R_W_n_int     : std_logic;
+    signal Sync_int      : std_logic;
+    signal Rdy_int       : std_logic;
     signal Addr_int      : std_logic_vector(15 downto 0);
+    signal IRQ_n_sync    : std_logic;
+    signal NMI_n_sync    : std_logic;
+    
+    signal Phi0_a        : std_logic;
+    signal Phi0_b        : std_logic;
+    signal Phi0_c        : std_logic;
+    signal Phi0_d        : std_logic;
+    signal cpu_clk       : std_logic;
+    
 begin
 
-    
-  
+    mon : entity work.AtomBusMon port map (  
+        clock49 => clock49,
+        Addr    => Addr_int,
+        Phi2    => Phi0,
+        RNW     => R_W_n_int,
+        Sync    => Sync_int,
+        Rdy     => Rdy_int,
+        nRST    => Res_n,
+        trig    => trig,
+        lcd_rs  => open,
+        lcd_rw  => open,
+        lcd_e   => open,
+        lcd_db  => open,
+        avr_RxD => avr_RxD,
+        avr_TxD => avr_TxD,
+        sw1     => sw1,
+        nsw2    => nsw2,
+        led3    => led3,
+        led6    => led6,
+        led8    => led8,
+        tmosi   => tmosi,
+        tdin    => tdin,
+        tcclk   => tcclk
+    );
 
-    cpu : entity work.T65 port map (
-        mode           => "00",
-        Abort_n        => '1',
-        SO_n           => SO_n,
-        Res_n          => Res_n,
-        Enable         => '1',
-        Clk            => not Phi0,
-        Rdy            => Rdy,
-        IRQ_n          => IRQ_n,
-        NMI_n          => NMI_n,
-        R_W_n          => R_W_n_int,
-        Sync           => Sync,
+    cpu_t65 : entity work.T65 port map (
+        mode            => "00",
+        Abort_n         => '1',
+        SO_n            => SO_n,
+        Res_n           => Res_n,
+        Enable          => '1',
+        Clk             => cpu_clk,
+        Rdy             => Rdy_int,
+        IRQ_n           => IRQ_n_sync,
+        NMI_n           => NMI_n_sync,
+        R_W_n           => R_W_n_int,
+        Sync            => Sync_int,
         A(23 downto 16) => open,
-        A(15 downto 0) => Addr_int(15 downto 0),
-        DI(7 downto 0) => Din(7 downto 0),
-        DO(7 downto 0) => Dout(7 downto 0)
-
+        A(15 downto 0)  => Addr_int,
+        DI              => Din,
+        DO              => Dout
     );
+
+    sync_gen : process(cpu_clk, Res_n)
+    begin
+        if Res_n = '0' then
+          NMI_n_sync <= '1';
+          IRQ_n_sync <= '1';
+        elsif rising_edge(cpu_clk) then
+          NMI_n_sync <= NMI_n;
+          IRQ_n_sync <= IRQ_n;            
+        end if;
+    end process;
     
-    Addr <= Addr_int;
     R_W_n <= R_W_n_int;
-        
+    Addr <= Addr_int;
+    Sync <= Sync_int;
 
-    Phi1 <= not Phi0;
-    Phi2 <= Phi0;
-    
     Din <= Data;
+    Data <= Dout when Phi0_d = '1' and R_W_n_int = '0' else (others => 'Z');
 
-    Data <= Dout when R_W_n_int = '0' else (others => 'Z');
+    clk_gen : process(clock49)
+    begin
+        if rising_edge(clock49) then
+          Phi0_a <= Phi0;
+          Phi0_b <= Phi0_a;
+          Phi0_c <= Phi0_b;
+          Phi0_d <= Phi0_c;
+        end if;
+    end process;
 
-    -- OHO DY1 Display for Testing
-    inst_oho_dy1 : entity work.Oho_Dy1 port map (
-        dy_clock       => clock49,
-        dy_rst_n       => '1',
-        dy_data        => dy_data,
-        dy_update      => '1',
-        dy_frame       => open,
-        dy_frameend    => open,
-        dy_frameend_c  => open,
-        dy_pwm         => "1010",
-        dy_counter     => dy_counter,
-        dy_sclk        => tdin,
-        dy_ser         => tcclk,
-        dy_rclk        => tmosi
-    );
-    
-    dy_data(0) <= hex & "0000" & Addr_int(3 downto 0);
-    dy_data(1) <= hex & "0000" & Addr_int(7 downto 4);
-    dy_data(2) <= hex & "0000" & "00" & (not nsw2) & sw1;
-    
-    led3 <= not sw1;
-    led6 <= nsw2;
-    led8 <= RES_n;
-    
+    Phi1    <= not (Phi0_b or Phi0_d);
+    Phi2    <= Phi0_b and Phi0_d;
+    cpu_clk <= not Phi0_d;
+
+
 end behavioral;
     
