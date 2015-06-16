@@ -90,7 +90,9 @@ entity T65 is
         VPA     : out std_logic;
         A       : out std_logic_vector(23 downto 0);
         DI      : in  std_logic_vector(7 downto 0);
-        DO      : out std_logic_vector(7 downto 0)
+        DO      : out std_logic_vector(7 downto 0);
+        -- 6502 registers (MSB) PC, SP, P, Y, X, A (LSB)
+        Regs    : out std_logic_vector(63 downto 0)
         );
 end T65;
 
@@ -184,6 +186,8 @@ begin
     VP_n <= '0' when IRQCycle = '1' and (MCycle = "101" or MCycle = "110")                           else '1';
     VDA  <= '1' when Set_Addr_To_r /= "00"                                                           else '0';  -- Incorrect !!!!!!!!!!!!
     VPA  <= '1' when Jump(1) = '0'                                                                   else '0';  -- Incorrect !!!!!!!!!!!!
+
+    Regs <= std_logic_vector(PC) & std_logic_vector(S)& P & Y(7 downto 0) & X(7 downto 0) & ABC(7 downto 0);
 
     mcode : T65_MCode
         port map(

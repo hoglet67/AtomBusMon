@@ -23,7 +23,7 @@ F_CPU=15855484
 CC=avr-gcc
 OBJCOPY=avr-objcopy
 
-CFLAGS=-DF_CPU=${F_CPU}UL -DSERIAL_STATUS -DCOOKED_SERIAL -DNOUSART1 -mmcu=$(MCU) -Wall -Os -mcall-prologues
+CFLAGS=-DLCD=1 -DF_CPU=${F_CPU}UL -DSERIAL_STATUS -DCOOKED_SERIAL -DNOUSART1 -mmcu=$(MCU) -Wall -Os -mcall-prologues
 
 OBJECTS=AtomBusMon.o hd44780.o status.o
 

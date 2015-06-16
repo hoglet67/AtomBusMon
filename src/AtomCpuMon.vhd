@@ -80,9 +80,11 @@ architecture behavioral of AtomCpuMon is
     signal Phi0_d        : std_logic;
     signal cpu_clk       : std_logic;
     
+    signal Regs          : std_logic_vector(63 downto 0);
+    
 begin
 
-    mon : entity work.AtomBusMon port map (  
+    mon : entity work.BusMonCore port map (  
         clock49 => clock49,
         Addr    => Addr_int,
         Phi2    => Phi0,
@@ -104,7 +106,8 @@ begin
         led8    => led8,
         tmosi   => tmosi,
         tdin    => tdin,
-        tcclk   => tcclk
+        tcclk   => tcclk,
+        Regs    => Regs
     );
 
     cpu_t65 : entity work.T65 port map (
@@ -122,7 +125,8 @@ begin
         A(23 downto 16) => open,
         A(15 downto 0)  => Addr_int,
         DI              => Din,
-        DO              => Dout
+        DO              => Dout,
+        Regs            => Regs
     );
 
     sync_gen : process(cpu_clk, Res_n)
@@ -155,6 +159,7 @@ begin
 
     Phi1    <= not (Phi0_b or Phi0_d);
     Phi2    <= Phi0_b and Phi0_d;
+
     cpu_clk <= not Phi0_d;
 
 

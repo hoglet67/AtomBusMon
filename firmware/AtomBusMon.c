@@ -10,6 +10,8 @@
 #define CTRL_DDR      DDRB
 #define CTRL_DIN      PINB
 
+#define MUXSEL_PORT   PORTD
+
 #define STATUS_PORT   PORTD
 #define STATUS_DDR    DDRD
 #define STATUS_DIN    PIND
@@ -25,6 +27,15 @@
 #define OFFSET_BW_BAL 4
 #define OFFSET_BW_BAH 5
 #define OFFSET_BW_M   6
+
+#define OFFSET_REG_A   8
+#define OFFSET_REG_X   9
+#define OFFSET_REG_Y   10
+#define OFFSET_REG_P   11
+#define OFFSET_REG_SPL 12
+#define OFFSET_REG_SPH 13
+#define OFFSET_REG_PCL 14
+#define OFFSET_REG_PCH 15
 
 // Commands
 // 000x Enable/Disable single strpping
@@ -44,8 +55,8 @@
 // Control bits
 #define CMD_MASK          0x1F
 #define CMD_EDGE          0x10
-#define MUX_SEL_MASK      0xE0
-#define MUX_SEL_BIT          5
+#define MUXSEL_MASK       0x0F
+#define MUXSEL_BIT           0
 
 // Status bits
 #define INTERRUPTED_MASK  0x40
@@ -95,9 +106,14 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.22"
+#define VERSION "0.23"
 
+#ifdef EMBEDDED_6502
+#define NUM_CMDS 20
+#else
 #define NUM_CMDS 19
+#endif
+
 #define MAXBKPTS 8
 
 int numbkpts = 0;
@@ -142,6 +158,9 @@ unsigned int triggers[MAXBKPTS] = {
 
 char *cmdStrings[NUM_CMDS] = {
   "help",
+#ifdef EMBEDDED_6502
+  "regs",
+#endif
   "reset",
   "step",
   "trace",
@@ -220,19 +239,19 @@ void hwCmd(unsigned int cmd, unsigned int param) {
 }
 
 unsigned int hwRead8(unsigned int offset) {
-  CTRL_PORT &= ~MUX_SEL_MASK;
-  CTRL_PORT |= offset << MUX_SEL_BIT;
+  MUXSEL_PORT &= ~MUXSEL_MASK;
+  MUXSEL_PORT |= offset << MUXSEL_BIT;
   Delay_us(1);
   return MUX_DIN;
 }
 
 unsigned int hwRead16(unsigned int offset) {
   unsigned int lsb;
-  CTRL_PORT &= ~MUX_SEL_MASK;
-  CTRL_PORT |= offset << MUX_SEL_BIT;
+  MUXSEL_PORT &= ~MUXSEL_MASK;
+  MUXSEL_PORT |= offset << MUXSEL_BIT;
   Delay_us(1);
   lsb = MUX_DIN;
-  CTRL_PORT |= 1 << MUX_SEL_BIT;
+  MUXSEL_PORT |= 1 << MUXSEL_BIT;
   Delay_us(1);
   return (MUX_DIN << 8) | lsb;
 }
@@ -257,6 +276,7 @@ void version() {
 }
 
 
+#ifdef LCD
 void lcdAddr(unsigned int addr) {
   int i;
   int nibble;
@@ -271,8 +291,9 @@ void lcdAddr(unsigned int addr) {
     }
     lcd_putc(nibble);
   }
-
 }
+#endif
+
 
 void logMode(unsigned int mode) {
   int i;
@@ -356,7 +377,9 @@ void doCmdHelp(char *params) {
 void doCmdAddr() {
   unsigned int i_addr = hwRead16(OFFSET_IAL);
   // Update the LCD display
+#ifdef LCD
   lcdAddr(i_addr);
+#endif
   // Update the serial console
   log0("%04X\n", i_addr);
 }
@@ -396,6 +419,18 @@ void doCmdReset(char *params) {
   Delay_us(100);
   hwCmd(CMD_RESET, 0);
 }
+
+#ifdef EMBEDDED_6502
+void doCmdRegs(char *params) {
+  log0("A=%02x; ",  hwRead8(OFFSET_REG_A));
+  log0("X=%02x; ",  hwRead8(OFFSET_REG_X));
+  log0("Y=%02x; ",  hwRead8(OFFSET_REG_Y));
+  log0("P=%02x; ",  hwRead8(OFFSET_REG_P));
+  log0("SP=%04x; ", hwRead16(OFFSET_REG_SPL));
+  log0("PC=%04x; ", hwRead16(OFFSET_REG_PCL));
+  log0("\n");
+}
+#endif
 
 void doCmdTrace(char *params) {
   long i;
@@ -602,20 +637,27 @@ void doCmdContinue(char *params) {
   do {
     // Update the LCD display
     i_addr = hwRead16(OFFSET_IAL);
+#ifdef LCD
     lcdAddr(i_addr);
+#endif
 
     status = STATUS_DIN;
     if (status & BW_ACTIVE_MASK) {
       cont = logDetails();
       hwCmd(CMD_WATCH_READ, 0);
     }
-    if (status & INTERRUPTED_MASK) {
+    if (status & INTERRUPTED_MASK || Serial_ByteRecieved0()) {
       log0("Interrupted at ");
       doCmdAddr();
       cont = 0;
     }
     Delay_us(10);
   } while (cont);
+
+  // Junk the interrupt character
+  if (Serial_ByteRecieved0()) {
+    Serial_RxByte0();
+  }
 
   // Enable single stepping
   setSingle(1);
@@ -627,12 +669,14 @@ void doCmdContinue(char *params) {
 
 void initialize() {
   CTRL_DDR = 255;
-  STATUS_DDR = 0;
+  STATUS_DDR = MUXSEL_MASK;
   MUX_DDR = 0;
   CTRL_PORT = 0;
   Serial_Init(57600,57600);
+#ifdef LCD
   lcd_init();
   lcd_puts("Addr: xxxx");
+#endif
   version();
   hwCmd(CMD_RESET, 0);
   hwCmd(CMD_FIFO_RST, 0);
@@ -642,6 +686,9 @@ void initialize() {
 
 void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdHelp,
+#ifdef EMBEDDED_6502
+  doCmdRegs,
+#endif
   doCmdReset,
   doCmdStep,
   doCmdTrace,
@@ -661,7 +708,6 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdTrigger,
   doCmdContinue
 };
-
 
 void dispatchCmd(char *cmd) {
   int i;
