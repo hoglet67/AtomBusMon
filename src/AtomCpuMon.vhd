@@ -79,15 +79,21 @@ architecture behavioral of AtomCpuMon is
     signal Phi0_c        : std_logic;
     signal Phi0_d        : std_logic;
     signal cpu_clk       : std_logic;
+    signal busmon_clk    : std_logic;
     
     signal Regs          : std_logic_vector(63 downto 0);
+    signal memory_rd     : std_logic;
+    signal memory_wr     : std_logic;
+    signal memory_addr   : std_logic_vector(15 downto 0);
+    signal memory_dout   : std_logic_vector(7 downto 0);
+    signal memory_din    : std_logic_vector(7 downto 0);
     
 begin
 
     mon : entity work.BusMonCore port map (  
         clock49 => clock49,
         Addr    => Addr_int,
-        Phi2    => Phi0,
+        Phi2    => busmon_clk,
         RNW     => R_W_n_int,
         Sync    => Sync_int,
         Rdy     => Rdy_int,
@@ -107,7 +113,12 @@ begin
         tmosi   => tmosi,
         tdin    => tdin,
         tcclk   => tcclk,
-        Regs    => Regs
+        Regs    => Regs,
+        RdOut   => memory_rd,
+        WrOut   => memory_wr,
+        AddrOut => memory_addr,
+        DataOut => memory_dout,
+        DataIn  => memory_din        
     );
 
     cpu_t65 : entity work.T65 port map (
@@ -140,12 +151,15 @@ begin
         end if;
     end process;
     
-    R_W_n <= R_W_n_int;
-    Addr <= Addr_int;
+    R_W_n <= '1' when memory_rd = '1' else '0' when memory_wr = '1' else R_W_n_int;
+    Addr <= memory_addr when (memory_rd = '1' or memory_wr = '1') else Addr_int;
     Sync <= Sync_int;
 
-    Din <= Data;
-    Data <= Dout when Phi0_d = '1' and R_W_n_int = '0' else (others => 'Z');
+    Din        <= Data;
+    memory_din <= Data;
+    Data       <= memory_dout when cpu_clk = '0' and memory_wr = '1' else
+                         Dout when cpu_clk = '0' and R_W_n_int = '0' and memory_rd = '0' else
+               (others => 'Z');
 
     clk_gen : process(clock49)
     begin
@@ -157,11 +171,10 @@ begin
         end if;
     end process;
 
-    Phi1    <= not (Phi0_b or Phi0_d);
-    Phi2    <= Phi0_b and Phi0_d;
-
-    cpu_clk <= not Phi0_d;
-
+    Phi1       <= not (Phi0_b or Phi0_d);
+    Phi2       <= Phi0_b and Phi0_d;
+    cpu_clk    <= not Phi0_d;
+    busmon_clk <= Phi0_d;
 
 end behavioral;
     

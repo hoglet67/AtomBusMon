@@ -6,28 +6,32 @@
 #include "hd44780.h"
 #include "status.h"
 
-#define CTRL_PORT     PORTB
-#define CTRL_DDR      DDRB
-#define CTRL_DIN      PINB
+#ifdef EMBEDDED_6502
+#include "disassembler.h"
+#endif
 
-#define MUXSEL_PORT   PORTD
+#define CTRL_PORT      PORTB
+#define CTRL_DDR       DDRB
+#define CTRL_DIN       PINB
 
-#define STATUS_PORT   PORTD
-#define STATUS_DDR    DDRD
-#define STATUS_DIN    PIND
+#define MUXSEL_PORT    PORTD
 
-#define MUX_PORT      PORTE
-#define MUX_DDR       DDRE
-#define MUX_DIN       PINE
+#define STATUS_PORT    PORTD
+#define STATUS_DDR     DDRD
+#define STATUS_DIN     PIND
 
-#define OFFSET_IAL    0
-#define OFFSET_IAH    1
-#define OFFSET_BW_IAL 2
-#define OFFSET_BW_IAH 3
-#define OFFSET_BW_BAL 4
-#define OFFSET_BW_BAH 5
-#define OFFSET_BW_M   6
+#define MUX_PORT       PORTE
+#define MUX_DDR        DDRE
+#define MUX_DIN        PINE
 
+#define OFFSET_IAL     0
+#define OFFSET_IAH     1
+#define OFFSET_BW_IAL  2
+#define OFFSET_BW_IAH  3
+#define OFFSET_BW_BAL  4
+#define OFFSET_BW_BAH  5
+#define OFFSET_BW_M    6
+#define OFFSET_DATA    7
 #define OFFSET_REG_A   8
 #define OFFSET_REG_X   9
 #define OFFSET_REG_Y   10
@@ -46,11 +50,14 @@
 
 #define CMD_SINGLE_ENABLE 0x00
 #define CMD_BRKPT_ENABLE  0x02
-#define CMD_LOAD_REG      0x04
+#define CMD_LOAD_BRKPT    0x04
 #define CMD_RESET         0x06
 #define CMD_STEP          0x08
 #define CMD_WATCH_READ    0x09
 #define CMD_FIFO_RST      0x0A
+#define CMD_LOAD_MEM      0x0C
+#define CMD_RD_MEM        0x0E
+#define CMD_WR_MEM        0x0F
 
 // Control bits
 #define CMD_MASK          0x1F
@@ -109,7 +116,7 @@ char *triggerStrings[NUM_TRIGGERS] = {
 #define VERSION "0.23"
 
 #ifdef EMBEDDED_6502
-#define NUM_CMDS 20
+#define NUM_CMDS 23
 #else
 #define NUM_CMDS 19
 #endif
@@ -121,6 +128,8 @@ int numbkpts = 0;
 int single;
 long trace;
 long instructions = 1;
+
+unsigned int memAddr = 0;
 
 unsigned int breakpoints[MAXBKPTS] = {
   0,
@@ -160,6 +169,9 @@ char *cmdStrings[NUM_CMDS] = {
   "help",
 #ifdef EMBEDDED_6502
   "regs",
+  "mem",
+  "dis",
+  "write",
 #endif
   "reset",
   "step",
@@ -340,7 +352,7 @@ int logDetails() {
 
 int lookupBreakpoint(char *params) {
   int i;
-  int n = 0;
+  int n = -1;
   sscanf(params, "%x", &n);
   // First, look assume n is an address, and try to map to an index
   for (i = 0; i < numbkpts; i++) {
@@ -357,6 +369,37 @@ int lookupBreakpoint(char *params) {
 }
 
 
+#ifdef EMBEDDED_6502
+unsigned int readMem(unsigned int addr) {
+  int i;
+  for (i = 0; i <= 15; i++) {
+    hwCmd(CMD_LOAD_MEM, addr & 1);
+    addr >>= 1;
+  }
+  hwCmd(CMD_RD_MEM, 0);
+  Delay_us(10);
+  return hwRead8(OFFSET_DATA);
+}
+
+void writeMem(unsigned int addr, unsigned int data) {
+  int i;
+  for (i = 0; i <= 7; i++) {
+    hwCmd(CMD_LOAD_MEM, data & 1);
+    data >>= 1;
+  }
+  for (i = 0; i <= 15; i++) {
+    hwCmd(CMD_LOAD_MEM, addr & 1);
+    addr >>= 1;
+  }
+  hwCmd(CMD_WR_MEM, 0);
+}
+
+unsigned int disMem(unsigned int addr) {
+  return disassemble(addr, readMem(addr), readMem(addr + 1), readMem(addr + 2));
+}
+
+#endif
+
 /*******************************************
  * Commands
  *******************************************/
@@ -368,20 +411,22 @@ void doCmdHelp(char *params) {
   for (i = 0; i < NUM_CMDS; i++) {
     log0("    %s\n", cmdStrings[i]);
   }
-  log0("Trigger Codes:\n");
-  for (i = 0; i < NUM_TRIGGERS; i++) {
-    log0("    %X = %s\n", i, triggerStrings[i]);
-  }
 }
 
 void doCmdAddr() {
-  unsigned int i_addr = hwRead16(OFFSET_IAL);
+  memAddr = hwRead16(OFFSET_IAL);
   // Update the LCD display
 #ifdef LCD
-  lcdAddr(i_addr);
+  lcdAddr(memAddr);
 #endif
   // Update the serial console
-  log0("%04X\n", i_addr);
+#ifdef EMBEDDED_6502
+  //log0("%04X\n", i_addr);
+  disMem(memAddr);
+#else
+  log0("%04X\n", memAddr);
+#endif
+  return;
 }
 
 void doCmdStep(char *params) {
@@ -430,6 +475,38 @@ void doCmdRegs(char *params) {
   log0("PC=%04x; ", hwRead16(OFFSET_REG_PCL));
   log0("\n");
 }
+
+void doCmdMem(char *params) {
+  int i;
+  sscanf(params, "%x", &memAddr);  
+  for (i = 0; i < 0x100; i++) {
+    if ((i & 15) == 0) {
+      log0("%04X ", memAddr + i);
+    }
+    log0("%02X ", readMem(memAddr + i));
+    if ((i & 15) == 15) {
+      log0("\n");
+    }
+  }
+  memAddr += 0x100;
+}
+
+void doCmdDis(char *params) {
+  int i;
+  sscanf(params, "%x", &memAddr);
+  for (i = 0; i < 10; i++) {
+    memAddr = disMem(memAddr);
+  }
+}
+
+void doCmdWrite(char *params) {
+  unsigned int addr;
+  unsigned int data;
+  sscanf(params, "%x %x", &addr, &data);
+  log0("Wr: %04X = %X\n", addr, data);
+  writeMem(addr, data);
+}
+
 #endif
 
 void doCmdTrace(char *params) {
@@ -576,9 +653,13 @@ void doCmdWClearW(char *params) {
 }
 
 void doCmdTrigger(char *params) {
-  unsigned int trigger = -1;
+  int trigger = -1;
   int n = lookupBreakpoint(params);
   if (n < 0) {
+    log0("Trigger Codes:\n");
+    for (trigger = 0; trigger < NUM_TRIGGERS; trigger++) {
+      log0("    %X = %s\n", trigger, triggerStrings[trigger]);
+    }
     return;
   }
   sscanf(params, "%*x %x", &trigger);
@@ -601,7 +682,7 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mode, unsigned int 
   reg |= addr;
   // Total size is 26 bits
   for (i = 0; i <= 25; i++) {
-    hwCmd(CMD_LOAD_REG, reg & 1);
+    hwCmd(CMD_LOAD_BRKPT, reg & 1);
     reg >>= 1;
   }
 }
@@ -609,7 +690,9 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mode, unsigned int 
 void doCmdContinue(char *params) {
   int i;
   int status;
+#ifdef LCD
   unsigned int i_addr;
+#endif
 
   // Step the 6502, otherwise the breakpoint happends again immediately
   hwCmd(CMD_STEP, 0);
@@ -636,8 +719,8 @@ void doCmdContinue(char *params) {
   int cont = 1;
   do {
     // Update the LCD display
-    i_addr = hwRead16(OFFSET_IAL);
 #ifdef LCD
+    i_addr = hwRead16(OFFSET_IAL);
     lcdAddr(i_addr);
 #endif
 
@@ -647,8 +730,7 @@ void doCmdContinue(char *params) {
       hwCmd(CMD_WATCH_READ, 0);
     }
     if (status & INTERRUPTED_MASK || Serial_ByteRecieved0()) {
-      log0("Interrupted at ");
-      doCmdAddr();
+      log0("Interrupted\n");
       cont = 0;
     }
     Delay_us(10);
@@ -664,6 +746,9 @@ void doCmdContinue(char *params) {
 
   // Disable breakpoints
   hwCmd(CMD_BRKPT_ENABLE, 0);
+
+  // Show current instruction
+  doCmdAddr();
 }
 
 
@@ -688,6 +773,9 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdHelp,
 #ifdef EMBEDDED_6502
   doCmdRegs,
+  doCmdMem,
+  doCmdDis,
+  doCmdWrite,
 #endif
   doCmdReset,
   doCmdStep,
