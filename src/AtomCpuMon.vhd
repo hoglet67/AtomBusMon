@@ -155,8 +155,14 @@ begin
     Addr <= memory_addr when (memory_rd = '1' or memory_wr = '1') else Addr_int;
     Sync <= Sync_int;
 
-    Din        <= Data;
-    memory_din <= Data;
+    data_latch : process(Phi0)
+    begin
+        if falling_edge(Phi0) then
+            Din        <= Data;
+            memory_din <= Data;
+        end if;
+    end process;
+    
     Data       <= memory_dout when cpu_clk = '0' and memory_wr = '1' else
                          Dout when cpu_clk = '0' and R_W_n_int = '0' and memory_rd = '0' else
                (others => 'Z');
