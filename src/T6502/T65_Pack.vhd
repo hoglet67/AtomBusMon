@@ -2,6 +2,8 @@
 -- T65(b) core. In an effort to merge and maintain bug fixes ....
 --
 --
+-- Ver 303 ost(ML) July 2014
+--   "magic" constants converted to vhdl types
 -- Ver 300 Bugfixes by ehenciak added
 -- MikeJ March 2005
 -- Latest version from www.fpgaarcade.com (original www.opencores.org)
@@ -59,59 +61,110 @@ use IEEE.std_logic_1164.all;
 
 package T65_Pack is
 
-    constant Flag_C : integer := 0;
-    constant Flag_Z : integer := 1;
-    constant Flag_I : integer := 2;
-    constant Flag_D : integer := 3;
-    constant Flag_B : integer := 4;
-    constant Flag_1 : integer := 5;
-    constant Flag_V : integer := 6;
-    constant Flag_N : integer := 7;
+  constant Flag_C : integer := 0;
+  constant Flag_Z : integer := 1;
+  constant Flag_I : integer := 2;
+  constant Flag_D : integer := 3;
+  constant Flag_B : integer := 4;
+  constant Flag_1 : integer := 5;
+  constant Flag_V : integer := 6;
+  constant Flag_N : integer := 7;
 
-    component T65_MCode
-        port(
-            Mode        : in  std_logic_vector(1 downto 0);  -- "00" => 6502, "01" => 65C02, "10" => 65816
-            IR          : in  std_logic_vector(7 downto 0);
-            MCycle      : in  std_logic_vector(2 downto 0);
-            P           : in  std_logic_vector(7 downto 0);
-            LCycle      : out std_logic_vector(2 downto 0);
-            ALU_Op      : out std_logic_vector(3 downto 0);
-            Set_BusA_To : out std_logic_vector(2 downto 0);  -- DI,A,X,Y,S,P
-            Set_Addr_To : out std_logic_vector(1 downto 0);  -- PC Adder,S,AD,BA
-            Write_Data  : out std_logic_vector(2 downto 0);  -- DL,A,X,Y,S,P,PCL,PCH
-            Jump        : out std_logic_vector(1 downto 0);  -- PC,++,DIDL,Rel
-            BAAdd       : out std_logic_vector(1 downto 0);  -- None,DB Inc,BA Add,BA Adj
-            BreakAtNA   : out std_logic;
-            ADAdd       : out std_logic;
-            AddY        : out std_logic;
-            PCAdd       : out std_logic;
-            Inc_S       : out std_logic;
-            Dec_S       : out std_logic;
-            LDA         : out std_logic;
-            LDP         : out std_logic;
-            LDX         : out std_logic;
-            LDY         : out std_logic;
-            LDS         : out std_logic;
-            LDDI        : out std_logic;
-            LDALU       : out std_logic;
-            LDAD        : out std_logic;
-            LDBAL       : out std_logic;
-            LDBAH       : out std_logic;
-            SaveP       : out std_logic;
-            Write       : out std_logic
-            );
-    end component;
+  type T_Set_BusA_To is
+  (
+    Set_BusA_To_DI,
+    Set_BusA_To_ABC,
+    Set_BusA_To_X,
+    Set_BusA_To_Y,
+    Set_BusA_To_S,
+    Set_BusA_To_P,
+    Set_BusA_To_DONTCARE
+  );
+  type T_Set_Addr_To is
+  (
+    Set_Addr_To_S,
+    Set_Addr_To_AD,
+    Set_Addr_To_PBR,
+    Set_Addr_To_BA
+  );
+  type T_Write_Data is
+  (
+    Write_Data_DL,
+    Write_Data_ABC,
+    Write_Data_X,
+    Write_Data_Y,
+    Write_Data_S,
+    Write_Data_P,
+    Write_Data_PCL,
+    Write_Data_PCH,
+    Write_Data_DONTCARE
+  );
+  type T_ALU_OP is
+  (
+  	ALU_OP_OR,	--"0000"
+  	ALU_OP_AND,	--"0001"
+  	ALU_OP_EOR,	--"0010"
+  	ALU_OP_ADC,	--"0011"
+  	ALU_OP_EQ1,	--"0100" EQ1 does not change N,Z flags, EQ2/3 does.
+  	ALU_OP_EQ2,	--"0101"Not sure yet whats the difference between EQ2&3. They seem to do the same ALU op
+  	ALU_OP_CMP,	--"0110"
+  	ALU_OP_SBC,	--"0111"
+  	ALU_OP_ASL,	--"1000"
+  	ALU_OP_ROL,	--"1001"
+  	ALU_OP_LSR,	--"1010"
+  	ALU_OP_ROR,	--"1011"
+  	ALU_OP_BIT,	--"1100"
+  	ALU_OP_EQ3,	--"1101"
+  	ALU_OP_DEC,	--"1110"
+  	ALU_OP_INC,	--"1111"
+  	ALU_OP_UNDEF--"----"--may be replaced with any?
+  );
 
-    component T65_ALU
-        port(
-            Mode  : in  std_logic_vector(1 downto 0);  -- "00" => 6502, "01" => 65C02, "10" => 65C816
-            Op    : in  std_logic_vector(3 downto 0);
-            BusA  : in  std_logic_vector(7 downto 0);
-            BusB  : in  std_logic_vector(7 downto 0);
-            P_In  : in  std_logic_vector(7 downto 0);
-            P_Out : out std_logic_vector(7 downto 0);
-            Q     : out std_logic_vector(7 downto 0)
-            );
-    end component;
+  component T65_MCode
+  port(
+    Mode                    : in  std_logic_vector(1 downto 0);      -- "00" => 6502, "01" => 65C02, "10" => 65816
+    IR                      : in  std_logic_vector(7 downto 0);
+    MCycle                  : in  std_logic_vector(2 downto 0);
+    P                       : in  std_logic_vector(7 downto 0);
+    LCycle                  : out std_logic_vector(2 downto 0);
+    ALU_Op                  : out T_ALU_Op;
+    Set_BusA_To             : out T_Set_BusA_To;-- DI,A,X,Y,S,P
+    Set_Addr_To             : out T_Set_Addr_To;-- PC Adder,S,AD,BA
+    Write_Data              : out T_Write_Data;-- DL,A,X,Y,S,P,PCL,PCH
+    Jump                    : out std_logic_vector(1 downto 0); -- PC,++,DIDL,Rel
+    BAAdd                   : out std_logic_vector(1 downto 0);     -- None,DB Inc,BA Add,BA Adj
+    BreakAtNA               : out std_logic;
+    ADAdd                   : out std_logic;
+    AddY                    : out std_logic;
+    PCAdd                   : out std_logic;
+    Inc_S                   : out std_logic;
+    Dec_S                   : out std_logic;
+    LDA                     : out std_logic;
+    LDP                     : out std_logic;
+    LDX                     : out std_logic;
+    LDY                     : out std_logic;
+    LDS                     : out std_logic;
+    LDDI                    : out std_logic;
+    LDALU                   : out std_logic;
+    LDAD                    : out std_logic;
+    LDBAL                   : out std_logic;
+    LDBAH                   : out std_logic;
+    SaveP                   : out std_logic;
+    ALUmore                 : out std_logic;
+    Write                   : out std_logic
+  );
+  end component;
+
+  component T65_ALU
+  port(
+    Mode    : in  std_logic_vector(1 downto 0);      -- "00" => 6502, "01" => 65C02, "10" => 65C816
+    Op      : in  T_ALU_Op;
+    BusA    : in  std_logic_vector(7 downto 0);
+    BusB    : in  std_logic_vector(7 downto 0);
+    P_In    : in  std_logic_vector(7 downto 0);
+    P_Out   : out std_logic_vector(7 downto 0);
+    Q       : out std_logic_vector(7 downto 0)
+  );
+  end component;
 
 end;

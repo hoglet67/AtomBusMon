@@ -113,10 +113,10 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.23"
+#define VERSION "0.24"
 
 #ifdef EMBEDDED_6502
-#define NUM_CMDS 23
+#define NUM_CMDS 24
 #else
 #define NUM_CMDS 19
 #endif
@@ -171,6 +171,7 @@ char *cmdStrings[NUM_CMDS] = {
   "regs",
   "mem",
   "dis",
+  "read",
   "write",
 #endif
   "reset",
@@ -467,13 +468,12 @@ void doCmdReset(char *params) {
 
 #ifdef EMBEDDED_6502
 void doCmdRegs(char *params) {
-  log0("A=%02x; ",  hwRead8(OFFSET_REG_A));
-  log0("X=%02x; ",  hwRead8(OFFSET_REG_X));
-  log0("Y=%02x; ",  hwRead8(OFFSET_REG_Y));
-  log0("P=%02x; ",  hwRead8(OFFSET_REG_P));
-  log0("SP=%04x; ", hwRead16(OFFSET_REG_SPL));
-  log0("PC=%04x; ", hwRead16(OFFSET_REG_PCL));
-  log0("\n");
+  log0("A=%02X; ",  hwRead8(OFFSET_REG_A));
+  log0("X=%02X; ",  hwRead8(OFFSET_REG_X));
+  log0("Y=%02X; ",  hwRead8(OFFSET_REG_Y));
+  log0("P=%02X; ",  hwRead8(OFFSET_REG_P));
+  log0("SP=01%02X; ", hwRead8(OFFSET_REG_SPL));
+  log0("PC=%04X\n", hwRead16(OFFSET_REG_PCL));
 }
 
 void doCmdMem(char *params) {
@@ -504,6 +504,15 @@ void doCmdWrite(char *params) {
   unsigned int data;
   sscanf(params, "%x %x", &addr, &data);
   log0("Wr: %04X = %X\n", addr, data);
+  writeMem(addr, data);
+}
+
+void doCmdRead(char *params) {
+  unsigned int addr;
+  sscanf(params, "%x", &addr);
+  unsigned int data;
+  data = readMem(addr);
+  log0("Rd: %04X = %X\n", addr, data);
   writeMem(addr, data);
 }
 
@@ -775,6 +784,7 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdRegs,
   doCmdMem,
   doCmdDis,
+  doCmdRead,
   doCmdWrite,
 #endif
   doCmdReset,
