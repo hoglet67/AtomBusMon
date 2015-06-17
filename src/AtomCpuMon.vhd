@@ -163,8 +163,8 @@ begin
         end if;
     end process;
     
-    Data       <= memory_dout when cpu_clk = '0' and memory_wr = '1' else
-                         Dout when cpu_clk = '0' and R_W_n_int = '0' and memory_rd = '0' else
+    Data       <= memory_dout when Phi0_c = '1' and memory_wr = '1' else
+                         Dout when Phi0_c = '1' and R_W_n_int = '0' and memory_rd = '0' else
                (others => 'Z');
 
     clk_gen : process(clock49)
