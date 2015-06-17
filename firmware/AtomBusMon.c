@@ -113,7 +113,7 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.24"
+#define VERSION "0.25"
 
 #ifdef EMBEDDED_6502
 #define NUM_CMDS 24
@@ -130,6 +130,8 @@ long trace;
 long instructions = 1;
 
 unsigned int memAddr = 0;
+
+char statusString[8] = "NV-BDIZC";
 
 unsigned int breakpoints[MAXBKPTS] = {
   0,
@@ -468,25 +470,46 @@ void doCmdReset(char *params) {
 
 #ifdef EMBEDDED_6502
 void doCmdRegs(char *params) {
-  log0("A=%02X; ",  hwRead8(OFFSET_REG_A));
-  log0("X=%02X; ",  hwRead8(OFFSET_REG_X));
-  log0("Y=%02X; ",  hwRead8(OFFSET_REG_Y));
-  log0("P=%02X; ",  hwRead8(OFFSET_REG_P));
-  log0("SP=01%02X; ", hwRead8(OFFSET_REG_SPL));
-  log0("PC=%04X\n", hwRead16(OFFSET_REG_PCL));
+  int i;
+  log0("6502 Registers:\n");
+  log0("  A=%02X X=%02X Y=%02X SP=01%02X PC=%04X\n",
+       hwRead8(OFFSET_REG_A),
+       hwRead8(OFFSET_REG_X),
+       hwRead8(OFFSET_REG_Y),
+       hwRead8(OFFSET_REG_SPL),
+       hwRead16(OFFSET_REG_PCL));
+  unsigned int p = hwRead8(OFFSET_REG_P);
+  char *sp = statusString;
+  log0("  P=%02X ", p);
+  for (i = 0; i <= 7; i++) {
+    log0("%c",  ((p & 128) ? (*sp) : '-'));
+    p <<= 1;
+    sp++;
+  }
+  log0("\n");
 }
 
 void doCmdMem(char *params) {
-  int i;
+  int i, j;
+  unsigned int row[16];
   sscanf(params, "%x", &memAddr);  
-  for (i = 0; i < 0x100; i++) {
-    if ((i & 15) == 0) {
-      log0("%04X ", memAddr + i);
+  for (i = 0; i < 0x100; i+= 16) {
+    for (j = 0; j < 16; j++) {
+      row[j] = readMem(memAddr + i + j);
     }
-    log0("%02X ", readMem(memAddr + i));
-    if ((i & 15) == 15) {
-      log0("\n");
+    log0("%04X ", memAddr + i);
+    for (j = 0; j < 16; j++) {
+      log0("%02X ", row[j]);
     }
+    log0(" ");
+    for (j = 0; j < 16; j++) {
+      unsigned int c = row[j];
+      if (c < 32 || c > 126) {
+	c = '.';
+      }
+      log0("%c", c);
+    }
+    log0("\n");
   }
   memAddr += 0x100;
 }
