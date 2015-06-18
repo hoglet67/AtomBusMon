@@ -113,10 +113,10 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.28"
+#define VERSION "0.29"
 
 #ifdef EMBEDDED_6502
-#define NUM_CMDS 24
+#define NUM_CMDS 25
 #else
 #define NUM_CMDS 19
 #endif
@@ -175,6 +175,7 @@ char *cmdStrings[NUM_CMDS] = {
   "dis",
   "read",
   "write",
+  "fill",
 #endif
   "reset",
   "step",
@@ -373,28 +374,41 @@ int lookupBreakpoint(char *params) {
 
 
 #ifdef EMBEDDED_6502
-unsigned int readMem(unsigned int addr) {
-  int i;
-  for (i = 0; i <= 15; i++) {
-    hwCmd(CMD_LOAD_MEM, addr & 1);
-    addr >>= 1;
-  }
-  hwCmd(CMD_RD_MEM, 0);
-  Delay_us(10);
-  return hwRead8(OFFSET_DATA);
-}
-
-void writeMem(unsigned int addr, unsigned int data) {
+void loadData(unsigned int data) {
   int i;
   for (i = 0; i <= 7; i++) {
     hwCmd(CMD_LOAD_MEM, data & 1);
     data >>= 1;
   }
+}
+
+void loadAddr(unsigned int addr) {
+  int i;
   for (i = 0; i <= 15; i++) {
     hwCmd(CMD_LOAD_MEM, addr & 1);
     addr >>= 1;
   }
+}
+
+unsigned int readByte() {
+  hwCmd(CMD_RD_MEM, 0);
+  Delay_us(10);
+  return hwRead8(OFFSET_DATA);
+}
+
+void writeByte() {
   hwCmd(CMD_WR_MEM, 0);
+}
+
+unsigned int readMem(unsigned int addr) {
+  loadAddr(addr);
+  return readByte();
+}
+
+void writeMem(unsigned int addr, unsigned int data) {
+  loadData(data);
+  loadAddr(addr);
+  writeByte();
 }
 
 unsigned int disMem(unsigned int addr) {
@@ -492,10 +506,11 @@ void doCmdRegs(char *params) {
 void doCmdMem(char *params) {
   int i, j;
   unsigned int row[16];
-  sscanf(params, "%x", &memAddr);  
+  sscanf(params, "%x", &memAddr);
+  loadAddr(memAddr);
   for (i = 0; i < 0x100; i+= 16) {
     for (j = 0; j < 16; j++) {
-      row[j] = readMem(memAddr + i + j);
+      row[j] = readByte();
     }
     log0("%04X ", memAddr + i);
     for (j = 0; j < 16; j++) {
@@ -537,6 +552,20 @@ void doCmdRead(char *params) {
   data = readMem(addr);
   log0("Rd: %04X = %X\n", addr, data);
   writeMem(addr, data);
+}
+
+void doCmdFill(char *params) {
+  unsigned int i;
+  unsigned int start;
+  unsigned int end;
+  unsigned int data;
+  sscanf(params, "%x %x %x", &start, &end, &data);
+  log0("Wr: %04X to %04X = %X\n", start, end, data);
+  loadData(data);
+  loadAddr(start);
+  for (i = start; i < end; i++) {
+    hwCmd(CMD_WR_MEM, 0);
+  }
 }
 
 #endif
@@ -809,6 +838,7 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdDis,
   doCmdRead,
   doCmdWrite,
+  doCmdFill,
 #endif
   doCmdReset,
   doCmdStep,

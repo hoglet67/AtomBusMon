@@ -25,7 +25,7 @@ char dopname[256][6] =
 /*F0*/ "BEQ", "SBC", "SBC", "---", "---", "SBC", "INC", "---", "SED", "SBC", "PLX", "---", "---", "SBC", "INC", "---",
 };
 
-int dopaddr[256] =
+unsigned char dopaddr[256] =
 {
 /*00*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  ABS,	  ABS,	 ABS,  IMP,
 /*10*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMPA,  IMP,  ABS,	  ABSX,	 ABSX, IMP,

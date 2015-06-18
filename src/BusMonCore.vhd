@@ -397,6 +397,11 @@ begin
                 end if;
                 
             end if;
+            
+            -- Auto increment the memory address reg the cycle after a rd/wr
+            if (memory_rd = '1' or memory_wr = '1') then
+                addr_dout_reg(23 downto 8) <= addr_dout_reg(23 downto 8) + 1;
+            end if;
 
             -- Single Stepping
             if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "1000")) then
