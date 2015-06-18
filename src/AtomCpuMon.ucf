@@ -64,7 +64,7 @@ NET "avr_RxD" LOC="P15" | IOSTANDARD = LVCMOS33 ;
 NET "trig<0>" LOC="P62" | IOSTANDARD = LVCMOS33 ;
 NET "trig<1>" LOC="P63" | IOSTANDARD = LVCMOS33 ;
 
-
+NET "fakeTube_n" LOC="P65" | IOSTANDARD = LVCMOS33 ;
 
 # NET ""  LOC="P48" | IOSTANDARD = LVCMOS33 ; # connector pin E2 
 # NET ""  LOC="P49" | IOSTANDARD = LVCMOS33 ; # connector pin E3

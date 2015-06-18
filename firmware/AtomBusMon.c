@@ -113,7 +113,7 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.27"
+#define VERSION "0.28"
 
 #ifdef EMBEDDED_6502
 #define NUM_CMDS 24

@@ -42,6 +42,9 @@ entity AtomCpuMon is
 
         -- External trigger inputs
         trig             : in    std_logic_vector(1 downto 0);
+        
+        -- Jumpers
+        fakeTube_n      : in     std_logic;
 
         -- Serial Console
         avr_RxD         : in     std_logic;
@@ -158,7 +161,11 @@ begin
     data_latch : process(Phi0)
     begin
         if falling_edge(Phi0) then
-            Din        <= Data;
+            if (fakeTube_n = '0' and Addr_int = x"FEE0") then
+                Din        <= x"FE";
+            else 
+                Din        <= Data;
+            end if;
             memory_din <= Data;
         end if;
     end process;
