@@ -26,8 +26,9 @@ entity R65C02 is
 		addr : out unsigned(15 downto 0);
 		nwe : out std_logic;
 		sync : out std_logic;
-		sync_irq : out std_logic
-			
+		sync_irq : out std_logic;
+        -- 6502 registers (MSB) PC, SP, P, Y, X, A (LSB)
+        Regs    : out std_logic_vector(63 downto 0)
 	);
 end R65C02;
 
@@ -847,15 +848,16 @@ processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, 
 			end if;
 		when others =>			null;
 		end case;	
-        		
-	if rising_edge(clk) then	
+
+-- DMB Remove Pipelining        		
+--	if rising_edge(clk) then	
 		aluRmwOut <= rmwBits(7 downto 0);
 		aluRegisterOut <= ninebits(7 downto 0);
 		aluC <= varC;
 		aluZ <= varZ;
 		aluV <= varV;
 		aluN <= varN;
-		end if;
+--		end if;
 		
 	end process;
 
@@ -909,12 +911,13 @@ calcNextOpcode: process(clk, di, reset, processIrq)
 
 	nextOpcInfo <= opcodeInfoTable(to_integer(nextOpcode));
 	
-	process(clk)
-	begin
-		if rising_edge(clk) then
+-- DMB Remove Pipelining        		
+--	process(clk)
+--	begin
+--		if rising_edge(clk) then
 			nextOpcInfoReg <= nextOpcInfo;
-		end if;
-	end process;
+--		end if;
+--	end process;
 
 	-- Read bits and flags from opcodeInfoTable and store in opcInfo.
 	-- This info is used to control the execution of the opcode.
@@ -1511,6 +1514,13 @@ calcAddr: process(clk)
 	end process;
 	
 		sync_irq <= irqActive;
+
+   Regs <= std_logic_vector(PC) &
+           "00000001" & std_logic_vector(S)& 
+           N & V & R & B & D & I & Z & C & 
+           std_logic_vector(Y) & 
+           std_logic_vector(X) & 
+           std_logic_vector(A);
 	
 end architecture;
 

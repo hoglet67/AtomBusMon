@@ -23,6 +23,10 @@ use work.OhoPack.all ;
 
 
 entity AtomCpuMon is
+    generic (
+       UseT65Core    : boolean := false;
+       UseAlanDCore  : boolean := true
+       );
     port (
         clock49         : in    std_logic;
           
@@ -76,7 +80,10 @@ architecture behavioral of AtomCpuMon is
     signal Addr_int      : std_logic_vector(15 downto 0);
     signal IRQ_n_sync    : std_logic;
     signal NMI_n_sync    : std_logic;
-    
+
+    signal cpu_addr_us: unsigned (15 downto 0);
+    signal cpu_dout_us: unsigned (7 downto 0);
+
     signal Phi0_a        : std_logic;
     signal Phi0_b        : std_logic;
     signal Phi0_c        : std_logic;
@@ -124,24 +131,45 @@ begin
         DataIn  => memory_din        
     );
 
-    cpu_t65 : entity work.T65 port map (
-        mode            => "00",
-        Abort_n         => '1',
-        SO_n            => SO_n,
-        Res_n           => Res_n,
-        Enable          => Rdy_int,
-        Clk             => cpu_clk,
-        Rdy             => '1',
-        IRQ_n           => IRQ_n_sync,
-        NMI_n           => NMI_n_sync,
-        R_W_n           => R_W_n_int,
-        Sync            => Sync_int,
-        A(23 downto 16) => open,
-        A(15 downto 0)  => Addr_int,
-        DI              => Din,
-        DO              => Dout,
-        Regs            => Regs
-    );
+    GenT65Core: if UseT65Core generate
+        inst_t65: entity work.T65 port map (
+            mode            => "00",
+            Abort_n         => '1',
+            SO_n            => SO_n,
+            Res_n           => Res_n,
+            Enable          => Rdy_int,
+            Clk             => cpu_clk,
+            Rdy             => '1',
+            IRQ_n           => IRQ_n_sync,
+            NMI_n           => NMI_n_sync,
+            R_W_n           => R_W_n_int,
+            Sync            => Sync_int,
+            A(23 downto 16) => open,
+            A(15 downto 0)  => Addr_int,
+            DI              => Din,
+            DO              => Dout,
+            Regs            => Regs
+        );
+    end generate;
+    
+    GenAlanDCore: if UseAlanDCore generate
+        inst_r65c02: entity work.r65c02 port map (
+            reset    => RES_n,
+            clk      => cpu_clk,
+            enable   => Rdy_int,
+            nmi_n    => NMI_n_sync,
+            irq_n    => IRQ_n_sync,
+            di       => unsigned(Din),
+            do       => cpu_dout_us,
+            addr     => cpu_addr_us,
+            nwe      => R_W_n_int,
+            sync     => Sync_int,
+            sync_irq => open,
+            Regs     => Regs            
+        );
+        Dout <= std_logic_vector(cpu_dout_us);
+        Addr_int <= std_logic_vector(cpu_addr_us);
+    end generate;
 
     sync_gen : process(cpu_clk, Res_n)
     begin
