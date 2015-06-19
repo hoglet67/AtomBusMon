@@ -24,8 +24,8 @@ use work.OhoPack.all ;
 
 entity AtomCpuMon is
     generic (
-       UseT65Core    : boolean := false;
-       UseAlanDCore  : boolean := true
+       UseT65Core    : boolean := true;
+       UseAlanDCore  : boolean := false
        );
     port (
         clock49         : in    std_logic;
@@ -39,7 +39,7 @@ entity AtomCpuMon is
         NMI_n           : in    std_logic;
         Sync            : out   std_logic;                
         Addr            : out   std_logic_vector(15 downto 0);
-        R_W_n           : out    std_logic;
+        R_W_n           : out   std_logic;
         Data            : inout std_logic_vector(7 downto 0);
         SO_n            : in    std_logic;
         Res_n           : inout std_logic;
@@ -137,9 +137,9 @@ begin
             Abort_n         => '1',
             SO_n            => SO_n,
             Res_n           => Res_n,
-            Enable          => Rdy_int,
+            Enable          => '1',
             Clk             => cpu_clk,
-            Rdy             => '1',
+            Rdy             => Rdy_int,
             IRQ_n           => IRQ_n_sync,
             NMI_n           => NMI_n_sync,
             R_W_n           => R_W_n_int,

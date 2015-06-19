@@ -404,6 +404,10 @@ begin
             end if;
 
             -- Single Stepping
+            if (brkpt_active = '1') then
+                single <= '1';
+            end if;
+            
             if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "1000")) then
                 Rdy <= (not brkpt_active);
             else
