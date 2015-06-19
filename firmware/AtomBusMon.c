@@ -156,7 +156,7 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.30"
+#define VERSION "0.31"
 
 #ifdef EMBEDDED_6502
 #define NUM_CMDS 25
@@ -187,6 +187,17 @@ unsigned int breakpoints[MAXBKPTS] = {
   0
 };
 
+unsigned int masks[MAXBKPTS] = {
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+};
+
 unsigned int modes[MAXBKPTS] = {
   0,
   0,
@@ -198,7 +209,7 @@ unsigned int modes[MAXBKPTS] = {
   0
 };
 
-unsigned int triggers[MAXBKPTS] = {
+int triggers[MAXBKPTS] = {
   0,
   0,
   0,
@@ -354,48 +365,6 @@ void lcdAddr(unsigned int addr) {
 #endif
 
 
-void logMode(unsigned int mode) {
-  int i;
-  int first = 1;
-  for (i = 0; i < UNDEFINED; i++) {
-    if (mode & 1) {
-      if (first) {
-	log0("%s", modeStrings[i]);
-      } else {
-	log0(", %c%s", tolower(*modeStrings[i]), modeStrings[i] + 1);
-      }
-      first = 0;
-    }
-    mode >>= 1;
-  }
-}
-
-void logTrigger(unsigned int trigger) {
-  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
-    log0("trigger: %s", triggerStrings[trigger]);
-  } else {
-    log0("trigger: ILLEGAL");
-  }
-}
-
-int logDetails() {
-  unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
-  unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
-  unsigned int mode   = hwRead8(OFFSET_BW_M);
-  unsigned int watch = mode & 8;
-  // Convert from 4-bit compressed to 6 bit expanded mode representation
-  if (watch) {
-    mode = (mode & 7) << 3;
-  }
-  // Update the serial console
-  logMode(mode);
-  log0(" hit at %04X", i_addr);
-  if (mode & BW_MEM_MASK) {
-    log0(" accessing %04X", b_addr);
-  }
-  log0("\n");
-  return watch;
-}
 
 int lookupBreakpoint(char *params) {
   int i;
@@ -536,22 +505,54 @@ unsigned int disMem(unsigned int addr) {
   return disassemble(addr);
 }
 
-#endif
-
-/*******************************************
- * Commands
- *******************************************/
-
-void doCmdHelp(char *params) {
+void logMode(unsigned int mode) {
   int i;
-  version();
-  log0("Commands:\n");
-  for (i = 0; i < NUM_CMDS; i++) {
-    log0("    %s\n", cmdStrings[i]);
+  int first = 1;
+  for (i = 0; i < UNDEFINED; i++) {
+    if (mode & 1) {
+      if (first) {
+	log0("%s", modeStrings[i]);
+      } else {
+	log0(", %c%s", tolower(*modeStrings[i]), modeStrings[i] + 1);
+      }
+      first = 0;
+    }
+    mode >>= 1;
   }
 }
 
-void doCmdAddr() {
+void logTrigger(int trigger) {
+  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
+    log0("trigger: %s", triggerStrings[trigger]);
+  } else {
+    log0("trigger: ILLEGAL");
+  }
+}
+
+int logDetails() {
+  unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
+  unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
+  unsigned int mode   = hwRead8(OFFSET_BW_M);
+  unsigned int watch = mode & 8;
+  // Convert from 4-bit compressed to 6 bit expanded mode representation
+  if (watch) {
+    mode = (mode & 7) << 3;
+  }
+  // Update the serial console
+  logMode(mode);
+  log0(" hit at %04X", i_addr);
+  if (mode & BW_MEM_MASK) {
+    log0(" accessing %04X\n", b_addr);
+    disMem(i_addr);
+  } else {
+    log0("\n");
+  }
+  return watch;
+}
+
+#endif
+
+void logAddr() {
   memAddr = hwRead16(OFFSET_IAL);
   // Update the LCD display
 #ifdef LCD
@@ -566,6 +567,20 @@ void doCmdAddr() {
 #endif
   return;
 }
+
+/*******************************************
+ * Commands
+ *******************************************/
+
+void doCmdHelp(char *params) {
+  int i;
+  version();
+  log0("Commands:\n");
+  for (i = 0; i < NUM_CMDS; i++) {
+    log0("    %s\n", cmdStrings[i]);
+  }
+}
+
 
 void doCmdStep(char *params) {
   long i;
@@ -590,7 +605,7 @@ void doCmdStep(char *params) {
     hwCmd(CMD_STEP, 0);
     if (i == instructions || (trace && (--j == 0))) {
       Delay_us(10);
-      doCmdAddr();
+      logAddr();
       j = trace;
     }
   }
@@ -702,7 +717,7 @@ void doCmdBList(char *params) {
   int i;
   if (numbkpts) {
     for (i = 0; i < numbkpts; i++) {
-      log0("%d: %04X: ", i, breakpoints[i]);
+      log0("%d: %04X mask %04X: ", i, breakpoints[i], masks[i]);
       logMode(modes[i]);
       log0(" (");
       logTrigger(triggers[i]);
@@ -713,10 +728,11 @@ void doCmdBList(char *params) {
   }
 }
 
-void setBreakpoint(int i, unsigned int addr, unsigned int mode, unsigned int trigger) {
+void setBreakpoint(int i, unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
   logMode(mode);
   log0(" set at %04X\n", addr);
-  breakpoints[i] = addr;
+  breakpoints[i] = addr & mask;
+  masks[i] = mask;
   modes[i] = mode;
   triggers[i] = trigger;
 }
@@ -724,8 +740,9 @@ void setBreakpoint(int i, unsigned int addr, unsigned int mode, unsigned int tri
 void doCmdBreak(char *params, unsigned int mode) {
   int i;
   unsigned int addr;
-  unsigned int trigger = -1;
-  sscanf(params, "%x %x", &addr, &trigger);
+  unsigned int mask = 0xFFFF;
+  int trigger = -1;
+  sscanf(params, "%x %x %x", &addr, &mask, &trigger);
   for (i = 0; i < numbkpts; i++) {
     if (breakpoints[i] == addr) {
       if (modes[i] & mode) {
@@ -736,7 +753,7 @@ void doCmdBreak(char *params, unsigned int mode) {
 	if (trigger == -1) {
 	  trigger = triggers[i];
 	}
-	setBreakpoint(i, addr, modes[i] | mode, trigger);
+	setBreakpoint(i, addr, mask, modes[i] | mode, trigger);
       }
       return;
     }
@@ -752,10 +769,11 @@ void doCmdBreak(char *params, unsigned int mode) {
   }
   for (i = numbkpts - 2; i >= -1; i--) {
     if (i == -1 || breakpoints[i] < addr) {
-      setBreakpoint(i + 1, addr, mode, trigger);
+      setBreakpoint(i + 1, addr, mask, mode, trigger);
       return;
     } else {
       breakpoints[i + 1] = breakpoints[i];
+      masks[i + 1] = masks[i];
       modes[i + 1] = modes[i];
       triggers[i + 1] = triggers[i];
     }
@@ -800,6 +818,7 @@ void doCmdBClear(char *params, unsigned int mode) {
     if (modes[n] == 0) {
       for (i = n; i < numbkpts; i++) {
 	breakpoints[i] = breakpoints[i + 1];
+        masks[i] = masks[i + 1];
 	modes[i] = modes[i + 1];
 	triggers[i] = triggers[i + 1];
       }
@@ -853,20 +872,23 @@ void doCmdTrigger(char *params) {
   }
 }
 
-void shiftBreakpointRegister(unsigned int addr, unsigned int mode, unsigned int trigger) {
+void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
   int i;
-  // Trigger is 4 bits
-  long reg = trigger;
-  // Mode is 6 bits
-  reg <<= 6;
-  reg |= mode;
-  // Address is 16 bits
-  reg <<= 16;
-  reg |= addr;
-  // Total size is 26 bits
-  for (i = 0; i <= 25; i++) {
-    hwCmd(CMD_LOAD_BRKPT, reg & 1);
-    reg >>= 1;
+  for (i = 0; i <= 15; i++) {
+    hwCmd(CMD_LOAD_BRKPT, addr & 1);
+    addr >>= 1;
+  }
+  for (i = 0; i <= 15; i++) {
+    hwCmd(CMD_LOAD_BRKPT, mask & 1);
+    mask >>= 1;
+  }
+  for (i = 0; i <= 5; i++) {
+    hwCmd(CMD_LOAD_BRKPT, mode & 1);
+    mode >>= 1;
+  }
+  for (i = 0; i <= 3; i++) {
+    hwCmd(CMD_LOAD_BRKPT, trigger & 1);
+    trigger >>= 1;
   }
 }
 
@@ -885,10 +907,10 @@ void doCmdContinue(char *params) {
 
   // Load breakpoints into comparators
   for (i = 0; i < numbkpts; i++) {
-    shiftBreakpointRegister(breakpoints[i], modes[i], triggers[i]);
+    shiftBreakpointRegister(breakpoints[i], masks[i], modes[i], triggers[i]);
   }
   for (i = numbkpts; i < MAXBKPTS; i++) {
-    shiftBreakpointRegister(0, 0, 0);
+    shiftBreakpointRegister(0, 0, 0, 0);
   }
 
   // Enable breakpoints 
@@ -931,7 +953,7 @@ void doCmdContinue(char *params) {
   hwCmd(CMD_BRKPT_ENABLE, 0);
 
   // Show current instruction
-  doCmdAddr();
+  logAddr();
 }
 
 

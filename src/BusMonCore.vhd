@@ -25,7 +25,7 @@ use work.OhoPack.all ;
 entity BusMonCore is
     generic (
         num_comparators : integer := 8;
-        reg_width       : integer := 26;
+        reg_width       : integer := 42;
         fifo_width      : integer := 36
     );
     port (
@@ -270,6 +270,7 @@ begin
     brkpt_active_process: process (brkpt_reg, brkpt_enable, Addr, Sync)
         variable i            : integer;
         variable reg_addr     : std_logic_vector(15 downto 0);
+        variable reg_mask     : std_logic_vector(15 downto 0);
         variable reg_mode_bi  : std_logic;
         variable reg_mode_bar : std_logic;
         variable reg_mode_baw : std_logic;
@@ -287,43 +288,44 @@ begin
         if (brkpt_enable = '1') then
             for i in 0 to num_comparators - 1 loop
                 reg_addr     := brkpt_reg(i * reg_width + 15 downto i * reg_width);
-                reg_mode_bi  := brkpt_reg(i * reg_width + 16);
-                reg_mode_bar := brkpt_reg(i * reg_width + 17);
-                reg_mode_baw := brkpt_reg(i * reg_width + 18);
-                reg_mode_wi  := brkpt_reg(i * reg_width + 19);
-                reg_mode_war := brkpt_reg(i * reg_width + 20);
-                reg_mode_waw := brkpt_reg(i * reg_width + 21);
-                trigval      := brkpt_reg(i * reg_width + 22 + to_integer(unsigned(trig)));
-                if (trigval = '1' and (Addr = reg_addr or
+                reg_mask     := brkpt_reg(i * reg_width + 31 downto i * reg_width + 16);
+                reg_mode_bi  := brkpt_reg(i * reg_width + 32);
+                reg_mode_bar := brkpt_reg(i * reg_width + 33);
+                reg_mode_baw := brkpt_reg(i * reg_width + 34);
+                reg_mode_wi  := brkpt_reg(i * reg_width + 35);
+                reg_mode_war := brkpt_reg(i * reg_width + 36);
+                reg_mode_waw := brkpt_reg(i * reg_width + 37);
+                trigval      := brkpt_reg(i * reg_width + 38 + to_integer(unsigned(trig)));
+                if (trigval = '1' and ((Addr and reg_mask) = reg_addr or
                    (reg_mode_bi = '0' and reg_mode_bar = '0' and reg_mode_baw = '0' and
                    (reg_mode_wi = '0' and reg_mode_war = '0' and reg_mode_waw = '0')))) then
                     if (Sync = '1') then
                         if (reg_mode_bi = '1') then
                             bactive := '1';
-                            status  := "0001" & reg_addr;
+                            status  := "0001" & Addr;
                         end if;
                         if (reg_mode_wi = '1') then
                             wactive := '1';
-                            status  := "1001" & reg_addr;
+                            status  := "1001" & Addr;
                         end if;
                     else
                         if (RNW = '1') then
                             if (reg_mode_bar = '1') then
                                 bactive := '1';
-                                status  := "0010" & reg_addr;
+                                status  := "0010" & Addr;
                             end if;
                             if (reg_mode_war = '1') then
                                 wactive := '1';
-                                status  := "1010" & reg_addr;
+                                status  := "1010" & Addr;
                             end if;
                         else
                             if (reg_mode_baw = '1') then
                                 bactive := '1';
-                                status  := "0100" & reg_addr;                                
+                                status  := "0100" & Addr;                                
                             end if;
                             if (reg_mode_waw = '1') then
                                 wactive := '1';
-                                status  := "1100" & reg_addr;                                
+                                status  := "1100" & Addr;                                
                             end if;
                         end if;
                      end if;
