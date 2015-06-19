@@ -121,6 +121,7 @@ unsigned char dopaddr[256] =
 #define WATCH_WRITE 5
 #define UNDEFINED   6
 
+#define B_MEM_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE))
 #define BW_MEM_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE) | (1<<WATCH_READ) | (1<<WATCH_WRITE))
 
 char *modeStrings[7] = {
@@ -543,7 +544,10 @@ int logDetails() {
   log0(" hit at %04X", i_addr);
   if (mode & BW_MEM_MASK) {
     log0(" accessing %04X\n", b_addr);
-    disMem(i_addr);
+    if (mode & B_MEM_MASK) {
+      // It's only safe to do this for brkpts, as it makes memory accesses
+      disMem(i_addr);
+    }
   } else {
     log0("\n");
   }
