@@ -185,7 +185,7 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.34"
+#define VERSION "0.35"
 
 #ifdef EMBEDDED_6502
 #define NUM_CMDS 27
@@ -815,7 +815,7 @@ void test(unsigned int start, unsigned int end, int data) {
     actual = readByte();
     expected = getData(i, data);
     if (expected != actual) {
-      log0("Fail at %04X (Wrote: %02X, Read back %02X)\n", i, expected, actual);
+      log0("Fail at %04lX (Wrote: %02X, Read back %02X)\n", i, expected, actual);
       fail++;
     }
   }
