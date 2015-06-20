@@ -9,6 +9,8 @@
 
 #ifdef EMBEDDED_6502
 
+unsigned int disMem(unsigned int addr);
+
 enum
 {
   IMP, IMPA, MARK2, BRA, IMM, ZP, ZPX, ZPY, INDX, INDY, IND, MARK3, ABS, ABSX, ABSY, IND16, IND1X
@@ -553,6 +555,77 @@ int lookupBreakpoint(char *params) {
 }
 
 
+void logCycleCount(int offsetLow, int offsetHigh) {
+  unsigned long count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow); 
+  unsigned long countSecs = count / 1000000;
+  unsigned long countMicros = count % 1000000;
+  log0("%02ld.%06ld: ", countSecs, countMicros);
+}
+
+void logMode(unsigned int mode) {
+  int i;
+  int first = 1;
+  for (i = 0; i < UNDEFINED; i++) {
+    if (mode & 1) {
+      if (first) {
+	log0("%s", modeStrings[i]);
+      } else {
+	log0(", %c%s", tolower(*modeStrings[i]), modeStrings[i] + 1);
+      }
+      first = 0;
+    }
+    mode >>= 1;
+  }
+}
+
+void logTrigger(int trigger) {
+  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
+    log0("trigger: %s", triggerStrings[trigger]);
+  } else {
+    log0("trigger: ILLEGAL");
+  }
+}
+
+int logDetails() {
+  unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
+  unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
+  unsigned int b_data = hwRead8(OFFSET_BW_BD);
+  unsigned int mode   = hwRead8(OFFSET_BW_M);
+  unsigned int watch = mode & 8;
+
+
+  // Convert from 4-bit compressed to 6 bit expanded mode representation
+  if (watch) {
+    mode = (mode & 7) << 3;
+  }
+  // Update the serial console
+  if (mode & W_MASK) {
+    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
+  }
+  logMode(mode);
+  log0(" hit at %04X", i_addr);
+  if (mode & BW_MEM_MASK) {
+    if (mode & W_MEM_MASK) {
+      log0(" writing");
+    } else {
+      log0(" reading");
+    }
+    log0(" %04X = %02X\n", b_addr, b_data);
+    if (mode & B_MASK) {
+      logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
+    }
+#ifdef EMBEDDED_6502
+    if (mode & B_MEM_MASK) {
+      // It's only safe to do this for brkpts, as it makes memory accesses
+      disMem(i_addr);
+    }
+#endif
+  } else {
+    log0("\n");
+  }
+  return watch;
+}
+
 #ifdef EMBEDDED_6502
 void loadData(unsigned int data) {
   int i;
@@ -671,77 +744,8 @@ unsigned int disassemble(unsigned int addr)
 unsigned int disMem(unsigned int addr) {
   loadAddr(addr);
   return disassemble(addr);
+
 }
-
-void logMode(unsigned int mode) {
-  int i;
-  int first = 1;
-  for (i = 0; i < UNDEFINED; i++) {
-    if (mode & 1) {
-      if (first) {
-	log0("%s", modeStrings[i]);
-      } else {
-	log0(", %c%s", tolower(*modeStrings[i]), modeStrings[i] + 1);
-      }
-      first = 0;
-    }
-    mode >>= 1;
-  }
-}
-
-void logTrigger(int trigger) {
-  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
-    log0("trigger: %s", triggerStrings[trigger]);
-  } else {
-    log0("trigger: ILLEGAL");
-  }
-}
-
-void logCycleCount(int offsetLow, int offsetHigh) {
-  unsigned long count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow); 
-  unsigned long countSecs = count / 1000000;
-  unsigned long countMicros = count % 1000000;
-  log0("%02ld.%06ld: ", countSecs, countMicros);
-}
-
-int logDetails() {
-  unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
-  unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
-  unsigned int b_data = hwRead8(OFFSET_BW_BD);
-  unsigned int mode   = hwRead8(OFFSET_BW_M);
-  unsigned int watch = mode & 8;
-
-
-  // Convert from 4-bit compressed to 6 bit expanded mode representation
-  if (watch) {
-    mode = (mode & 7) << 3;
-  }
-  // Update the serial console
-  if (mode & W_MASK) {
-    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
-  }
-  logMode(mode);
-  log0(" hit at %04X", i_addr);
-  if (mode & BW_MEM_MASK) {
-    if (mode & W_MEM_MASK) {
-      log0(" writing");
-    } else {
-      log0(" reading");
-    }
-    log0(" %04X = %02X\n", b_addr, b_data);
-    if (mode & B_MASK) {
-      logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
-    }
-    if (mode & B_MEM_MASK) {
-      // It's only safe to do this for brkpts, as it makes memory accesses
-      disMem(i_addr);
-    }
-  } else {
-    log0("\n");
-  }
-  return watch;
-}
-
 #endif
 
 void logAddr() {

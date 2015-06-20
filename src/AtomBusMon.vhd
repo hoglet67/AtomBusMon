@@ -36,10 +36,10 @@ entity AtomBusMon is
         trig             : in    std_logic_vector(1 downto 0);
                     
         -- HD44780 LCD
-        lcd_rs           : out   std_logic;
-        lcd_rw           : out   std_logic;
-        lcd_e            : out   std_logic;
-        lcd_db           : inout std_logic_vector(7 downto 4);
+        --lcd_rs           : out   std_logic;
+        --lcd_rw           : out   std_logic;
+        --lcd_e            : out   std_logic;
+        --lcd_db           : inout std_logic_vector(7 downto 4);
 
         -- AVR Serial Port
         avr_RxD          : in    std_logic;
@@ -68,16 +68,23 @@ begin
     mon : entity work.BusMonCore port map (  
         clock49 => clock49,
         Addr    => Addr,
+        Data    => (others => '0'),
         Phi2    => Phi2,
         RNW     => RNW,
         Sync    => Sync,
         Rdy     => Rdy,
         nRST    => nRST,
+        Regs    => (others => '0'),
+        RdOut   => open,
+        WrOut   => open,
+        AddrOut => open,
+        DataOut => open,
+        DataIn  => (others => '0'),        
         trig    => trig,
-        lcd_rs  => lcd_rs,
-        lcd_rw  => lcd_rw,
-        lcd_e   => lcd_e,
-        lcd_db  => lcd_db,
+        lcd_rs  => open,
+        lcd_rw  => open,
+        lcd_e   => open,
+        lcd_db  => open,
         avr_RxD => avr_RxD,
         avr_TxD => avr_TxD,
         sw1     => sw1,
@@ -87,8 +94,7 @@ begin
         led8    => led8,
         tmosi   => tmosi,
         tdin    => tdin,
-        tcclk   => tcclk,
-        Regs    => (others => '0')
+        tcclk   => tcclk
     );
 
 end behavioral;
