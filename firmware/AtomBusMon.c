@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <avr/pgmspace.h>
@@ -12,7 +13,8 @@ enum
   IMP, IMPA, MARK2, BRA, IMM, ZP, ZPX, ZPY, INDX, INDY, IND, MARK3, ABS, ABSX, ABSY, IND16, IND1X
 };
 
-char dopname[256][6] =
+
+char dopname[256][4] =
 {
 /*00*/ "BRK", "ORA", "---", "---", "TSB", "ORA", "ASL", "---", "PHP", "ORA", "ASL", "---", "TSB", "ORA", "ASL", "---",
 /*10*/ "BPL", "ORA", "ORA", "---", "TRB", "ORA", "ASL", "---", "CLC", "ORA", "INC", "---", "TRB", "ORA", "ASL", "---",
@@ -52,6 +54,8 @@ unsigned char dopaddr[256] =
 /*F0*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABS,	  ABSX,	 ABSX, IMP,
 };
 #endif
+
+#define CRC_POLY 0x002d
 
 #define CTRL_PORT      PORTB
 #define CTRL_DDR       DDRB
@@ -139,6 +143,15 @@ unsigned char dopaddr[256] =
 #define W_MEM_MASK  ((1<<BRKPT_WRITE) | (1<<WATCH_WRITE))
 #define BW_MEM_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE) | (1<<WATCH_READ) | (1<<WATCH_WRITE))
 
+char *testNames[6] = {
+  "Fixed",
+  "Checkerboard",
+  "Inverse checkerboard",
+  "Address pattern",
+  "Inverse address pattern",
+  "Random"
+};
+
 char *modeStrings[7] = {
   "Ex Breakpoint",
   "Rn Breakpoint",
@@ -172,10 +185,10 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.32"
+#define VERSION "0.34"
 
 #ifdef EMBEDDED_6502
-#define NUM_CMDS 25
+#define NUM_CMDS 27
 #else
 #define NUM_CMDS 19
 #endif
@@ -184,7 +197,6 @@ char *triggerStrings[NUM_TRIGGERS] = {
 
 int numbkpts = 0;
 
-int single;
 long trace;
 long instructions = 1;
 
@@ -239,6 +251,7 @@ int triggers[MAXBKPTS] = {
 
 char *cmdStrings[NUM_CMDS] = {
   "help",
+  "continue",
 #ifdef EMBEDDED_6502
   "regs",
   "mem",
@@ -246,6 +259,8 @@ char *cmdStrings[NUM_CMDS] = {
   "read",
   "write",
   "fill",
+  "crc",
+  "test",
 #endif
   "reset",
   "step",
@@ -263,8 +278,7 @@ char *cmdStrings[NUM_CMDS] = {
   "wcleari",
   "wclearr",
   "wclearw",
-  "trigger",
-  "continue"
+  "trigger"
 };
 
 #define Delay_us(__us) \
@@ -342,8 +356,7 @@ unsigned int hwRead16(unsigned int offset) {
   return (MUX_DIN << 8) | lsb;
 }
 
-void setSingle(int i) {
-  single = i;
+void setSingle(int single) {
   hwCmd(CMD_SINGLE_ENABLE, single ? 1 : 0);
 }
 
@@ -379,8 +392,6 @@ void lcdAddr(unsigned int addr) {
   }
 }
 #endif
-
-
 
 int lookupBreakpoint(char *params) {
   int i;
@@ -627,11 +638,6 @@ void doCmdStep(char *params) {
   long i;
   long j;
 
-  if (!single) {
-    log0("Use the break command to stop the 6502\n");
-    return;
-  }
-
   sscanf(params, "%ld", &instructions);
   if (instructions <= 0) {
     log0("Number of instuctions must be positive\n");
@@ -655,7 +661,9 @@ void doCmdStep(char *params) {
 void doCmdReset(char *params) {
   log0("Resetting 6502\n");
   hwCmd(CMD_RESET, 1);
-  Delay_us(100);
+  Delay_us(50);
+  hwCmd(CMD_STEP, 0);
+  Delay_us(50);
   hwCmd(CMD_RESET, 0);
 }
 
@@ -729,11 +737,10 @@ void doCmdRead(char *params) {
   unsigned int data;
   data = readMem(addr);
   log0("Rd: %04X = %X\n", addr, data);
-  writeMem(addr, data);
 }
 
 void doCmdFill(char *params) {
-  unsigned int i;
+  long i;
   unsigned int start;
   unsigned int end;
   unsigned int data;
@@ -741,8 +748,110 @@ void doCmdFill(char *params) {
   log0("Wr: %04X to %04X = %X\n", start, end, data);
   loadData(data);
   loadAddr(start);
-  for (i = start; i < end; i++) {
+  for (i = start; i <= end; i++) {
     hwCmd(CMD_WR_MEM, 0);
+  }
+}
+
+void doCmdCrc(char *params) {
+  long i;
+  int j;
+  unsigned int start;
+  unsigned int end;
+  unsigned int data;
+  unsigned long crc = 0;
+  sscanf(params, "%x %x", &start, &end);
+  loadAddr(start);
+  for (i = start; i <= end; i++) {
+    data = readByte();
+    for (j = 0; j < 8; j++) {
+      crc = crc << 1;
+      crc = crc | (data & 1);
+      data >>= 1;
+      if (crc & 0x10000)
+	crc = (crc ^ CRC_POLY) & 0xFFFF;
+    }
+  }
+  log0("crc: %04X\n", crc);
+}
+
+unsigned int getData(unsigned int addr, int data) {
+  if (data == -1) {
+    // checkerboard
+    return (addr & 1) ? 0x55 : 0xAA;
+  } else if (data == -2) {
+    // inverse checkerboard
+    return (addr & 1) ? 0xAA : 0x55;
+  } else if (data == -3) {
+    // address pattern
+    return (0xC3 ^ addr ^ (addr >> 8)) & 0xff;
+  } else if (data == -4) {
+    // address pattern
+    return (0x3C ^ addr ^ (addr >> 8)) & 0xff;
+  } else if (data < 0) {
+    // random data
+    return rand() & 0xff;
+  } else {
+    // fixed data
+    return data & 0xff;
+  }
+}
+
+void test(unsigned int start, unsigned int end, int data) {
+  long i;
+  int name;
+  int actual;
+  int expected;
+  unsigned int fail = 0;
+  // Write
+  srand(data);
+  for (i = start; i <= end; i++) {
+    writeMem(i, getData(i, data));
+  }
+  // Read
+  srand(data);
+  loadAddr(start);
+  for (i = start; i <= end; i++) {
+    actual = readByte();
+    expected = getData(i, data);
+    if (expected != actual) {
+      log0("Fail at %04X (Wrote: %02X, Read back %02X)\n", i, expected, actual);
+      fail++;
+    }
+  }
+  name = -data;
+  if (name < 0) {
+    name = 0;
+  }
+  if (name > 5) {
+    name = 5;
+  }
+  log0("Memory test: %s", testNames[name]);
+  if (data >= 0) {
+    log0(" %02X", data);
+  }
+  if (fail) {
+    log0(": failed: %d errors\n", fail);
+  } else {
+    log0(": passed\n");
+  }
+}
+
+void doCmdTest(char *params) {
+  unsigned int start;
+  unsigned int end;
+  int data =-100;
+  int i;
+  sscanf(params, "%x %x %d", &start, &end, &data);
+  if (data == -100) {
+    test(start, end, 0x55);
+    test(start, end, 0xAA);
+    test(start, end, 0xFF);
+    for (i = 0; i >= -7; i--) {
+      test(start, end, i);
+    }
+  } else {
+    test(start, end, data);
   }
 }
 
@@ -1017,6 +1126,7 @@ void initialize() {
 
 void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdHelp,
+  doCmdContinue,
 #ifdef EMBEDDED_6502
   doCmdRegs,
   doCmdMem,
@@ -1024,6 +1134,8 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdRead,
   doCmdWrite,
   doCmdFill,
+  doCmdCrc,
+  doCmdTest,
 #endif
   doCmdReset,
   doCmdStep,
@@ -1041,8 +1153,7 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdWClearI,
   doCmdWClearR,
   doCmdWClearW,
-  doCmdTrigger,
-  doCmdContinue
+  doCmdTrigger
 };
 
 void dispatchCmd(char *cmd) {
