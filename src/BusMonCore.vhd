@@ -26,13 +26,14 @@ entity BusMonCore is
     generic (
         num_comparators : integer := 8;
         reg_width       : integer := 42;
-        fifo_width      : integer := 36
+        fifo_width      : integer := 72
     );
     port (
         clock49         : in    std_logic;
 
         -- 6502 Signals
         Addr             : in    std_logic_vector(15 downto 0);
+        Data             : in    std_logic_vector(7 downto 0);
         Phi2             : in    std_logic;
         RNW              : in    std_logic;
         Sync             : in    std_logic;
@@ -40,9 +41,11 @@ entity BusMonCore is
         nRST             : inout std_logic;
         
         -- 6502 Registers
+        -- unused in pure bus monitor mode
         Regs             : in    std_logic_vector(63 downto 0);
 
         -- 6502 Memory Read/Write
+        -- unused in pure bus monitor mode
         RdOut            : out std_logic;
         WrOut            : out std_logic;
         AddrOut          : out std_logic_vector(15 downto 0);
@@ -80,48 +83,56 @@ end BusMonCore;
 
 architecture behavioral of BusMonCore is
 
-    signal clock_avr     : std_logic;
-    signal nrst_avr      : std_logic;
-    signal lcd_rw_int    : std_logic;
-    signal lcd_db_in     : std_logic_vector(7 downto 4);
-    signal lcd_db_out    : std_logic_vector(7 downto 4);
-    signal dy_counter    : std_logic_vector(31 downto 0);
-    signal dy_data       : y2d_type ;
+    signal clock_avr       : std_logic;
+    signal nrst_avr        : std_logic;
+    signal lcd_rw_int      : std_logic;
+    signal lcd_db_in       : std_logic_vector(7 downto 4);
+    signal lcd_db_out      : std_logic_vector(7 downto 4);
+    signal dy_counter      : std_logic_vector(31 downto 0);
+    signal dy_data         : y2d_type ;
 
-    signal mux           : std_logic_vector(7 downto 0);
-    signal muxsel        : std_logic_vector(3 downto 0);
-    signal cmd_edge      : std_logic;
-    signal cmd_edge1     : std_logic;
-    signal cmd_edge2     : std_logic;
-    signal cmd           : std_logic_vector(3 downto 0);
+    signal mux             : std_logic_vector(7 downto 0);
+    signal muxsel          : std_logic_vector(4 downto 0);
+    signal cmd_edge        : std_logic;
+    signal cmd_edge1       : std_logic;
+    signal cmd_edge2       : std_logic;
+    signal cmd             : std_logic_vector(3 downto 0);
 
-    signal addr_sync     : std_logic_vector(15 downto 0);
-    signal addr_inst     : std_logic_vector(15 downto 0);
+    signal addr_sync       : std_logic_vector(15 downto 0);
+    signal addr_inst       : std_logic_vector(15 downto 0);
+    signal Addr1           : std_logic_vector(15 downto 0);
+    signal Data1           : std_logic_vector(7 downto 0);
 
-    signal single        : std_logic;
-    signal reset         : std_logic;
-    signal step          : std_logic;
+    signal cycleCount      : std_logic_vector(23 downto 0);
+    signal cycleCount_inst : std_logic_vector(23 downto 0);
 
-    signal bw_status     : std_logic_vector(fifo_width - 16 - 1 downto 0);
-    signal bw_status1    : std_logic_vector(fifo_width - 16 - 1 downto 0);
+    signal single          : std_logic;
+    signal reset           : std_logic;
+    signal step            : std_logic;
+
+    signal bw_status       : std_logic_vector(3 downto 0);
+    signal bw_status1      : std_logic_vector(3 downto 0);
     
-    signal brkpt_reg     : std_logic_vector(num_comparators * reg_width - 1 downto 0);
-    signal brkpt_enable  : std_logic;
-    signal brkpt_active  : std_logic;
-    signal brkpt_active1 : std_logic;
-    signal watch_active  : std_logic;
     
-    signal fifo_din      : std_logic_vector(fifo_width - 1 downto 0);
-    signal fifo_dout     : std_logic_vector(fifo_width - 1 downto 0);
-    signal fifo_empty    : std_logic;
-    signal fifo_rd       : std_logic;
-    signal fifo_wr       : std_logic;
-    signal fifo_rst      : std_logic;
+    signal brkpt_reg       : std_logic_vector(num_comparators * reg_width - 1 downto 0);
+    signal brkpt_enable    : std_logic;
+    signal brkpt_active    : std_logic;
+    signal brkpt_active1   : std_logic;
+    signal watch_active    : std_logic;
+    
+    signal fifo_din        : std_logic_vector(fifo_width - 1 downto 0);
+    signal fifo_dout       : std_logic_vector(fifo_width - 1 downto 0);
+    signal fifo_empty      : std_logic;
+    signal fifo_rd         : std_logic;
+    signal fifo_wr         : std_logic;
+    signal fifo_rst        : std_logic;
 
-    signal memory_rd     : std_logic;
-    signal memory_wr     : std_logic;
-    signal addr_dout_reg : std_logic_vector(23 downto 0);
-    signal din_reg       : std_logic_vector(7 downto 0);
+    signal memory_rd       : std_logic;
+    signal memory_wr       : std_logic;
+    signal addr_dout_reg   : std_logic_vector(23 downto 0);
+    signal din_reg         : std_logic_vector(7 downto 0);
+
+    signal Rdy_int         : std_logic;
     
 begin
 
@@ -202,7 +213,7 @@ begin
         portdout(1)           => muxsel(1),
         portdout(2)           => muxsel(2),
         portdout(3)           => muxsel(3),
-        portdout(4)           => open,
+        portdout(4)           => muxsel(4),
         portdout(5)           => open,
         portdout(6)           => open,
         portdout(7)           => open,
@@ -230,8 +241,12 @@ begin
         empty  => fifo_empty
     );
   
-
-    fifo_din <= bw_status1 & addr_inst;
+    -- The fifo is writen the cycle after the break point
+    -- Addr1 is the address bus delayed by 1 cycle
+    -- DataWr1 is the data being written delayed by 1 cycle
+    -- DataRd is the data being read, that is already one cycle late
+    -- bw_state1(1) is 1 for writes, and 0 for reads
+    fifo_din <= cycleCount_inst & "0000" & bw_status1 & Data1 & Addr1 & addr_inst;
 
     lcd_rw    <= lcd_rw_int;
     lcd_db    <= lcd_db_out when lcd_rw_int = '0' else (others => 'Z');
@@ -250,20 +265,29 @@ begin
 
     mux <= addr_inst(7 downto 0)            when muxsel = 0 else
            addr_inst(15 downto 8)           when muxsel = 1 else
-           fifo_dout(7 downto 0)            when muxsel = 2 else
-           fifo_dout(15 downto 8)           when muxsel = 3 else
-           fifo_dout(23 downto 16)          when muxsel = 4 else
-           fifo_dout(31 downto 24)          when muxsel = 5 else          
-           "0000" & fifo_dout(35 downto 32) when muxsel = 6 else
-           din_reg                          when muxsel = 7 else
-           Regs(7 downto 0)                 when muxsel = 8 else
-           Regs(15 downto 8)                when muxsel = 9 else
-           Regs(23 downto 16)               when muxsel = 10 else
-           Regs(31 downto 24)               when muxsel = 11 else
-           Regs(39 downto 32)               when muxsel = 12 else
-           Regs(47 downto 40)               when muxsel = 13 else
-           Regs(55 downto 48)               when muxsel = 14 else
-           Regs(63 downto 56)               when muxsel = 15 else           
+           din_reg                          when muxsel = 2 else
+           cycleCount(23 downto 16)         when muxsel = 3 else
+           cycleCount(7 downto 0)           when muxsel = 4 else
+           cycleCount(15 downto 8)          when muxsel = 5 else
+
+           fifo_dout(7 downto 0)            when muxsel = 6 else
+           fifo_dout(15 downto 8)           when muxsel = 7 else
+           fifo_dout(23 downto 16)          when muxsel = 8 else
+           fifo_dout(31 downto 24)          when muxsel = 9 else          
+           fifo_dout(39 downto 32)          when muxsel = 10 else
+           fifo_dout(47 downto 40)          when muxsel = 11 else
+           fifo_dout(55 downto 48)          when muxsel = 12 else
+           fifo_dout(63 downto 56)          when muxsel = 13 else
+           fifo_dout(71 downto 64)          when muxsel = 14 else
+           
+           Regs(7 downto 0)                 when muxsel = 16 else
+           Regs(15 downto 8)                when muxsel = 17 else
+           Regs(23 downto 16)               when muxsel = 18 else
+           Regs(31 downto 24)               when muxsel = 19 else
+           Regs(39 downto 32)               when muxsel = 20 else
+           Regs(47 downto 40)               when muxsel = 21 else
+           Regs(55 downto 48)               when muxsel = 22 else
+           Regs(63 downto 56)               when muxsel = 23 else           
            "10101010";
 
     -- Combinatorial set of comparators to decode breakpoint/watch addresses
@@ -279,12 +303,12 @@ begin
         variable reg_mode_waw : std_logic;
         variable bactive      : std_logic;
         variable wactive      : std_logic;
-        variable status       : std_logic_vector(19 downto 0);
+        variable status       : std_logic_vector(3 downto 0);
         variable trigval      : std_logic;
     begin
         bactive := '0';
         wactive := '0';
-        status  := "00001010101010101010";
+        status  := (others => '0');
         if (brkpt_enable = '1') then
             for i in 0 to num_comparators - 1 loop
                 reg_addr     := brkpt_reg(i * reg_width + 15 downto i * reg_width);
@@ -302,30 +326,30 @@ begin
                     if (Sync = '1') then
                         if (reg_mode_bi = '1') then
                             bactive := '1';
-                            status  := "0001" & Addr;
+                            status  := "0001";
                         end if;
                         if (reg_mode_wi = '1') then
                             wactive := '1';
-                            status  := "1001" & Addr;
+                            status  := "1001";
                         end if;
                     else
                         if (RNW = '1') then
                             if (reg_mode_bar = '1') then
                                 bactive := '1';
-                                status  := "0010" & Addr;
+                                status  := "0010";
                             end if;
                             if (reg_mode_war = '1') then
                                 wactive := '1';
-                                status  := "1010" & Addr;
+                                status  := "1010";
                             end if;
                         else
                             if (reg_mode_baw = '1') then
                                 bactive := '1';
-                                status  := "0100" & Addr;                                
+                                status  := "0100";
                             end if;
                             if (reg_mode_waw = '1') then
                                 wactive := '1';
-                                status  := "1100" & Addr;                                
+                                status  := "1100";
                             end if;
                         end if;
                      end if;
@@ -352,6 +376,13 @@ begin
     risingProcess: process (Phi2)
     begin
         if rising_edge(Phi2) then
+        
+            -- Cycle counter, wraps every 16s at 1MHz
+            if (nRST = '0') then
+                cycleCount <= (others => '0');
+            elsif (Rdy_int = '1') then
+                cycleCount <= cycleCount + 1;
+            end if;
         
             -- Command processing
             cmd_edge1 <= cmd_edge;
@@ -411,9 +442,9 @@ begin
             end if;
             
             if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "1000")) then
-                Rdy <= (not brkpt_active);
+                Rdy_int <= (not brkpt_active);
             else
-                Rdy <= (not Sync);
+                Rdy_int <= (not Sync);
             end if;
             
             -- 6502 Reset needs to be open collector
@@ -426,6 +457,7 @@ begin
             -- Latch instruction address for the whole cycle
             if (Sync = '1') then
                 addr_inst <= Addr;
+                cycleCount_inst <= cycleCount;
             end if;
             
             -- Breakpoints and Watches written to the FIFO
@@ -433,6 +465,7 @@ begin
             bw_status1    <= bw_status;
             if watch_active = '1' or (brkpt_active = '1' and brkpt_active1 = '0') then
                 fifo_wr <= '1';
+                Addr1 <= Addr;
             end if;
             
         end if;
@@ -441,13 +474,16 @@ begin
     fallingProcess: process (Phi2)
     begin
         if falling_edge(Phi2) then
+            -- Latch the data bus for use in watches
+            Data1 <= Data;
             -- Latch memory read in response to a read command
             if (memory_rd = '1') then
                 din_reg <= DataIn;
             end if;
         end if;
     end process;
-             
+    
+    Rdy <= Rdy_int;
     RdOut <= memory_rd;
     WrOut <= memory_wr;
     AddrOut <= addr_dout_reg(23 downto 8);

@@ -67,22 +67,34 @@ unsigned char dopaddr[256] =
 #define MUX_DDR        DDRE
 #define MUX_DIN        PINE
 
+// Hardware registers
 #define OFFSET_IAL     0
 #define OFFSET_IAH     1
-#define OFFSET_BW_IAL  2
-#define OFFSET_BW_IAH  3
-#define OFFSET_BW_BAL  4
-#define OFFSET_BW_BAH  5
-#define OFFSET_BW_M    6
-#define OFFSET_DATA    7
-#define OFFSET_REG_A   8
-#define OFFSET_REG_X   9
-#define OFFSET_REG_Y   10
-#define OFFSET_REG_P   11
-#define OFFSET_REG_SPL 12
-#define OFFSET_REG_SPH 13
-#define OFFSET_REG_PCL 14
-#define OFFSET_REG_PCH 15
+#define OFFSET_DATA    2
+#define OFFSET_CNTH    3
+#define OFFSET_CNTL    4
+#define OFFSET_CNTM    5
+
+// Hardware fifo
+#define OFFSET_BW_IAL  6
+#define OFFSET_BW_IAH  7
+#define OFFSET_BW_BAL  8
+#define OFFSET_BW_BAH  9
+#define OFFSET_BW_BD   10
+#define OFFSET_BW_M    11
+#define OFFSET_BW_CNTL 12
+#define OFFSET_BW_CNTM 13
+#define OFFSET_BW_CNTH 14
+
+// Processor registers
+#define OFFSET_REG_A   16
+#define OFFSET_REG_X   17
+#define OFFSET_REG_Y   18
+#define OFFSET_REG_P   19
+#define OFFSET_REG_SPL 20
+#define OFFSET_REG_SPH 21
+#define OFFSET_REG_PCL 22
+#define OFFSET_REG_PCH 23
 
 // Commands
 // 000x Enable/Disable single strpping
@@ -105,7 +117,7 @@ unsigned char dopaddr[256] =
 // Control bits
 #define CMD_MASK          0x1F
 #define CMD_EDGE          0x10
-#define MUXSEL_MASK       0x0F
+#define MUXSEL_MASK       0x1F
 #define MUXSEL_BIT           0
 
 // Status bits
@@ -113,24 +125,27 @@ unsigned char dopaddr[256] =
 #define BW_ACTIVE_MASK    0x80
 
 // Breakpoint Modes
-#define BRKPT_INSTR 0
+#define BRKPT_EXEC  0
 #define BRKPT_READ  1
 #define BRKPT_WRITE 2
-#define WATCH_INSTR 3
+#define WATCH_EXEC  3
 #define WATCH_READ  4
 #define WATCH_WRITE 5
 #define UNDEFINED   6
 
+#define B_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE) | (1<<BRKPT_EXEC))
+#define W_MASK  ((1<<WATCH_READ) | (1<<WATCH_WRITE) | (1<<WATCH_EXEC))
 #define B_MEM_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE))
+#define W_MEM_MASK  ((1<<BRKPT_WRITE) | (1<<WATCH_WRITE))
 #define BW_MEM_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE) | (1<<WATCH_READ) | (1<<WATCH_WRITE))
 
 char *modeStrings[7] = {
-  "Instruction breakpoint",
-  "Read breakpoint",
-  "Write breakpoint",
-  "Instruction watch",
-  "Read watch",
-  "Write watch",
+  "Ex Breakpoint",
+  "Rn Breakpoint",
+  "Wr Breakpoint",
+  "Ex watch",
+  "Rd watch",
+  "Wr watch",
   "Undefined"
 };
 
@@ -157,7 +172,7 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.31"
+#define VERSION "0.32"
 
 #ifdef EMBEDDED_6502
 #define NUM_CMDS 25
@@ -530,20 +545,41 @@ void logTrigger(int trigger) {
   }
 }
 
+void logCycleCount(int offsetLow, int offsetHigh) {
+  unsigned long count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow); 
+  unsigned long countSecs = count / 1000000;
+  unsigned long countMicros = count % 1000000;
+  log0("%02ld.%06ld: ", countSecs, countMicros);
+}
+
 int logDetails() {
   unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
   unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
+  unsigned int b_data = hwRead8(OFFSET_BW_BD);
   unsigned int mode   = hwRead8(OFFSET_BW_M);
   unsigned int watch = mode & 8;
+
+
   // Convert from 4-bit compressed to 6 bit expanded mode representation
   if (watch) {
     mode = (mode & 7) << 3;
   }
   // Update the serial console
+  if (mode & W_MASK) {
+    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
+  }
   logMode(mode);
   log0(" hit at %04X", i_addr);
   if (mode & BW_MEM_MASK) {
-    log0(" accessing %04X\n", b_addr);
+    if (mode & W_MEM_MASK) {
+      log0(" writing");
+    } else {
+      log0(" reading");
+    }
+    log0(" %04X = %02X\n", b_addr, b_data);
+    if (mode & B_MASK) {
+      logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
+    }
     if (mode & B_MEM_MASK) {
       // It's only safe to do this for brkpts, as it makes memory accesses
       disMem(i_addr);
@@ -563,6 +599,7 @@ void logAddr() {
   lcdAddr(memAddr);
 #endif
   // Update the serial console
+  logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
 #ifdef EMBEDDED_6502
   //log0("%04X\n", i_addr);
   disMem(memAddr);
@@ -785,7 +822,7 @@ void doCmdBreak(char *params, unsigned int mode) {
 }
 
 void doCmdBreakI(char *params) {
-  doCmdBreak(params, 1 << BRKPT_INSTR);
+  doCmdBreak(params, 1 << BRKPT_EXEC);
 }
 
 void doCmdBreakR(char *params) {
@@ -797,7 +834,7 @@ void doCmdBreakW(char *params) {
 }
 
 void doCmdWatchI(char *params) {
-  doCmdBreak(params, 1 << WATCH_INSTR);
+  doCmdBreak(params, 1 << WATCH_EXEC);
 }
 
 void doCmdWatchR(char *params) {
@@ -835,7 +872,7 @@ void doCmdBClear(char *params, unsigned int mode) {
 }
 
 void doCmdBClearI(char *params) {
-  doCmdBClear(params, 1 << BRKPT_INSTR);
+  doCmdBClear(params, 1 << BRKPT_EXEC);
 }
 
 void doCmdBClearR(char *params) {
@@ -847,7 +884,7 @@ void doCmdBClearW(char *params) {
 }
 
 void doCmdWClearI(char *params) {
-  doCmdBClear(params, 1 << WATCH_INSTR);
+  doCmdBClear(params, 1 << WATCH_EXEC);
 }
 
 void doCmdWClearR(char *params) {

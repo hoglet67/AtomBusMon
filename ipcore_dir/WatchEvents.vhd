@@ -44,10 +44,10 @@ ENTITY WatchEvents IS
   PORT (
     clk : IN STD_LOGIC;
     srst : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(35 DOWNTO 0);
+    din : IN STD_LOGIC_VECTOR(71 DOWNTO 0);
     wr_en : IN STD_LOGIC;
     rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(35 DOWNTO 0);
+    dout : OUT STD_LOGIC_VECTOR(71 DOWNTO 0);
     full : OUT STD_LOGIC;
     empty : OUT STD_LOGIC
   );
@@ -59,10 +59,10 @@ COMPONENT wrapped_WatchEvents
   PORT (
     clk : IN STD_LOGIC;
     srst : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(35 DOWNTO 0);
+    din : IN STD_LOGIC_VECTOR(71 DOWNTO 0);
     wr_en : IN STD_LOGIC;
     rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(35 DOWNTO 0);
+    dout : OUT STD_LOGIC_VECTOR(71 DOWNTO 0);
     full : OUT STD_LOGIC;
     empty : OUT STD_LOGIC
   );
@@ -98,7 +98,7 @@ END COMPONENT;
       c_count_type => 0,
       c_data_count_width => 10,
       c_default_value => "BlankString",
-      c_din_width => 36,
+      c_din_width => 72,
       c_din_width_axis => 1,
       c_din_width_rach => 32,
       c_din_width_rdch => 64,
@@ -106,7 +106,7 @@ END COMPONENT;
       c_din_width_wdch => 64,
       c_din_width_wrch => 2,
       c_dout_rst_val => "0",
-      c_dout_width => 36,
+      c_dout_width => 72,
       c_enable_rlocs => 0,
       c_enable_rst_sync => 1,
       c_error_injection_type => 0,
@@ -179,7 +179,7 @@ END COMPONENT;
       c_overflow_low => 0,
       c_preload_latency => 0,
       c_preload_regs => 1,
-      c_prim_fifo_type => "512x36",
+      c_prim_fifo_type => "512x72",
       c_prog_empty_thresh_assert_val => 4,
       c_prog_empty_thresh_assert_val_axis => 1022,
       c_prog_empty_thresh_assert_val_rach => 1022,

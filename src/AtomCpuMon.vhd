@@ -103,6 +103,7 @@ begin
     mon : entity work.BusMonCore port map (  
         clock49 => clock49,
         Addr    => Addr_int,
+        Data    => Data,
         Phi2    => busmon_clk,
         RNW     => R_W_n_int,
         Sync    => Sync_int,
@@ -128,7 +129,7 @@ begin
         WrOut   => memory_wr,
         AddrOut => memory_addr,
         DataOut => memory_dout,
-        DataIn  => memory_din        
+        DataIn  => memory_din                
     );
 
     GenT65Core: if UseT65Core generate
