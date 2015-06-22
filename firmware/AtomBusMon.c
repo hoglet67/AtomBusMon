@@ -258,12 +258,14 @@ unsigned char dopaddr[256] =
 #define CMD_WATCH_READ    0x09
 #define CMD_FIFO_RST      0x0A
 #define CMD_LOAD_MEM      0x0C
-#define CMD_RD_MEM        0x0E
-#define CMD_WR_MEM        0x0F
+#define CMD_RD_MEM        0x10
+#define CMD_RD_MEM_INC    0x11
+#define CMD_WR_MEM        0x12
+#define CMD_WR_MEM_INC    0x13
 
 // Control bits
-#define CMD_MASK          0x1F
-#define CMD_EDGE          0x10
+#define CMD_MASK          0x3F
+#define CMD_EDGE          0x20
 #define MUXSEL_MASK       0x1F
 #define MUXSEL_BIT           0
 
@@ -328,7 +330,7 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.36"
+#define VERSION "0.37"
 
 #ifdef EMBEDDED_6502
 #define NUM_CMDS 27
@@ -649,29 +651,27 @@ unsigned int readByte() {
   return hwRead8(OFFSET_DATA);
 }
 
+unsigned int readByteInc() {
+  hwCmd(CMD_RD_MEM_INC, 0);
+  Delay_us(10);
+  return hwRead8(OFFSET_DATA);
+}
+
 void writeByte() {
   hwCmd(CMD_WR_MEM, 0);
 }
 
-unsigned int readMem(unsigned int addr) {
-  loadAddr(addr);
-  return readByte();
+void writeByteInc() {
+  hwCmd(CMD_WR_MEM_INC, 0);
 }
-
-void writeMem(unsigned int addr, unsigned int data) {
-  loadData(data);
-  loadAddr(addr);
-  writeByte();
-}
-
 
 unsigned int disassemble(unsigned int addr)
 {
 	unsigned int temp;
-	unsigned int op = readByte();
+	unsigned int op = readByteInc();
         int mode = dopaddr[op];
-	unsigned int p1 = (mode > MARK2) ? readByte() : 0;
-	unsigned int p2 = (mode > MARK3) ? readByte() : 0;
+	unsigned int p1 = (mode > MARK2) ? readByteInc() : 0;
+	unsigned int p2 = (mode > MARK3) ? readByteInc() : 0;
 
 	log0("%04X : %s ", addr, opStrings[dopname[op]]);
 	switch (mode)
@@ -840,7 +840,7 @@ void doCmdMem(char *params) {
   loadAddr(memAddr);
   for (i = 0; i < 0x100; i+= 16) {
     for (j = 0; j < 16; j++) {
-      row[j] = readByte();
+      row[j] = readByteInc();
     }
     log0("%04X ", memAddr + i);
     for (j = 0; j < 16; j++) {
@@ -871,17 +871,32 @@ void doCmdDis(char *params) {
 void doCmdWrite(char *params) {
   unsigned int addr;
   unsigned int data;
-  sscanf(params, "%x %x", &addr, &data);
+  long count = 1;
+  sscanf(params, "%x %x %ld", &addr, &data, &count);
   log0("Wr: %04X = %X\n", addr, data);
-  writeMem(addr, data);
+  loadData(data);
+  loadAddr(addr);
+  while (count-- > 0) {
+    writeByte();
+  }
 }
 
 void doCmdRead(char *params) {
   unsigned int addr;
-  sscanf(params, "%x", &addr);
   unsigned int data;
-  data = readMem(addr);
+  unsigned int data2;
+  long count = 1;
+  sscanf(params, "%x %ld", &addr, &count);
+  loadAddr(addr);
+  data = readByte();
   log0("Rd: %04X = %X\n", addr, data);
+  while (count-- > 1) {
+    data2 = readByte();
+    if (data2 != data) {
+      log0("Inconsistent Rd: %02X <> %02X\n", data2, data);
+    }
+    data = data2;
+  }
 }
 
 void doCmdFill(char *params) {
@@ -894,7 +909,7 @@ void doCmdFill(char *params) {
   loadData(data);
   loadAddr(start);
   for (i = start; i <= end; i++) {
-    hwCmd(CMD_WR_MEM, 0);
+    writeByteInc();
   }
 }
 
@@ -908,7 +923,7 @@ void doCmdCrc(char *params) {
   sscanf(params, "%x %x", &start, &end);
   loadAddr(start);
   for (i = start; i <= end; i++) {
-    data = readByte();
+    data = readByteInc();
     for (j = 0; j < 8; j++) {
       crc = crc << 1;
       crc = crc | (data & 1);
@@ -951,13 +966,15 @@ void test(unsigned int start, unsigned int end, int data) {
   // Write
   srand(data);
   for (i = start; i <= end; i++) {
-    writeMem(i, getData(i, data));
+    loadData(getData(i, data));
+    loadAddr(i);
+    writeByteInc();
   }
   // Read
   srand(data);
   loadAddr(start);
   for (i = start; i <= end; i++) {
-    actual = readByte();
+    actual = readByteInc();
     expected = getData(i, data);
     if (expected != actual) {
       log0("Fail at %04lX (Wrote: %02X, Read back %02X)\n", i, expected, actual);

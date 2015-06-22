@@ -96,7 +96,7 @@ architecture behavioral of BusMonCore is
     signal cmd_edge        : std_logic;
     signal cmd_edge1       : std_logic;
     signal cmd_edge2       : std_logic;
-    signal cmd             : std_logic_vector(3 downto 0);
+    signal cmd             : std_logic_vector(4 downto 0);
 
     signal addr_sync       : std_logic_vector(15 downto 0);
     signal addr_inst       : std_logic_vector(15 downto 0);
@@ -113,6 +113,7 @@ architecture behavioral of BusMonCore is
     signal bw_status       : std_logic_vector(3 downto 0);
     signal bw_status1      : std_logic_vector(3 downto 0);
     
+    signal auto_inc        : std_logic;
     
     signal brkpt_reg       : std_logic_vector(num_comparators * reg_width - 1 downto 0);
     signal brkpt_enable    : std_logic;
@@ -194,8 +195,8 @@ begin
         portbout(1)          => cmd(1),
         portbout(2)          => cmd(2),
         portbout(3)          => cmd(3),
-        portbout(4)          => cmd_edge,
-        portbout(5)          => open,
+        portbout(4)          => cmd(4),
+        portbout(5)          => cmd_edge,
         portbout(6)          => open,
         portbout(7)          => open,
         
@@ -362,17 +363,19 @@ begin
     end process;
    
     -- 6502 Control Commands
-    -- 000x Enable/Disable single stepping
-    -- 001x Enable/Disable breakpoints / watches
-    -- 010x Load breakpoint register
-    -- 011x Reset
-    -- 1000 Single Step
-    -- 1001 FIFO Read
-    -- 1010 FIFO Reset
-    -- 110x Load memory address/data register
-    -- 1110 Read memory
-    -- 1111 Write memory
-
+    -- 0000x Enable/Disable single stepping
+    -- 0001x Enable/Disable breakpoints / watches
+    -- 0010x Load breakpoint register
+    -- 0011x Reset
+    -- 01000 Single Step
+    -- 01001 FIFO Read
+    -- 01010 FIFO Reset
+    -- 0110x Load memory address/data register
+    -- 0111x Unused 
+    -- 1000x Read memory
+    -- 1001x Write memory
+    -- 101xx Unused
+    -- 11xxx Unused
     risingProcess: process (Phi2)
     begin
         if rising_edge(Phi2) then
@@ -392,47 +395,50 @@ begin
             fifo_rst  <= '0';
             memory_rd <= '0';
             memory_wr <= '0';
+            auto_inc  <= '0';
             if (cmd_edge2 = '0' and cmd_edge1 = '1') then
-                if (cmd(3 downto 1) = "000") then
+                if (cmd(4 downto 1) = "0000") then
                     single <= cmd(0);
                 end if;
                 
-                if (cmd(3 downto 1) = "001") then
+                if (cmd(4 downto 1) = "0001") then
                     brkpt_enable <= cmd(0);
                 end if;
                 
-                if (cmd(3 downto 1) = "010") then
+                if (cmd(4 downto 1) = "0010") then
                     brkpt_reg <= cmd(0) & brkpt_reg(brkpt_reg'length - 1 downto 1);
                 end if;
 
-                if (cmd(3 downto 1) = "110") then
+                if (cmd(4 downto 1) = "0110") then
                     addr_dout_reg <= cmd(0) & addr_dout_reg(addr_dout_reg'length - 1 downto 1);
                 end if;
                 
-                if (cmd(3 downto 1) = "011") then
+                if (cmd(4 downto 1) = "0011") then
                     reset <= cmd(0);
                 end if;
 
-                if (cmd(3 downto 0) = "1001") then
+                if (cmd(4 downto 0) = "01001") then
                     fifo_rd <= '1';
                 end if;                
 
-                if (cmd(3 downto 0) = "1010") then
+                if (cmd(4 downto 0) = "01010") then
                     fifo_rst <= '1';
                 end if;
 
-                if (cmd(3 downto 0) = "1110") then
+                if (cmd(4 downto 1) = "1000") then
                     memory_rd <= '1';
+                    auto_inc  <= cmd(0); 
                 end if;
 
-                if (cmd(3 downto 0) = "1111") then
+                if (cmd(4 downto 1) = "1001") then
                     memory_wr <= '1';
+                    auto_inc  <= cmd(0); 
                 end if;
                 
             end if;
             
             -- Auto increment the memory address reg the cycle after a rd/wr
-            if (memory_rd = '1' or memory_wr = '1') then
+            if (auto_inc = '1' and (memory_rd = '1' or memory_wr = '1')) then
                 addr_dout_reg(23 downto 8) <= addr_dout_reg(23 downto 8) + 1;
             end if;
 
@@ -441,7 +447,7 @@ begin
                 single <= '1';
             end if;
             
-            if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "1000")) then
+            if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "01000")) then
                 Rdy_int <= (not brkpt_active);
             else
                 Rdy_int <= (not Sync);
