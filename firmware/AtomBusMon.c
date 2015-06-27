@@ -337,12 +337,12 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.41"
+#define VERSION "0.42"
 
 #ifdef CPUEMBEDDED
-#define NUM_CMDS 27
+#define NUM_CMDS 22
 #else
-#define NUM_CMDS 19
+#define NUM_CMDS 14
 #endif
 
 #if (CPU == Z80)
@@ -436,12 +436,7 @@ char *cmdStrings[NUM_CMDS] = {
   "watchi",
   "watchr",
   "watchw",
-  "bcleari",
-  "bclearr",
-  "bclearw",
-  "wcleari",
-  "wclearr",
-  "wclearw",
+  "clear",
   "trigger"
 };
 
@@ -1136,54 +1131,22 @@ void doCmdWatchW(char *params) {
   doCmdBreak(params, 1 << WATCH_WRITE);
 }
 
-void doCmdBClear(char *params, unsigned int mode) {
+void doCmdClear(char *params) {
   int i;
   int n = lookupBreakpoint(params);
   if (n < 0) {
     return;
   }
-  if (modes[n] & mode) {
-    log0("Removing ");
-    logMode(mode);
-    log0(" at %04X\n", breakpoints[n]);
-    modes[n] &= ~mode;
-    if (modes[n] == 0) {
-      for (i = n; i < numbkpts; i++) {
-	breakpoints[i] = breakpoints[i + 1];
-        masks[i] = masks[i + 1];
-	modes[i] = modes[i + 1];
-	triggers[i] = triggers[i + 1];
-      }
-      numbkpts--;
-    }
-  } else {
-    logMode(mode);
-    log0(" not set at %04X\n", breakpoints[n]);
+  log0("Removing ");
+  logMode(modes[n]);
+  log0(" at %04X\n", breakpoints[n]);
+  for (i = n; i < numbkpts; i++) {
+    breakpoints[i] = breakpoints[i + 1];
+    masks[i] = masks[i + 1];
+    modes[i] = modes[i + 1];
+    triggers[i] = triggers[i + 1];
   }
-}
-
-void doCmdBClearI(char *params) {
-  doCmdBClear(params, 1 << BRKPT_EXEC);
-}
-
-void doCmdBClearR(char *params) {
-  doCmdBClear(params, 1 << BRKPT_READ);
-}
-
-void doCmdBClearW(char *params) {
-  doCmdBClear(params, 1 << BRKPT_WRITE);
-}
-
-void doCmdWClearI(char *params) {
-  doCmdBClear(params, 1 << WATCH_EXEC);
-}
-
-void doCmdWClearR(char *params) {
-  doCmdBClear(params, 1 << WATCH_READ);
-}
-
-void doCmdWClearW(char *params) {
-  doCmdBClear(params, 1 << WATCH_WRITE);
+  numbkpts--;
 }
 
 void doCmdTrigger(char *params) {
@@ -1338,12 +1301,7 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdWatchI,
   doCmdWatchR,
   doCmdWatchW,
-  doCmdBClearI,
-  doCmdBClearR,
-  doCmdBClearW,
-  doCmdWClearI,
-  doCmdWClearR,
-  doCmdWClearW,
+  doCmdClear,
   doCmdTrigger
 };
 
