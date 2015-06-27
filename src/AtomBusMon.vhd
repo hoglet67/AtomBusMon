@@ -70,10 +70,12 @@ begin
         Addr    => Addr,
         Data    => (others => '0'),
         Phi2    => Phi2,
-        RNW     => RNW,
+        Rd_n    => not RNW,
+        Wr_n    => RNW,
         Sync    => Sync,
         Rdy     => Rdy,
-        nRST    => nRST,
+        nRSTin  => nRST,
+        nRSTout => nRST,
         Regs    => (others => '0'),
         RdOut   => open,
         WrOut   => open,
@@ -94,7 +96,9 @@ begin
         led8    => led8,
         tmosi   => tmosi,
         tdin    => tdin,
-        tcclk   => tcclk
+        tcclk   => tcclk,
+        SS_Step => open,
+        SS_Single => open
     );
 
 end behavioral;

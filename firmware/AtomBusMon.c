@@ -7,7 +7,14 @@
 #include "hd44780.h"
 #include "status.h"
 
-#ifdef EMBEDDED_6502
+
+#if (CPU == Z80)
+#define NAME "ICE-T80"
+#else
+#define NAME "ICE-T65"
+#endif
+
+#ifdef CPUEMBEDDED
 
 unsigned int disMem(unsigned int addr);
 
@@ -330,15 +337,19 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.37"
+#define VERSION "0.41"
 
-#ifdef EMBEDDED_6502
+#ifdef CPUEMBEDDED
 #define NUM_CMDS 27
 #else
 #define NUM_CMDS 19
 #endif
 
+#if (CPU == Z80)
+#define MAXBKPTS 1
+#else
 #define MAXBKPTS 8
+#endif
 
 int numbkpts = 0;
 
@@ -350,6 +361,7 @@ unsigned int memAddr = 0;
 char statusString[8] = "NV-BDIZC";
 
 unsigned int breakpoints[MAXBKPTS] = {
+#if (CPU != Z80)
   0,
   0,
   0,
@@ -357,10 +369,12 @@ unsigned int breakpoints[MAXBKPTS] = {
   0,
   0,
   0,
+#endif
   0
 };
 
 unsigned int masks[MAXBKPTS] = {
+#if (CPU != Z80)
   0,
   0,
   0,
@@ -368,10 +382,12 @@ unsigned int masks[MAXBKPTS] = {
   0,
   0,
   0,
+#endif
   0
 };
 
 unsigned int modes[MAXBKPTS] = {
+#if (CPU != Z80)
   0,
   0,
   0,
@@ -379,10 +395,12 @@ unsigned int modes[MAXBKPTS] = {
   0,
   0,
   0,
+#endif
   0
 };
 
 int triggers[MAXBKPTS] = {
+#if (CPU != Z80)
   0,
   0,
   0,
@@ -390,6 +408,7 @@ int triggers[MAXBKPTS] = {
   0,
   0,
   0,
+#endif
   0
 };
 
@@ -397,7 +416,7 @@ int triggers[MAXBKPTS] = {
 char *cmdStrings[NUM_CMDS] = {
   "help",
   "continue",
-#ifdef EMBEDDED_6502
+#ifdef CPUEMBEDDED
   "regs",
   "mem",
   "dis",
@@ -515,8 +534,13 @@ void setTrace(long i) {
 }
 
 void version() {
-  log0("Atom Bus Monitor version %s\n", VERSION);
+#ifdef CPUEMBEDDED
+  log0("%s In-Circuit Emulator version %s\n", NAME, VERSION);
+#else
+  log0("%s Bus Monitor version %s\n", NAME, VERSION);
+#endif
   log0("Compiled at %s on %s\n",__TIME__,__DATE__);
+  log0("%d watches/breakpoints implemented\n",MAXBKPTS);
 }
 
 
@@ -606,29 +630,25 @@ int logDetails() {
   }
   logMode(mode);
   log0(" hit at %04X", i_addr);
-  if (mode & BW_MEM_MASK) {
-    if (mode & W_MEM_MASK) {
-      log0(" writing");
-    } else {
-      log0(" reading");
-    }
-    log0(" %04X = %02X\n", b_addr, b_data);
-    if (mode & B_MASK) {
-      logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
-    }
-#ifdef EMBEDDED_6502
-    if (mode & B_MEM_MASK) {
-      // It's only safe to do this for brkpts, as it makes memory accesses
-      disMem(i_addr);
-    }
-#endif
+  if (mode & W_MEM_MASK) {
+    log0(" writing");
   } else {
-    log0("\n");
+    log0(" reading");
   }
+  log0(" %04X = %02X\n", b_addr, b_data);
+  if (mode & B_MASK) {
+    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
+  }
+#ifdef CPUEMBEDDED
+  if (mode & B_MEM_MASK) {
+    // It's only safe to do this for brkpts, as it makes memory accesses
+    disMem(i_addr);
+  }
+#endif
   return watch;
 }
 
-#ifdef EMBEDDED_6502
+#ifdef CPUEMBEDDED
 void loadData(unsigned int data) {
   int i;
   for (i = 0; i <= 7; i++) {
@@ -756,7 +776,7 @@ void logAddr() {
 #endif
   // Update the serial console
   logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
-#ifdef EMBEDDED_6502
+#ifdef CPUEMBEDDED
   //log0("%04X\n", i_addr);
   disMem(memAddr);
 #else
@@ -793,7 +813,7 @@ void doCmdStep(char *params) {
   
   j = trace;
   for (i = 1; i <= instructions; i++) {
-    // Step the 6502
+    // Step the CPU
     hwCmd(CMD_STEP, 0);
     if (i == instructions || (trace && (--j == 0))) {
       Delay_us(10);
@@ -804,7 +824,7 @@ void doCmdStep(char *params) {
 }
 
 void doCmdReset(char *params) {
-  log0("Resetting 6502\n");
+  log0("Resetting CPU\n");
   hwCmd(CMD_RESET, 1);
   Delay_us(50);
   hwCmd(CMD_STEP, 0);
@@ -812,15 +832,15 @@ void doCmdReset(char *params) {
   hwCmd(CMD_RESET, 0);
 }
 
-#ifdef EMBEDDED_6502
+#ifdef CPUEMBEDDED
 void doCmdRegs(char *params) {
   int i;
-  log0("6502 Registers:\n");
-  log0("  A=%02X X=%02X Y=%02X SP=01%02X PC=%04X\n",
+  log0("CPU Registers:\n");
+  log0("  A=%02X X=%02X Y=%02X SP=%04X PC=%04X\n",
        hwRead8(OFFSET_REG_A),
        hwRead8(OFFSET_REG_X),
        hwRead8(OFFSET_REG_Y),
-       hwRead8(OFFSET_REG_SPL),
+       hwRead16(OFFSET_REG_SPL),
        hwRead16(OFFSET_REG_PCL));
   unsigned int p = hwRead8(OFFSET_REG_P);
   char *sp = statusString;
@@ -1210,10 +1230,9 @@ void doCmdContinue(char *params) {
 #ifdef LCD
   unsigned int i_addr;
 #endif
-
-  // Step the 6502, otherwise the breakpoint happends again immediately
-  hwCmd(CMD_STEP, 0);
-
+  int reset = 0;
+  sscanf(params, "%d", &reset);
+  
   // Disable breakpoints to allow loading
   hwCmd(CMD_BRKPT_ENABLE, 0);
 
@@ -1225,14 +1244,25 @@ void doCmdContinue(char *params) {
     shiftBreakpointRegister(0, 0, 0, 0);
   }
 
+  // Step the 6502, otherwise the breakpoint happends again immediately
+  hwCmd(CMD_STEP, 0);
+
   // Enable breakpoints 
   hwCmd(CMD_BRKPT_ENABLE, 1);
 
   // Disable single stepping
   setSingle(0);
 
+  // Reset if required
+  if (reset) {
+    log0("Resetting CPU\n");
+    hwCmd(CMD_RESET, 1);
+    Delay_us(100);
+    hwCmd(CMD_RESET, 0);
+  }
+
   // Wait for breakpoint to become active
-  log0("6502 free running...\n");
+  log0("CPU free running...\n");
   int cont = 1;
   do {
     // Update the LCD display
@@ -1268,7 +1298,6 @@ void doCmdContinue(char *params) {
   logAddr();
 }
 
-
 void initialize() {
   CTRL_DDR = 255;
   STATUS_DDR = MUXSEL_MASK;
@@ -1289,7 +1318,7 @@ void initialize() {
 void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdHelp,
   doCmdContinue,
-#ifdef EMBEDDED_6502
+#ifdef CPUEMBEDDED
   doCmdRegs,
   doCmdMem,
   doCmdDis,

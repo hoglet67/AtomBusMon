@@ -105,10 +105,12 @@ begin
         Addr    => Addr_int,
         Data    => Data,
         Phi2    => busmon_clk,
-        RNW     => R_W_n_int,
+        Rd_n    => not R_W_n_int,
+        Wr_n    => R_W_n_int,
         Sync    => Sync_int,
         Rdy     => Rdy_int,
-        nRST    => Res_n,
+        nRSTin  => Res_n,
+        nRSTout => Res_n,
         trig    => trig,
         lcd_rs  => open,
         lcd_rw  => open,
@@ -129,7 +131,9 @@ begin
         WrOut   => memory_wr,
         AddrOut => memory_addr,
         DataOut => memory_dout,
-        DataIn  => memory_din                
+        DataIn  => memory_din,
+        SS_Step => open,
+        SS_Single => open
     );
 
     GenT65Core: if UseT65Core generate

@@ -35,10 +35,12 @@ entity BusMonCore is
         Addr             : in    std_logic_vector(15 downto 0);
         Data             : in    std_logic_vector(7 downto 0);
         Phi2             : in    std_logic;
-        RNW              : in    std_logic;
+        Rd_n             : in    std_logic;
+        Wr_n             : in    std_logic;
         Sync             : in    std_logic;
         Rdy              : out   std_logic;
-        nRST             : inout std_logic;
+        nRSTin           : in    std_logic;
+        nRSTout          : out   std_logic;
         
         -- 6502 Registers
         -- unused in pure bus monitor mode
@@ -51,6 +53,10 @@ entity BusMonCore is
         AddrOut          : out std_logic_vector(15 downto 0);
         DataOut          : out std_logic_vector(7 downto 0);
         DataIn           : in std_logic_vector(7 downto 0);
+        
+        -- Single Step interface
+        SS_Single        : out std_logic;
+        SS_Step          : out std_logic;
         
         -- External trigger inputs
         trig             : in    std_logic_vector(1 downto 0);
@@ -334,7 +340,7 @@ begin
                             status  := "1001";
                         end if;
                     else
-                        if (RNW = '1') then
+                        if (Rd_n = '0') then
                             if (reg_mode_bar = '1') then
                                 bactive := '1';
                                 status  := "0010";
@@ -343,7 +349,8 @@ begin
                                 wactive := '1';
                                 status  := "1010";
                             end if;
-                        else
+                        end if;
+                        if (Wr_n = '0') then
                             if (reg_mode_baw = '1') then
                                 bactive := '1';
                                 status  := "0100";
@@ -381,7 +388,7 @@ begin
         if rising_edge(Phi2) then
         
             -- Cycle counter, wraps every 16s at 1MHz
-            if (nRST = '0') then
+            if (nRSTin = '0') then
                 cycleCount <= (others => '0');
             elsif (Rdy_int = '1') then
                 cycleCount <= cycleCount + 1;
@@ -396,6 +403,7 @@ begin
             memory_rd <= '0';
             memory_wr <= '0';
             auto_inc  <= '0';
+            SS_Step   <= '0';
             if (cmd_edge2 = '0' and cmd_edge1 = '1') then
                 if (cmd(4 downto 1) = "0000") then
                     single <= cmd(0);
@@ -449,15 +457,16 @@ begin
             
             if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "01000")) then
                 Rdy_int <= (not brkpt_active);
+                SS_Step <= '1';
             else
                 Rdy_int <= (not Sync);
             end if;
             
             -- 6502 Reset needs to be open collector
             if (reset = '1') then
-                 nRST <= '0';
+                 nRSTout <= '0';
             else
-                 nRST <= 'Z';
+                 nRSTout <= 'Z';
             end if;
             
             -- Latch instruction address for the whole cycle
@@ -494,6 +503,7 @@ begin
     WrOut <= memory_wr;
     AddrOut <= addr_dout_reg(23 downto 8);
     DataOut <= addr_dout_reg(7 downto 0);
+    SS_Single <= single;
 
 end behavioral;
 

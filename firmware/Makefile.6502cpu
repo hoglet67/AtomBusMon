@@ -23,16 +23,14 @@ F_CPU=15855484
 CC=avr-gcc
 OBJCOPY=avr-objcopy
 
-CFLAGS=-DEMBEDDED_6502=1 -DF_CPU=${F_CPU}UL -DSERIAL_STATUS -DCOOKED_SERIAL -DNOUSART1 -mmcu=$(MCU) -Wall -Os -mcall-prologues
+CFLAGS=-DCPU=6502 -DCPUEMBEDDED -DF_CPU=${F_CPU}UL -DSERIAL_STATUS -DCOOKED_SERIAL -DNOUSART1 -mmcu=$(MCU) -Wall -Os -mcall-prologues
 
 OBJECTS=AtomBusMon.o hd44780.o status.o
 
-load: avr.bit
-#	sudo $(PROG) -v -f avr.bit
-#	sudo $(PROG) -v -b $(BSCAN) -f avr.bit -sa -r
+build: avr6502cpu.bit
 
-avr.bit: avr_progmem.mem
-	$(DATA2MEM) -bm $(BMM_FILE) -bd avr_progmem.mem -bt $(BIT_FILE) -o b avr.bit
+avr6502cpu.bit: avr_progmem.mem
+	$(DATA2MEM) -bm $(BMM_FILE) -bd avr_progmem.mem -bt $(BIT_FILE) -o b avr6502cpu.bit
 
 avr_progmem.mem: avr_progmem.hex
 	$(SREC_CAT)  $< -Intel -Byte_Swap 2  -Data_Only -o tmp.mem -vmem 8
@@ -52,4 +50,4 @@ avr_progmem.out : $(OBJECTS)
 .phony: clean
 
 clean:
-	rm -f avr.bit avr_progmem.mem avr_progmem.hex avr_progmem.out avr_progmem.map *.o
+	rm -f avr6502cpu.bit avr_progmem.mem avr_progmem.hex avr_progmem.out avr_progmem.map *.o
