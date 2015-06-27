@@ -241,10 +241,17 @@ unsigned char dopaddr[256] =
 #define OFFSET_BW_CNTH 14
 
 // Processor registers
+#if (CPU == Z80) 
+#define OFFSET_REG_F   16
+#define OFFSET_REG_A   17
+#define OFFSET_REG_Fp  18
+#define OFFSET_REG_Ap  19
+#else
 #define OFFSET_REG_A   16
 #define OFFSET_REG_X   17
 #define OFFSET_REG_Y   18
 #define OFFSET_REG_P   19
+#endif
 #define OFFSET_REG_SPL 20
 #define OFFSET_REG_SPH 21
 #define OFFSET_REG_PCL 22
@@ -337,7 +344,7 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.42"
+#define VERSION "0.43"
 
 #ifdef CPUEMBEDDED
 #define NUM_CMDS 22
@@ -345,11 +352,7 @@ char *triggerStrings[NUM_TRIGGERS] = {
 #define NUM_CMDS 14
 #endif
 
-#if (CPU == Z80)
-#define MAXBKPTS 1
-#else
 #define MAXBKPTS 8
-#endif
 
 int numbkpts = 0;
 
@@ -358,7 +361,11 @@ long instructions = 1;
 
 unsigned int memAddr = 0;
 
+#if (CPU == Z80)
+char statusString[8] = "SZIH-P-C";
+#else
 char statusString[8] = "NV-BDIZC";
+#endif
 
 unsigned int breakpoints[MAXBKPTS] = {
 #if (CPU != Z80)
@@ -830,16 +837,24 @@ void doCmdReset(char *params) {
 #ifdef CPUEMBEDDED
 void doCmdRegs(char *params) {
   int i;
-  log0("CPU Registers:\n");
-  log0("  A=%02X X=%02X Y=%02X SP=%04X PC=%04X\n",
+#if (CPU == Z80)
+  unsigned int p = hwRead16(OFFSET_REG_F);
+  log0("Z80 Registers:\n  AF=%04X AF'=%04X SP=%04X PC=%04X\n",
+       p,
+       hwRead16(OFFSET_REG_Fp),
+       hwRead16(OFFSET_REG_SPL),
+       hwRead16(OFFSET_REG_PCL));
+#else
+  unsigned int p = hwRead8(OFFSET_REG_P);
+  log0("6502 Registers:\n  A=%02X X=%02X Y=%02X SP=%04X PC=%04X\n",
        hwRead8(OFFSET_REG_A),
        hwRead8(OFFSET_REG_X),
        hwRead8(OFFSET_REG_Y),
        hwRead16(OFFSET_REG_SPL),
        hwRead16(OFFSET_REG_PCL));
-  unsigned int p = hwRead8(OFFSET_REG_P);
+#endif
   char *sp = statusString;
-  log0("  P=%02X ", p);
+  log0("  Status: ");
   for (i = 0; i <= 7; i++) {
     log0("%c",  ((p & 128) ? (*sp) : '-'));
     p <<= 1;

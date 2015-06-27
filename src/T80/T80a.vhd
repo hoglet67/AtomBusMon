@@ -80,9 +80,7 @@ entity T80a is
 	port(
         -- Additions
         TS              : out std_logic_vector(2 downto 0);
-        WAIT_s_out      : out std_logic;
         Regs            : out std_logic_vector(63 downto 0);
-        Write_out       : out std_logic;
         -- Original Signals
 		RESET_n         : in std_logic;
 		CLK_n           : in std_logic;
@@ -222,7 +220,7 @@ begin
 		if Reset_s = '0' then
 			Req_Inhibit <= '0';
 		elsif CLK_n'event and CLK_n = '1' then
-			if MCycle = "001" and TState = "010" then
+			if MCycle = "001" and TState = "010" and Wait_s = '1' then
 				Req_Inhibit <= '1';
 			else
 				Req_Inhibit <= '0';
@@ -281,6 +279,4 @@ begin
 	end process;
 
     TS <= TState;
-    WAIT_s_out <= WAIT_s;
-    Write_out <= Write;
 end;

@@ -89,7 +89,6 @@ signal MREQ_n_int : std_logic;
 signal IORQ_n_int : std_logic;
 signal M1_n_int : std_logic;
 signal WAIT_n_int : std_logic;
-signal WAIT_s : std_logic;
 signal TState : std_logic_vector(2 downto 0);        
 signal SS_Single : std_logic;
 signal SS_Step : std_logic;
@@ -119,7 +118,7 @@ begin
 
       mon : entity work.BusMonCore
       generic map (
-        num_comparators => 1
+        num_comparators => 8
       )
       port map (  
         clock49 => clock49,
@@ -160,9 +159,7 @@ begin
     GenT80Core: if UseT80Core generate
         inst_t80: entity work.T80a port map (
             TS      => TState,
-            WAIT_s_out => WAIT_s,
             Regs    => Regs,
-            Write_out => Write,
             RESET_n => RESET_n_int,
             CLK_n   => cpu_clk,
             WAIT_n  => WAIT_n_int,
@@ -206,10 +203,14 @@ begin
     end process;
 
     
-    -- Make the monitoring decision in the middle of T2, but only if WAIT_n is '1'    
-    Sync0    <=     (WAIT_n_int and (not Write) and (not MREQ_n_int) and (not M1_n_int)) when TState = "010" else '0'; 
-    Read_n0  <= not (WAIT_n_int and (not Write) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
-    Write_n0 <= not (WAIT_n_int and (    Write) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
+    -- Make the monitoring decision in the middle of T2, but only if WAIT_n is '1'
+    Sync0    <=     (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and (not M1_n_int)) when TState = "010" else '0'; 
+    Read_n0  <= not (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
+    Write_n0 <= not (WAIT_n_int and (not WR_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
+
+    -- These are useful for debugging IO Requests:
+    -- Read_n0  <= not (WAIT_n_int and (not RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
+    -- Write_n0 <= not (               (    RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "011" else '1'; 
 
     -- Hold the monitoring decision so it is valid on the rising edge of the clock
     -- For instruction fetches and writes, the monitor sees these at the start of T3

@@ -125,7 +125,8 @@ package T80_Pack is
 		DOBH            : out std_logic_vector(7 downto 0);
 		DOBL            : out std_logic_vector(7 downto 0);
 		DOCH            : out std_logic_vector(7 downto 0);
-		DOCL            : out std_logic_vector(7 downto 0)
+		DOCL            : out std_logic_vector(7 downto 0);
+		RegFileData     : out std_logic_vector(127 downto 0)
 	);
 	end component;
 

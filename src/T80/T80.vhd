@@ -247,11 +247,12 @@ architecture rtl of T80 is
   signal IMode       : std_logic_vector(1 downto 0);
   signal Halt        : std_logic;
   signal XYbit_undoc : std_logic;
-
+  signal RegFileData : std_logic_vector(127 downto 0);
 
 begin
 
-  Regs(31 downto 0)  <= (others => '0');
+  Regs(31 downto 0)  <= Ap & Fp & ACC & F;
+  -- Regs(31 downto 0)  <= RegFileData(31 downto 0);
   Regs(47 downto 32) <= std_logic_vector(SP);
   Regs(63 downto 48) <= std_logic_vector(PC);
 
@@ -866,7 +867,8 @@ begin
       DOBH  => RegBusB(15 downto 8),
       DOBL  => RegBusB(7 downto 0),
       DOCH  => RegBusC(15 downto 8),
-      DOCL  => RegBusC(7 downto 0));
+      DOCL  => RegBusC(7 downto 0),
+      RegFileData => RegFileData);
 
 ---------------------------------------------------------------------------
 --
