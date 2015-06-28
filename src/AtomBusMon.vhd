@@ -76,6 +76,7 @@ begin
         Rdy     => Rdy,
         nRSTin  => nRST,
         nRSTout => nRST,
+        CountCycle => Rdy,
         Regs    => (others => '0'),
         RdOut   => open,
         WrOut   => open,

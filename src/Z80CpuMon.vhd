@@ -97,6 +97,7 @@ signal TState : std_logic_vector(2 downto 0);
 signal SS_Single : std_logic;
 signal SS_Step : std_logic;
 signal SS_Step_held : std_logic;
+signal CountCycle : std_logic;
 
 signal Regs : std_logic_vector(255 downto 0);        
 signal memory_rd     : std_logic;
@@ -145,6 +146,7 @@ begin
         Rdy     => Rdy,
         nRSTin  => RESET_n_int,
         nRSTout => nRST,
+        CountCycle => CountCycle,
         trig    => trig,
         lcd_rs  => open,
         lcd_rw  => open,
@@ -198,6 +200,8 @@ begin
  
     WAIT_n_int <= WAIT_n when SS_Single = '0' else
                   WAIT_n and SS_Step_held;
+                  
+    CountCycle <= '1' when SS_Single = '0' or SS_Step_held = '1' else '0';
 
     sync_gen : process(CLK_n, RESET_n_int)
     begin

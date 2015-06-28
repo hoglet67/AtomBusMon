@@ -41,6 +41,8 @@ entity BusMonCore is
         Rdy              : out   std_logic;
         nRSTin           : in    std_logic;
         nRSTout          : out   std_logic;
+
+        CountCycle       : in    std_logic;
         
         -- 6502 Registers
         -- unused in pure bus monitor mode
@@ -418,7 +420,7 @@ begin
             -- Cycle counter, wraps every 16s at 1MHz
             if (nRSTin = '0') then
                 cycleCount <= (others => '0');
-            elsif (Rdy_int = '1') then
+            elsif (CountCycle = '1') then
                 cycleCount <= cycleCount + 1;
             end if;
         

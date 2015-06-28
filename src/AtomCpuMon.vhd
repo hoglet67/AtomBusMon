@@ -111,6 +111,7 @@ begin
         Rdy     => Rdy_int,
         nRSTin  => Res_n,
         nRSTout => Res_n,
+        CountCycle => Rdy_int,
         trig    => trig,
         lcd_rs  => open,
         lcd_rw  => open,
