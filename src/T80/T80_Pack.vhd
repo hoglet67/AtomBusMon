@@ -105,7 +105,7 @@ package T80_Pack is
 		IntCycle_n      : out std_logic;
 		IntE            : out std_logic;
 		Stop            : out std_logic;
-		Regs                       : out std_logic_vector(63 downto 0)
+		Regs                       : out std_logic_vector(255 downto 0)
 	);
 	end component;
 

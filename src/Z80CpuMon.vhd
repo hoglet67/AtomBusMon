@@ -78,6 +78,10 @@ end Z80CpuMon;
 
 architecture behavioral of Z80CpuMon is
 
+type state_type is (idle, rd_init, rd_setup, rd, rd_hold, wr_init, wr_setup, wr, wr_hold, release);
+
+signal state : state_type;
+
 signal RESET_n_int : std_logic;
 signal cpu_clk : std_logic;
 signal busmon_clk : std_logic;
@@ -94,8 +98,13 @@ signal SS_Single : std_logic;
 signal SS_Step : std_logic;
 signal SS_Step_held : std_logic;
 
-signal Regs : std_logic_vector(63 downto 0);        
-signal Write : std_logic;
+signal Regs : std_logic_vector(255 downto 0);        
+signal memory_rd     : std_logic;
+signal memory_wr     : std_logic;
+signal memory_addr   : std_logic_vector(15 downto 0);
+signal memory_dout   : std_logic_vector(7 downto 0);
+signal memory_din    : std_logic_vector(7 downto 0);
+signal memory_done   : std_logic;
 
 signal INT_n_sync : std_logic;
 signal NMI_n_sync : std_logic;
@@ -110,15 +119,20 @@ signal Sync       : std_logic;
 signal Sync0      : std_logic;
 signal nRST       : std_logic;
 
-signal ex_data : std_logic_vector(7 downto 0);
-signal rd_data : std_logic_vector(7 downto 0);
-signal mon_data : std_logic_vector(7 downto 0);
+signal MemState   : std_logic_vector(2 downto 0);
+
+signal Din        : std_logic_vector(7 downto 0);
+signal Dout       : std_logic_vector(7 downto 0);
+signal Den        : std_logic;
+signal ex_data    : std_logic_vector(7 downto 0);
+signal rd_data    : std_logic_vector(7 downto 0);
+signal mon_data   : std_logic_vector(7 downto 0);
 
 begin
 
       mon : entity work.BusMonCore
       generic map (
-        num_comparators => 8
+        num_comparators => 4
       )
       port map (  
         clock49 => clock49,
@@ -129,10 +143,8 @@ begin
         Wr_n    => Write_n,
         Sync    => Sync,
         Rdy     => Rdy,
-        SS_Single => SS_Single,
-        SS_Step => SS_Step,
-        nRSTin    => RESET_n_int,
-        nRSTout    => nRST,
+        nRSTin  => RESET_n_int,
+        nRSTout => nRST,
         trig    => trig,
         lcd_rs  => open,
         lcd_rw  => open,
@@ -148,12 +160,15 @@ begin
         tmosi   => tmosi,
         tdin    => tdin,
         tcclk   => tcclk,
-        Regs    => Regs(63 downto 0),
-        RdOut   => open,
-        WrOut   => open,
-        AddrOut => open,
-        DataOut => open,
-        DataIn  => (others => '0')
+        Regs    => Regs,
+        RdOut   => memory_rd,
+        WrOut   => memory_wr,
+        AddrOut => memory_addr,
+        DataOut => memory_dout,
+        DataIn  => memory_din,
+        Done    => memory_done,
+        SS_Single => SS_Single,
+        SS_Step => SS_Step
     );
 
     GenT80Core: if UseT80Core generate
@@ -175,14 +190,15 @@ begin
             HALT_n  => HALT_n,
             BUSAK_n => BUSAK_n,
             A       => Addr_int,
-            D       => Data            
+            Din     => Din,
+            Dout    => Dout,
+            DEn     => Den
         );
     end generate;
  
-    WAIT_n_int <= WAIT_n when SS_Single = '0'
-                  else WAIT_n and SS_Step_held;
-            
-    
+    WAIT_n_int <= WAIT_n when SS_Single = '0' else
+                  WAIT_n and SS_Step_held;
+
     sync_gen : process(CLK_n, RESET_n_int)
     begin
         if RESET_n_int = '0' then
@@ -218,9 +234,9 @@ begin
     watch_gen : process(CLK_n)
     begin
         if falling_edge(CLK_n) then
-            Sync <= Sync0;
+            Sync    <= Sync0;
             Read_n1 <= Read_n0;
-            Read_n <= Read_n1;
+            Read_n  <= Read_n1;
             Write_n <= Write_n0;
         end if;
     end process;
@@ -242,18 +258,79 @@ begin
             if (Read_n1 = '0') then            
                 rd_data <= Data;
             end if;
+            memory_din <= Data;
         end if;
     end process;
 
     -- Mux the data seen by the bus monitor appropriately
     mon_data <= rd_data when Read_n <= '0' else ex_data;
 
-    Addr <= Addr_int;
-    WR_n <= WR_n_int;
-    RD_n <= RD_n_int;
-    MREQ_n <= MREQ_n_int;
-    IORQ_n <= IORQ_n_int;
-    M1_n <= M1_n_int;
+    -- Memory access
+    Addr   <= memory_addr when (state /= idle)   else Addr_int;
+    
+    MREQ_n <= '1'         when (state = rd_init or state = wr_init or state = release) else
+              '0'         when (state /= idle)   else MREQ_n_int;
+
+    IORQ_n <= '1'         when (state /= idle)   else IORQ_n_int;
+
+    WR_n   <= '0'         when (state = wr)      else 
+              '1'         when (state /= idle)   else WR_n_int;
+
+    RD_n   <= '0'         when (state = rd_setup or state = rd or state = rd_hold) else
+              '1'         when (state /= idle)   else RD_n_int;
+
+    M1_n   <= '1'         when (state /= idle)   else M1_n_int;
+
+    memory_done <= '1'    when (state = rd_hold or state = wr_hold) else '0';
+
+    -- TODO: Also need to take account of BUSRQ_n/BUSAK_n
+        
+    Data   <= memory_dout when state = wr_setup or state = wr or state = wr_hold else
+                     Dout when state = idle and Den = '1' else
+                     (others => 'Z');
+    Din    <= Data;
+    
+    
+    -- TODO: Add refresh generation into idle loop
+    
+    men_access_machine : process(CLK_n)
+    begin
+        if (RESET_n = '0') then
+            state <= idle;
+        elsif falling_edge(CLK_n) then
+            case state IS
+            when idle =>
+                if (memory_wr = '1') then
+                    state <= wr_init;
+                elsif (memory_rd = '1') then
+                    state <= rd_init;
+                end if;
+            when rd_init =>
+                state <= rd_setup;
+            when rd_setup =>
+                if (WAIT_n = '1') then
+                    state <= rd;
+                end if;
+            when rd =>
+                state <= rd_hold;
+            when rd_hold =>
+                state <= idle;
+            when wr_init =>
+                state <= wr_setup;
+            when wr_setup =>
+                if (WAIT_n = '1') then
+                    state <= wr;
+                end if;
+            when wr =>
+                state <= wr_hold;
+            when wr_hold =>
+                state <= release;                
+            when release =>
+                state <= idle;                
+            end case;
+        end if;
+    end process;
+
     RESET_n_int <= RESET_n and (not sw1) and nRST;
     
     test1 <= TState(0);

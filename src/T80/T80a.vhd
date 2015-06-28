@@ -80,7 +80,7 @@ entity T80a is
 	port(
         -- Additions
         TS              : out std_logic_vector(2 downto 0);
-        Regs            : out std_logic_vector(63 downto 0);
+        Regs            : out std_logic_vector(255 downto 0);
         -- Original Signals
 		RESET_n         : in std_logic;
 		CLK_n           : in std_logic;
@@ -97,7 +97,9 @@ entity T80a is
 		HALT_n          : out std_logic;
 		BUSAK_n         : out std_logic;
 		A               : out std_logic_vector(15 downto 0);
-		D               : inout std_logic_vector(7 downto 0)
+		Din             : in std_logic_vector(7 downto 0);
+		Dout            : out std_logic_vector(7 downto 0);
+                Den           : out std_logic
 	);
 end T80a;
 
@@ -140,7 +142,9 @@ begin
 	WR_n <= WR_n_i when BUSAK_n_i = '1' else 'Z';
 	RFSH_n <= RFSH_n_i when BUSAK_n_i = '1' else 'Z';
 	A <= A_i when BUSAK_n_i = '1' else (others => 'Z');
-	D <= DO when Write = '1' and BUSAK_n_i = '1' else (others => 'Z');
+
+        Dout <= DO;
+        Den  <= Write and BUSAK_n_i;
 
 	process (RESET_n, CLK_n)
 	begin
@@ -171,7 +175,7 @@ begin
 			BUSAK_n => BUSAK_n_i,
 			CLK_n => CLK_n,
 			A => A_i,
-			DInst => D,
+			DInst => Din,
 			DI => DI_Reg,
 			DO => DO,
 			MC => MCycle,
@@ -186,7 +190,7 @@ begin
 		if CLK_n'event and CLK_n = '0' then
 			Wait_s <= WAIT_n;
 			if TState = "011" and BUSAK_n_i = '1' then
-				DI_Reg <= to_x01(D);
+				DI_Reg <= to_x01(Din);
 			end if;
 		end if;
 	end process;

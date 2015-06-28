@@ -126,12 +126,14 @@ begin
         tmosi   => tmosi,
         tdin    => tdin,
         tcclk   => tcclk,
-        Regs    => Regs,
+        Regs(63 downto 0)   => Regs,
+        Regs(255 downto 64) => (others <= '0'),
         RdOut   => memory_rd,
         WrOut   => memory_wr,
         AddrOut => memory_addr,
         DataOut => memory_dout,
         DataIn  => memory_din,
+        Done    => memory_rd,
         SS_Step => open,
         SS_Single => open
     );

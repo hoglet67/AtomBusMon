@@ -92,21 +92,20 @@ architecture rtl of T80_Reg is
 begin
 
     RegFileData( 7  downto   0) <= RegsL(0);
-    RegFileData( 15 downto   8) <= RegsL(1);
-    RegFileData( 23 downto  16) <= RegsL(2);
-    RegFileData( 31 downto  24) <= RegsL(3);
-    RegFileData( 39 downto  32) <= RegsL(4);
-    RegFileData( 47 downto  40) <= RegsL(5);
-    RegFileData( 55 downto  48) <= RegsL(6);
-    RegFileData( 63 downto  56) <= RegsL(7);
-
-    RegFileData( 71 downto  64) <= RegsH(0);
-    RegFileData( 79 downto  72) <= RegsH(1);
-    RegFileData( 87 downto  80) <= RegsH(2);
-    RegFileData( 95 downto  88) <= RegsH(3);
-    RegFileData(103 downto  96) <= RegsH(4);
-    RegFileData(111 downto 104) <= RegsH(5);
-    RegFileData(119 downto 112) <= RegsH(6);
+    RegFileData( 15 downto   8) <= RegsH(0);
+    RegFileData( 23 downto  16) <= RegsL(1);
+    RegFileData( 31 downto  24) <= RegsH(1);
+    RegFileData( 39 downto  32) <= RegsL(2);
+    RegFileData( 47 downto  40) <= RegsH(2);
+    RegFileData( 55 downto  48) <= RegsL(3);
+    RegFileData( 63 downto  56) <= RegsH(3);
+    RegFileData( 71 downto  64) <= RegsL(4);
+    RegFileData( 79 downto  72) <= RegsH(4);
+    RegFileData( 87 downto  80) <= RegsL(5);
+    RegFileData( 95 downto  88) <= RegsH(5);
+    RegFileData(103 downto  96) <= RegsL(6);
+    RegFileData(111 downto 104) <= RegsH(6);
+    RegFileData(119 downto 112) <= RegsL(7);
     RegFileData(127 downto 120) <= RegsH(7);
     
 	process (Clk)

@@ -44,7 +44,7 @@ entity BusMonCore is
         
         -- 6502 Registers
         -- unused in pure bus monitor mode
-        Regs             : in    std_logic_vector(63 downto 0);
+        Regs             : in    std_logic_vector(255 downto 0);
 
         -- 6502 Memory Read/Write
         -- unused in pure bus monitor mode
@@ -53,6 +53,7 @@ entity BusMonCore is
         AddrOut          : out std_logic_vector(15 downto 0);
         DataOut          : out std_logic_vector(7 downto 0);
         DataIn           : in std_logic_vector(7 downto 0);
+        Done             : in std_logic;
         
         -- Single Step interface
         SS_Single        : out std_logic;
@@ -98,7 +99,7 @@ architecture behavioral of BusMonCore is
     signal dy_data         : y2d_type ;
 
     signal mux             : std_logic_vector(7 downto 0);
-    signal muxsel          : std_logic_vector(4 downto 0);
+    signal muxsel          : std_logic_vector(5 downto 0);
     signal cmd_edge        : std_logic;
     signal cmd_edge1       : std_logic;
     signal cmd_edge2       : std_logic;
@@ -221,7 +222,7 @@ begin
         portdout(2)           => muxsel(2),
         portdout(3)           => muxsel(3),
         portdout(4)           => muxsel(4),
-        portdout(5)           => open,
+        portdout(5)           => muxsel(5),
         portdout(6)           => open,
         portdout(7)           => open,
 
@@ -287,15 +288,42 @@ begin
            fifo_dout(63 downto 56)          when muxsel = 13 else
            fifo_dout(71 downto 64)          when muxsel = 14 else
            
-           Regs(7 downto 0)                 when muxsel = 16 else
-           Regs(15 downto 8)                when muxsel = 17 else
-           Regs(23 downto 16)               when muxsel = 18 else
-           Regs(31 downto 24)               when muxsel = 19 else
-           Regs(39 downto 32)               when muxsel = 20 else
-           Regs(47 downto 40)               when muxsel = 21 else
-           Regs(55 downto 48)               when muxsel = 22 else
-           Regs(63 downto 56)               when muxsel = 23 else           
-           "10101010";
+           Regs(8 * to_integer(unsigned(muxsel(4 downto 0))) + 7 downto 8 * to_integer(unsigned(muxsel(4 downto 0))));
+
+--           Regs( 15 downto   8)             when muxsel = 33 else
+--           Regs( 23 downto  16)             when muxsel = 34 else
+--           Regs( 31 downto  24)             when muxsel = 35 else
+--           Regs( 39 downto  32)             when muxsel = 36 else
+--           Regs( 47 downto  40)             when muxsel = 37 else
+--           Regs( 55 downto  48)             when muxsel = 38 else
+--           Regs( 63 downto  56)             when muxsel = 39 else           
+--           Regs(  7 downto  64)             when muxsel = 40 else
+--           Regs( 15 downto  72)             when muxsel = 41 else
+--           Regs( 23 downto  80)             when muxsel = 42 else
+--           Regs( 31 downto  88)             when muxsel = 43 else
+--           Regs( 39 downto  96)             when muxsel = 44 else
+--           Regs( 47 downto 104)             when muxsel = 45 else
+--           Regs( 55 downto 112)             when muxsel = 46 else
+--           Regs( 63 downto 120)             when muxsel = 47 else           
+--           Regs(  7 downto 128)             when muxsel = 48 else
+--           Regs( 15 downto 136)             when muxsel = 49 else
+--           Regs( 23 downto 144)             when muxsel = 50 else
+--           Regs( 31 downto  24)             when muxsel = 51 else
+--           Regs( 39 downto  32)             when muxsel = 52 else
+--           Regs( 47 downto  40)             when muxsel = 53 else
+--           Regs( 55 downto  48)             when muxsel = 54 else
+--           Regs( 63 downto  56)             when muxsel = 55 else           
+--           Regs(  7 downto   0)             when muxsel = 56 else
+--           Regs( 15 downto   8)             when muxsel = 57 else
+--           Regs( 23 downto  16)             when muxsel = 58 else
+--           Regs( 31 downto  24)             when muxsel = 59 else
+--           Regs( 39 downto  32)             when muxsel = 60 else
+--           Regs( 47 downto  40)             when muxsel = 61 else
+--           Regs( 55 downto  48)             when muxsel = 62 else
+--           Regs( 63 downto  56)             when muxsel = 63 else           
+--
+--
+--           "10101010";
 
     -- Combinatorial set of comparators to decode breakpoint/watch addresses
     brkpt_active_process: process (brkpt_reg, brkpt_enable, Addr, Sync)
@@ -402,7 +430,6 @@ begin
             fifo_rst  <= '0';
             memory_rd <= '0';
             memory_wr <= '0';
-            auto_inc  <= '0';
             SS_Step   <= '0';
             if (cmd_edge2 = '0' and cmd_edge1 = '1') then
                 if (cmd(4 downto 1) = "0000") then
@@ -446,7 +473,7 @@ begin
             end if;
             
             -- Auto increment the memory address reg the cycle after a rd/wr
-            if (auto_inc = '1' and (memory_rd = '1' or memory_wr = '1')) then
+            if (auto_inc = '1' and Done = '1') then
                 addr_dout_reg(23 downto 8) <= addr_dout_reg(23 downto 8) + 1;
             end if;
 
@@ -492,7 +519,7 @@ begin
             -- Latch the data bus for use in watches
             Data1 <= Data;
             -- Latch memory read in response to a read command
-            if (memory_rd = '1') then
+            if (Done = '1') then
                 din_reg <= DataIn;
             end if;
         end if;

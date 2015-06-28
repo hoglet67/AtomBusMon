@@ -4,9 +4,7 @@
 #include <ctype.h>
 #include <avr/pgmspace.h>
 
-#include "hd44780.h"
-#include "status.h"
-
+#include "AtomBusMon.h"
 
 #if (CPU == Z80)
 #define NAME "ICE-T80"
@@ -14,198 +12,7 @@
 #define NAME "ICE-T65"
 #endif
 
-#ifdef CPUEMBEDDED
-
-unsigned int disMem(unsigned int addr);
-
-enum
-{
-  IMP, IMPA, MARK2, BRA, IMM, ZP, ZPX, ZPY, INDX, INDY, IND, MARK3, ABS, ABSX, ABSY, IND16, IND1X
-};
-
-enum
-  {
-    I_ADC,
-    I_AND,
-    I_ASL,
-    I_BCC,
-    I_BCS,
-    I_BEQ,
-    I_BIT,
-    I_BMI,
-    I_BNE,
-    I_BPL,
-    I_BRA,
-    I_BRK,
-    I_BVC,
-    I_BVS,
-    I_CLC,
-    I_CLD,
-    I_CLI,
-    I_CLV,
-    I_CMP,
-    I_CPX,
-    I_CPY,
-    I_DEC,
-    I_DEX,
-    I_DEY,
-    I_EOR,
-    I_INC,
-    I_INX,
-    I_INY,
-    I_JMP,
-    I_JSR,
-    I_LDA,
-    I_LDX,
-    I_LDY,
-    I_LSR,
-    I_NOP,
-    I_ORA,
-    I_PHA,
-    I_PHP,
-    I_PHX,
-    I_PHY,
-    I_PLA,
-    I_PLP,
-    I_PLX,
-    I_PLY,
-    I_ROL,
-    I_ROR,
-    I_RTI,
-    I_RTS,
-    I_SBC,
-    I_SEC,
-    I_SED,
-    I_SEI,
-    I_STA,
-    I_STP,
-    I_STX,
-    I_STY,
-    I_STZ,
-    I_TAX,
-    I_TAY,
-    I_TRB,
-    I_TSB,
-    I_TSX,
-    I_TXA,
-    I_TXS,
-    I_TYA,
-    I_WAI,
-    I_XXX
-  };
-
-char *opStrings[67] = {
-    "ADC",
-    "AND",
-    "ASL",
-    "BCC",
-    "BCS",
-    "BEQ",
-    "BIT",
-    "BMI",
-    "BNE",
-    "BPL",
-    "BRA",
-    "BRK",
-    "BVC",
-    "BVS",
-    "CLC",
-    "CLD",
-    "CLI",
-    "CLV",
-    "CMP",
-    "CPX",
-    "CPY",
-    "DEC",
-    "DEX",
-    "DEY",
-    "EOR",
-    "INC",
-    "INX",
-    "INY",
-    "JMP",
-    "JSR",
-    "LDA",
-    "LDX",
-    "LDY",
-    "LSR",
-    "NOP",
-    "ORA",
-    "PHA",
-    "PHP",
-    "PHX",
-    "PHY",
-    "PLA",
-    "PLP",
-    "PLX",
-    "PLY",
-    "ROL",
-    "ROR",
-    "RTI",
-    "RTS",
-    "SBC",
-    "SEC",
-    "SED",
-    "SEI",
-    "STA",
-    "STP",
-    "STX",
-    "STY",
-    "STZ",
-    "TAX",
-    "TAY",
-    "TRB",
-    "TSB",
-    "TSX",
-    "TXA",
-    "TXS",
-    "TYA",
-    "WAI",
-    "---"
-};
-
-unsigned char dopname[256] =
-{
-/*00*/ I_BRK, I_ORA, I_XXX, I_XXX, I_TSB, I_ORA, I_ASL, I_XXX, I_PHP, I_ORA, I_ASL, I_XXX, I_TSB, I_ORA, I_ASL, I_XXX,
-/*10*/ I_BPL, I_ORA, I_ORA, I_XXX, I_TRB, I_ORA, I_ASL, I_XXX, I_CLC, I_ORA, I_INC, I_XXX, I_TRB, I_ORA, I_ASL, I_XXX,
-/*20*/ I_JSR, I_AND, I_XXX, I_XXX, I_BIT, I_AND, I_ROL, I_XXX, I_PLP, I_AND, I_ROL, I_XXX, I_BIT, I_AND, I_ROL, I_XXX,
-/*30*/ I_BMI, I_AND, I_AND, I_XXX, I_BIT, I_AND, I_ROL, I_XXX, I_SEC, I_AND, I_DEC, I_XXX, I_BIT, I_AND, I_ROL, I_XXX,
-/*40*/ I_RTI, I_EOR, I_XXX, I_XXX, I_XXX, I_EOR, I_LSR, I_XXX, I_PHA, I_EOR, I_LSR, I_XXX, I_JMP, I_EOR, I_LSR, I_XXX,
-/*50*/ I_BVC, I_EOR, I_EOR, I_XXX, I_XXX, I_EOR, I_LSR, I_XXX, I_CLI, I_EOR, I_PHY, I_XXX, I_XXX, I_EOR, I_LSR, I_XXX,
-/*60*/ I_RTS, I_ADC, I_XXX, I_XXX, I_STZ, I_ADC, I_ROR, I_XXX, I_PLA, I_ADC, I_ROR, I_XXX, I_JMP, I_ADC, I_ROR, I_XXX,
-/*70*/ I_BVS, I_ADC, I_ADC, I_XXX, I_STZ, I_ADC, I_ROR, I_XXX, I_SEI, I_ADC, I_PLY, I_XXX, I_JMP, I_ADC, I_ROR, I_XXX,
-/*80*/ I_BRA, I_STA, I_XXX, I_XXX, I_STY, I_STA, I_STX, I_XXX, I_DEY, I_BIT, I_TXA, I_XXX, I_STY, I_STA, I_STX, I_XXX,
-/*90*/ I_BCC, I_STA, I_STA, I_XXX, I_STY, I_STA, I_STX, I_XXX, I_TYA, I_STA, I_TXS, I_XXX, I_STZ, I_STA, I_STZ, I_XXX,
-/*A0*/ I_LDY, I_LDA, I_LDX, I_XXX, I_LDY, I_LDA, I_LDX, I_XXX, I_TAY, I_LDA, I_TAX, I_XXX, I_LDY, I_LDA, I_LDX, I_XXX,
-/*B0*/ I_BCS, I_LDA, I_LDA, I_XXX, I_LDY, I_LDA, I_LDX, I_XXX, I_CLV, I_LDA, I_TSX, I_XXX, I_LDY, I_LDA, I_LDX, I_XXX,
-/*C0*/ I_CPY, I_CMP, I_XXX, I_XXX, I_CPY, I_CMP, I_DEC, I_XXX, I_INY, I_CMP, I_DEX, I_WAI, I_CPY, I_CMP, I_DEC, I_XXX,
-/*D0*/ I_BNE, I_CMP, I_CMP, I_XXX, I_XXX, I_CMP, I_DEC, I_XXX, I_CLD, I_CMP, I_PHX, I_STP, I_XXX, I_CMP, I_DEC, I_XXX,
-/*E0*/ I_CPX, I_SBC, I_XXX, I_XXX, I_CPX, I_SBC, I_INC, I_XXX, I_INX, I_SBC, I_NOP, I_XXX, I_CPX, I_SBC, I_INC, I_XXX,
-/*F0*/ I_BEQ, I_SBC, I_SBC, I_XXX, I_XXX, I_SBC, I_INC, I_XXX, I_SED, I_SBC, I_PLX, I_XXX, I_XXX, I_SBC, I_INC, I_XXX
-};
-
-unsigned char dopaddr[256] =
-{
-/*00*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*10*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMPA,  IMP,  ABS,	  ABSX,	 ABSX, IMP,
-/*20*/ ABS, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*30*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMPA,  IMP,  ABSX,	  ABSX,	 ABSX, IMP,
-/*40*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*50*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABS,	  ABSX,	 ABSX, IMP,
-/*60*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  IND16,  ABS,	 ABS,  IMP,
-/*70*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMP,   IMP,  IND1X,  ABSX,	 ABSX, IMP,
-/*80*/ BRA, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMP,   IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*90*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPY,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABS,	  ABSX,	 ABSX, IMP,
-/*A0*/ IMM, INDX,  IMM, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMP,   IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*B0*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPY,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABSX,	  ABSX,	 ABSY, IMP,
-/*C0*/ IMM, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMP,   IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*D0*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABS,	  ABSX,	 ABSX, IMP,
-/*E0*/ IMM, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMP,   IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*F0*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABS,	  ABSX,	 ABSX, IMP
-};
-#endif
-
-#define CRC_POLY 0x002d
+#define CRC_POLY       0x002d
 
 #define CTRL_PORT      PORTB
 #define CTRL_DDR       DDRB
@@ -242,20 +49,29 @@ unsigned char dopaddr[256] =
 
 // Processor registers
 #if (CPU == Z80) 
-#define OFFSET_REG_F   16
-#define OFFSET_REG_A   17
-#define OFFSET_REG_Fp  18
-#define OFFSET_REG_Ap  19
+#define OFFSET_REG_BC  32
+#define OFFSET_REG_DE  34
+#define OFFSET_REG_HL  36
+#define OFFSET_REG_IX  38
+#define OFFSET_REG_BCp 40
+#define OFFSET_REG_DEp 42
+#define OFFSET_REG_HLp 44
+#define OFFSET_REG_IY  46
+#define OFFSET_REG_AF  48
+#define OFFSET_REG_AFp 50
+#define OFFSET_REG_SP  52
+#define OFFSET_REG_PC  54
+#define OFFSET_REG_I   56
+#define OFFSET_REG_R   57
+#define OFFSET_REG_IFF 58
 #else
-#define OFFSET_REG_A   16
-#define OFFSET_REG_X   17
-#define OFFSET_REG_Y   18
-#define OFFSET_REG_P   19
+#define OFFSET_REG_A   32
+#define OFFSET_REG_X   33
+#define OFFSET_REG_Y   34
+#define OFFSET_REG_P   35
+#define OFFSET_REG_SP  36
+#define OFFSET_REG_PC  38
 #endif
-#define OFFSET_REG_SPL 20
-#define OFFSET_REG_SPH 21
-#define OFFSET_REG_PCL 22
-#define OFFSET_REG_PCH 23
 
 // Commands
 // 000x Enable/Disable single strpping
@@ -280,7 +96,7 @@ unsigned char dopaddr[256] =
 // Control bits
 #define CMD_MASK          0x3F
 #define CMD_EDGE          0x20
-#define MUXSEL_MASK       0x1F
+#define MUXSEL_MASK       0x3F
 #define MUXSEL_BIT           0
 
 // Status bits
@@ -344,17 +160,18 @@ char *triggerStrings[NUM_TRIGGERS] = {
 };
 
 
-#define VERSION "0.43"
+#define VERSION "0.44"
 
 #ifdef CPUEMBEDDED
-#define NUM_CMDS 22
+  #if (CPU != Z80)
+    #define NUM_CMDS 22
+  #else
+    #define NUM_CMDS 21
+  #endif
 #else
-#define NUM_CMDS 14
+  #define NUM_CMDS 14
 #endif
 
-#define MAXBKPTS 8
-
-int numbkpts = 0;
 
 long trace;
 long instructions = 1;
@@ -367,58 +184,18 @@ char statusString[8] = "SZIH-P-C";
 char statusString[8] = "NV-BDIZC";
 #endif
 
-unsigned int breakpoints[MAXBKPTS] = {
-#if (CPU != Z80)
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-#endif
-  0
-};
+int numbkpts = 0;
 
-unsigned int masks[MAXBKPTS] = {
-#if (CPU != Z80)
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
+#if (CPU == Z80)
+#define MAXBKPTS 4
+#else
+#define MAXBKPTS 8
 #endif
-  0
-};
 
-unsigned int modes[MAXBKPTS] = {
-#if (CPU != Z80)
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-#endif
-  0
-};
-
-int triggers[MAXBKPTS] = {
-#if (CPU != Z80)
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-#endif
-  0
-};
-
+unsigned int breakpoints[MAXBKPTS];
+unsigned int       masks[MAXBKPTS];
+unsigned int       modes[MAXBKPTS];
+int             triggers[MAXBKPTS];
 
 char *cmdStrings[NUM_CMDS] = {
   "help",
@@ -431,7 +208,9 @@ char *cmdStrings[NUM_CMDS] = {
   "write",
   "fill",
   "crc",
+#if (CPU != Z80)
   "test",
+#endif
 #endif
   "reset",
   "step",
@@ -687,81 +466,6 @@ void writeByteInc() {
   hwCmd(CMD_WR_MEM_INC, 0);
 }
 
-unsigned int disassemble(unsigned int addr)
-{
-	unsigned int temp;
-	unsigned int op = readByteInc();
-        int mode = dopaddr[op];
-	unsigned int p1 = (mode > MARK2) ? readByteInc() : 0;
-	unsigned int p2 = (mode > MARK3) ? readByteInc() : 0;
-
-	log0("%04X : %s ", addr, opStrings[dopname[op]]);
-	switch (mode)
-	{
-	case IMP:
-		log0("        ");
-		break;
-	case IMPA:
-		log0("A       ");
-		break;
-	case BRA:
-		temp = addr + 2 + (signed char)p1;
-		log0("%04X    ", temp);
-		addr++;
-		break;
-	case IMM:
-		log0("#%02X     ", p1);
-		addr++;
-		break;
-	case ZP:
-		log0("%02X      ", p1);
-		addr++;
-		break;
-	case ZPX:
-		log0("%02X,X    ", p1);
-		addr++;
-		break;
-	case ZPY:
-		log0("%02X,Y    ", p1);
-		addr++;
-		break;
-	case IND:
-		log0("(%02X)    ", p1);
-		addr++;
-		break;
-	case INDX:
-		log0("(%02X,X)  ", p1);
-		addr++;
-		break;
-	case INDY:
-		log0("(%02X),Y  ", p1);
-		addr++;
-		break;
-	case ABS:
-		log0("%02X%02X    ", p2, p1);
-		addr += 2;
-		break;
-	case ABSX:
-		log0("%02X%02X,X  ", p2, p1);
-		addr += 2;
-		break;
-	case ABSY:
-		log0("%02X%02X,Y  ", p2, p1);
-		addr += 2;
-		break;
-	case IND16:
-		log0("(%02X%02X)  ", p2, p1);
-		addr += 2;
-		break;
-	case IND1X:
-		log0("(%02X%02X,X)", p2, p1);
-		addr += 2;
-		break;
-	}
-	log0("\n");
-	addr++;
-	return addr;
-}
 
 unsigned int disMem(unsigned int addr) {
   loadAddr(addr);
@@ -838,20 +542,34 @@ void doCmdReset(char *params) {
 void doCmdRegs(char *params) {
   int i;
 #if (CPU == Z80)
-  unsigned int p = hwRead16(OFFSET_REG_F);
-  log0("Z80 Registers:\n  AF=%04X AF'=%04X SP=%04X PC=%04X\n",
+  unsigned int p = hwRead16(OFFSET_REG_AF);
+  log0("Z80 Registers:\n");
+  log0("   AF=%04X  BC=%04X  DE=%04X  HL=%04X\n",
        p,
-       hwRead16(OFFSET_REG_Fp),
-       hwRead16(OFFSET_REG_SPL),
-       hwRead16(OFFSET_REG_PCL));
+       hwRead16(OFFSET_REG_BC),
+       hwRead16(OFFSET_REG_DE),
+       hwRead16(OFFSET_REG_HL));
+  log0("  'AF=%04X 'BC=%04X 'DE=%04X 'HL=%04X\n",
+       hwRead16(OFFSET_REG_AFp),
+       hwRead16(OFFSET_REG_BCp),
+       hwRead16(OFFSET_REG_DEp),
+       hwRead16(OFFSET_REG_HLp));
+  log0("   IX=%04X  IY=%04X  PC=%04X  SP=%04X I=%02X R=%02X IFF=%02X\n",
+       hwRead16(OFFSET_REG_IX),
+       hwRead16(OFFSET_REG_IY),
+       hwRead16(OFFSET_REG_PC),
+       hwRead16(OFFSET_REG_SP),
+       hwRead8(OFFSET_REG_I),
+       hwRead8(OFFSET_REG_R),
+       hwRead8(OFFSET_REG_IFF));
 #else
   unsigned int p = hwRead8(OFFSET_REG_P);
   log0("6502 Registers:\n  A=%02X X=%02X Y=%02X SP=%04X PC=%04X\n",
        hwRead8(OFFSET_REG_A),
        hwRead8(OFFSET_REG_X),
        hwRead8(OFFSET_REG_Y),
-       hwRead16(OFFSET_REG_SPL),
-       hwRead16(OFFSET_REG_PCL));
+       hwRead16(OFFSET_REG_SP),
+       hwRead16(OFFSET_REG_PC));
 #endif
   char *sp = statusString;
   log0("  Status: ");
@@ -965,6 +683,7 @@ void doCmdCrc(char *params) {
   log0("crc: %04X\n", crc);
 }
 
+#if (CPU != Z80)
 unsigned int getData(unsigned int addr, int data) {
   if (data == -1) {
     // checkerboard
@@ -1046,6 +765,8 @@ void doCmdTest(char *params) {
     test(start, end, data);
   }
 }
+
+#endif
 
 #endif
 
@@ -1304,7 +1025,9 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdWrite,
   doCmdFill,
   doCmdCrc,
+#if (CPU != Z80)
   doCmdTest,
+#endif
 #endif
   doCmdReset,
   doCmdStep,
