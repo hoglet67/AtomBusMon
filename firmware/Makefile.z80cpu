@@ -23,7 +23,7 @@ F_CPU=15855484
 CC=avr-gcc
 OBJCOPY=avr-objcopy
 
-CFLAGS=-DCPU=Z80 -DCPUEMBEDDED -DF_CPU=${F_CPU}UL -DSERIAL_STATUS -DCOOKED_SERIAL -DNOUSART1 -mmcu=$(MCU) -Wall -Os -mcall-prologues
+CFLAGS=-DCPU=Z80 -DCPUEMBEDDED -DF_CPU=${F_CPU}UL -DSERIAL_STATUS -DCOOKED_SERIAL -DNOUSART1 -mmcu=$(MCU) -Wall -Os -mcall-prologues -mno-interrupts
 
 OBJECTS=AtomBusMon.o disz80.o status.o
 

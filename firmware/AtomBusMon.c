@@ -73,12 +73,28 @@
 #define OFFSET_REG_PC  38
 #endif
 
-// Commands
-// 000x Enable/Disable single strpping
-// 001x Enable/Disable breakpoints / watches
-// 010x Load register
-// 011x Reset
-// 1000 Singe Step
+// Commands:
+//
+// 0000x Enable/Disable single strpping
+// 0001x Enable/Disable breakpoints / watches
+// 0010x Load breakpoint / watch register
+// 0011x Reset CPU
+// 01000 Singe Step CPU
+// 01001 Read FIFO
+// 01010 Reset FIFO
+// 01011 Unused
+// 0110x Load address/data register
+// 0111x Unused
+// 10000 Read Memory
+// 10001 Read Memory and Auto Inc Address
+// 10010 Write Memory
+// 10011 Write Memory and Auto Inc Address
+// 10000 Read Memory
+// 10001 Read Memory and Auto Inc Address
+// 10010 Write Memory
+// 10011 Write Memory and Auto Inc Address
+// 1x1xx Unused
+// 11xxx Unused
 
 #define CMD_SINGLE_ENABLE 0x00
 #define CMD_BRKPT_ENABLE  0x02
@@ -92,6 +108,10 @@
 #define CMD_RD_MEM_INC    0x11
 #define CMD_WR_MEM        0x12
 #define CMD_WR_MEM_INC    0x13
+#define CMD_RD_IO         0x14
+#define CMD_RD_IO_INC     0x15
+#define CMD_WR_IO         0x16
+#define CMD_WR_IO_INC     0x17
 
 // Control bits
 #define CMD_MASK          0x3F
@@ -446,32 +466,51 @@ void loadAddr(unsigned int addr) {
   }
 }
 
-unsigned int readByte() {
+unsigned int readMemByte() {
   hwCmd(CMD_RD_MEM, 0);
   Delay_us(10);
   return hwRead8(OFFSET_DATA);
 }
 
-unsigned int readByteInc() {
+unsigned int readMemByteInc() {
   hwCmd(CMD_RD_MEM_INC, 0);
   Delay_us(10);
   return hwRead8(OFFSET_DATA);
 }
 
-void writeByte() {
+void writeMemByte() {
   hwCmd(CMD_WR_MEM, 0);
 }
 
-void writeByteInc() {
+void writeMemByteInc() {
   hwCmd(CMD_WR_MEM_INC, 0);
 }
 
+unsigned int readIOByte() {
+  hwCmd(CMD_RD_IO, 0);
+  Delay_us(10);
+  return hwRead8(OFFSET_DATA);
+}
+
+unsigned int readIOByteInc() {
+  hwCmd(CMD_RD_IO_INC, 0);
+  Delay_us(10);
+  return hwRead8(OFFSET_DATA);
+}
+
+void writeIOByte() {
+  hwCmd(CMD_WR_IO, 0);
+}
+
+void writeIOByteInc() {
+  hwCmd(CMD_WR_IO_INC, 0);
+}
 
 unsigned int disMem(unsigned int addr) {
   loadAddr(addr);
   return disassemble(addr);
-
 }
+
 #endif
 
 void logAddr() {
@@ -588,7 +627,7 @@ void doCmdMem(char *params) {
   loadAddr(memAddr);
   for (i = 0; i < 0x100; i+= 16) {
     for (j = 0; j < 16; j++) {
-      row[j] = readByteInc();
+      row[j] = readMemByteInc();
     }
     log0("%04X ", memAddr + i);
     for (j = 0; j < 16; j++) {
@@ -625,7 +664,7 @@ void doCmdWrite(char *params) {
   loadData(data);
   loadAddr(addr);
   while (count-- > 0) {
-    writeByte();
+    writeMemByte();
   }
 }
 
@@ -636,10 +675,10 @@ void doCmdRead(char *params) {
   long count = 1;
   sscanf(params, "%x %ld", &addr, &count);
   loadAddr(addr);
-  data = readByte();
+  data = readMemByte();
   log0("Rd: %04X = %X\n", addr, data);
   while (count-- > 1) {
-    data2 = readByte();
+    data2 = readMemByte();
     if (data2 != data) {
       log0("Inconsistent Rd: %02X <> %02X\n", data2, data);
     }
@@ -657,7 +696,7 @@ void doCmdFill(char *params) {
   loadData(data);
   loadAddr(start);
   for (i = start; i <= end; i++) {
-    writeByteInc();
+    writeMemByteInc();
   }
 }
 
@@ -671,7 +710,7 @@ void doCmdCrc(char *params) {
   sscanf(params, "%x %x", &start, &end);
   loadAddr(start);
   for (i = start; i <= end; i++) {
-    data = readByteInc();
+    data = readMemByteInc();
     for (j = 0; j < 8; j++) {
       crc = crc << 1;
       crc = crc | (data & 1);
@@ -717,13 +756,13 @@ void test(unsigned int start, unsigned int end, int data) {
   for (i = start; i <= end; i++) {
     loadData(getData(i, data));
     loadAddr(i);
-    writeByteInc();
+    writeMemByteInc();
   }
   // Read
   srand(data);
   loadAddr(start);
   for (i = start; i <= end; i++) {
-    actual = readByteInc();
+    actual = readMemByteInc();
     expected = getData(i, data);
     if (expected != actual) {
       log0("Fail at %04lX (Wrote: %02X, Read back %02X)\n", i, expected, actual);

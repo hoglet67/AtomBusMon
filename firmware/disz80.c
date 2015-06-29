@@ -314,7 +314,7 @@ unsigned char c_sh[]     = { RLC,RRC,RL,RR,SLA,SRA,SLL,SRL };
 
 unsigned char Peek(unsigned int addr) {
   loadAddr(addr);
-  return readByte();
+  return readMemByte();
 }
 
 // ---- return mnenonic descriptor for normal instructions

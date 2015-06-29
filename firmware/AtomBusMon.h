@@ -12,10 +12,10 @@
 unsigned int disMem(unsigned int addr);
 void loadData(unsigned int data);
 void loadAddr(unsigned int addr);
-unsigned int readByte();
-unsigned int readByteInc();
-void writeByte();
-void writeByteInc();
+unsigned int readMemByte();
+unsigned int readMemByteInc();
+void writeMemByte();
+void writeMemByteInc();
 unsigned int disMem(unsigned int addr);
 #endif
 
