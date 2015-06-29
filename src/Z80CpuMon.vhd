@@ -226,10 +226,14 @@ begin
             end if;
         end if;
     end process;
-
     
-    -- Make the monitoring decision in the middle of T2, but only if WAIT_n is '1'
-    Sync0    <=     (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and (not M1_n_int)) when TState = "010" else '0'; 
+    -- For instruction breakpoints, we make the monitoring decision as early as possibe
+    -- to allow time to stop the current instruction, which is possible because we don't
+    -- really care about the data (it's re-read from memory by the disassembler).
+    Sync0    <= not M1_n_int when TState = "001" else '0'; 
+
+    -- For reads/write breakpoints we make the monitoring decision in the middle of T2
+    -- but only if WAIT_n is '1' so we catch the right data.
     Read_n0  <= not (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
     Write_n0 <= not (WAIT_n_int and (not WR_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
 

@@ -510,7 +510,7 @@ begin
             
             if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "01000")) then
                 Rdy_int <= (not brkpt_active);
-                SS_Step <= '1';
+                SS_Step <= (not brkpt_active);            
             else
                 Rdy_int <= (not Sync);
             end if;

@@ -6,7 +6,7 @@
 
 #include "AtomBusMon.h"
 
-#define VERSION "0.45"
+#define VERSION "0.46"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -433,18 +433,20 @@ int logDetails() {
   }
   logMode(mode);
   log0(" hit at %04X", i_addr);
-  if (mode & W_MEM_MASK) {
-    log0(" writing");
+  if (mode & BW_MEM_MASK) {
+    if (mode & W_MEM_MASK) {
+      log0(" writing");
+    } else {
+      log0(" reading");
+    }
+    log0(" %04X = %02X\n", b_addr, b_data);
   } else {
-    log0(" reading");
-  }
-  log0(" %04X = %02X\n", b_addr, b_data);
-  if (mode & B_MASK) {
-    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
-  }
+    log0("\n");
+  } 
 #ifdef CPUEMBEDDED
   if (mode & B_MEM_MASK) {
     // It's only safe to do this for brkpts, as it makes memory accesses
+    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
     disMem(i_addr);
   }
 #endif
