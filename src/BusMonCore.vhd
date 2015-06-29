@@ -50,8 +50,10 @@ entity BusMonCore is
 
         -- 6502 Memory Read/Write
         -- unused in pure bus monitor mode
-        RdOut            : out std_logic;
-        WrOut            : out std_logic;
+        RdMemOut         : out std_logic;
+        WrMemOut         : out std_logic;
+        RdIOOut          : out std_logic;
+        WrIOOut          : out std_logic;
         AddrOut          : out std_logic_vector(15 downto 0);
         DataOut          : out std_logic_vector(7 downto 0);
         DataIn           : in std_logic_vector(7 downto 0);
@@ -139,6 +141,8 @@ architecture behavioral of BusMonCore is
 
     signal memory_rd       : std_logic;
     signal memory_wr       : std_logic;
+    signal io_rd           : std_logic;
+    signal io_wr           : std_logic;
     signal addr_dout_reg   : std_logic_vector(23 downto 0);
     signal din_reg         : std_logic_vector(7 downto 0);
 
@@ -399,20 +403,28 @@ begin
         bw_status    <= status;
     end process;
    
-    -- 6502 Control Commands
-    -- 0000x Enable/Disable single stepping
+    -- CPU Control Commands
+    -- 0000x Enable/Disable single strpping
     -- 0001x Enable/Disable breakpoints / watches
-    -- 0010x Load breakpoint register
-    -- 0011x Reset
-    -- 01000 Single Step
-    -- 01001 FIFO Read
-    -- 01010 FIFO Reset
-    -- 0110x Load memory address/data register
-    -- 0111x Unused 
-    -- 1000x Read memory
-    -- 1001x Write memory
-    -- 101xx Unused
+    -- 0010x Load breakpoint / watch register
+    -- 0011x Reset CPU
+    -- 01000 Singe Step CPU
+    -- 01001 Read FIFO
+    -- 01010 Reset FIFO
+    -- 01011 Unused
+    -- 0110x Load address/data register
+    -- 0111x Unused
+    -- 10000 Read Memory
+    -- 10001 Read Memory and Auto Inc Address
+    -- 10010 Write Memory
+    -- 10011 Write Memory and Auto Inc Address
+    -- 10000 Read Memory
+    -- 10001 Read Memory and Auto Inc Address
+    -- 10010 Write Memory
+    -- 10011 Write Memory and Auto Inc Address
+    -- 1x1xx Unused
     -- 11xxx Unused
+
     risingProcess: process (Phi2)
     begin
         if rising_edge(Phi2) then
@@ -432,6 +444,8 @@ begin
             fifo_rst  <= '0';
             memory_rd <= '0';
             memory_wr <= '0';
+            io_rd     <= '0';
+            io_wr     <= '0';
             SS_Step   <= '0';
             if (cmd_edge2 = '0' and cmd_edge1 = '1') then
                 if (cmd(4 downto 1) = "0000") then
@@ -469,6 +483,16 @@ begin
 
                 if (cmd(4 downto 1) = "1001") then
                     memory_wr <= '1';
+                    auto_inc  <= cmd(0); 
+                end if;
+
+                if (cmd(4 downto 1) = "1010") then
+                    io_rd <= '1';
+                    auto_inc  <= cmd(0); 
+                end if;
+
+                if (cmd(4 downto 1) = "1011") then
+                    io_wr <= '1';
                     auto_inc  <= cmd(0); 
                 end if;
                 
@@ -528,8 +552,10 @@ begin
     end process;
     
     Rdy <= Rdy_int;
-    RdOut <= memory_rd;
-    WrOut <= memory_wr;
+    RdMemOut <= memory_rd;
+    WrMemOut <= memory_wr;
+    RdIOOut <= io_rd;
+    WrIOOut <= io_wr;
     AddrOut <= addr_dout_reg(23 downto 8);
     DataOut <= addr_dout_reg(7 downto 0);
     SS_Single <= single;

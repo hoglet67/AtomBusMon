@@ -100,6 +100,9 @@ signal SS_Step_held : std_logic;
 signal CountCycle : std_logic;
 
 signal Regs : std_logic_vector(255 downto 0);        
+signal io_not_mem    : std_logic;
+signal io_rd         : std_logic;
+signal io_wr         : std_logic;
 signal memory_rd     : std_logic;
 signal memory_wr     : std_logic;
 signal memory_addr   : std_logic_vector(15 downto 0);
@@ -136,41 +139,43 @@ begin
         num_comparators => 4
       )
       port map (  
-        clock49 => clock49,
-        Addr    => Addr_int,
-        Data    => mon_data,
-        Phi2    => busmon_clk,
-        Rd_n    => Read_n,
-        Wr_n    => Write_n,
-        Sync    => Sync,
-        Rdy     => Rdy,
-        nRSTin  => RESET_n_int,
-        nRSTout => nRST,
+        clock49    => clock49,
+        Addr       => Addr_int,
+        Data       => mon_data,
+        Phi2       => busmon_clk,
+        Rd_n       => Read_n,
+        Wr_n       => Write_n,
+        Sync       => Sync,
+        Rdy        => Rdy,
+        nRSTin     => RESET_n_int,
+        nRSTout    => nRST,
         CountCycle => CountCycle,
-        trig    => trig,
-        lcd_rs  => open,
-        lcd_rw  => open,
-        lcd_e   => open,
-        lcd_db  => open,
-        avr_RxD => avr_RxD,
-        avr_TxD => avr_TxD,
-        sw1     => '0',
-        nsw2    => nsw2,
-        led3    => led3,
-        led6    => led6,
-        led8    => led8,
-        tmosi   => tmosi,
-        tdin    => tdin,
-        tcclk   => tcclk,
-        Regs    => Regs,
-        RdOut   => memory_rd,
-        WrOut   => memory_wr,
-        AddrOut => memory_addr,
-        DataOut => memory_dout,
-        DataIn  => memory_din,
-        Done    => memory_done,
-        SS_Single => SS_Single,
-        SS_Step => SS_Step
+        trig       => trig,
+        lcd_rs     => open,
+        lcd_rw     => open,
+        lcd_e      => open,
+        lcd_db     => open,
+        avr_RxD    => avr_RxD,
+        avr_TxD    => avr_TxD,
+        sw1        => '0',
+        nsw2       => nsw2,
+        led3       => led3,
+        led6       => led6,
+        led8       => led8,
+        tmosi      => tmosi,
+        tdin       => tdin,
+        tcclk      => tcclk,
+        Regs       => Regs,
+        RdMemOut   => memory_rd,
+        WrMemOut   => memory_wr,
+        RdIOOut    => io_rd,
+        WrIOOut    => io_wr,
+        AddrOut    => memory_addr,
+        DataOut    => memory_dout,
+        DataIn     => memory_din,
+        Done       => memory_done,
+        SS_Single  => SS_Single,
+        SS_Step    => SS_Step
     );
 
     GenT80Core: if UseT80Core generate
@@ -273,9 +278,10 @@ begin
     Addr   <= memory_addr when (state /= idle)   else Addr_int;
     
     MREQ_n <= '1'         when (state = rd_init or state = wr_init or state = release) else
-              '0'         when (state /= idle)   else MREQ_n_int;
+              '0'         when (state /= idle and io_not_mem = '0') else MREQ_n_int;
 
-    IORQ_n <= '1'         when (state /= idle)   else IORQ_n_int;
+    IORQ_n <= '1'         when (state = rd_init or state = wr_init or state = release) else
+              '0'         when (state /= idle and io_not_mem = '1') else IORQ_n_int;
 
     WR_n   <= '0'         when (state = wr)      else 
               '1'         when (state /= idle)   else WR_n_int;
@@ -304,10 +310,12 @@ begin
         elsif falling_edge(CLK_n) then
             case state IS
             when idle =>
-                if (memory_wr = '1') then
+                if (memory_wr = '1' or io_wr = '1') then
                     state <= wr_init;
-                elsif (memory_rd = '1') then
+                    io_not_mem <= io_wr;
+                elsif (memory_rd = '1' or io_rd = '1') then
                     state <= rd_init;
+                    io_not_mem <= io_rd;
                 end if;
             when rd_init =>
                 state <= rd_setup;

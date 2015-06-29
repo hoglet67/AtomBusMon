@@ -6,10 +6,22 @@
 
 #include "AtomBusMon.h"
 
+#define VERSION "0.45"
+
 #if (CPU == Z80)
-#define NAME "ICE-T80"
+  #define NAME "ICE-T80"
 #else
-#define NAME "ICE-T65"
+  #define NAME "ICE-T65"
+#endif
+
+#ifdef CPUEMBEDDED
+  #if (CPU == Z80)
+    #define NUM_CMDS 24
+  #else
+    #define NUM_CMDS 22
+  #endif
+#else
+  #define NUM_CMDS 14
 #endif
 
 #define CRC_POLY       0x002d
@@ -179,20 +191,6 @@ char *triggerStrings[NUM_TRIGGERS] = {
   "Always",
 };
 
-
-#define VERSION "0.44"
-
-#ifdef CPUEMBEDDED
-  #if (CPU != Z80)
-    #define NUM_CMDS 22
-  #else
-    #define NUM_CMDS 21
-  #endif
-#else
-  #define NUM_CMDS 14
-#endif
-
-
 long trace;
 long instructions = 1;
 
@@ -222,13 +220,17 @@ char *cmdStrings[NUM_CMDS] = {
   "continue",
 #ifdef CPUEMBEDDED
   "regs",
-  "mem",
   "dis",
-  "read",
-  "write",
   "fill",
   "crc",
-#if (CPU != Z80)
+  "mem",
+  "readmem",
+  "writemem",
+#if (CPU == Z80)
+  "io",
+  "readio",
+  "writeio",
+#else
   "test",
 #endif
 #endif
@@ -620,32 +622,6 @@ void doCmdRegs(char *params) {
   log0("\n");
 }
 
-void doCmdMem(char *params) {
-  int i, j;
-  unsigned int row[16];
-  sscanf(params, "%x", &memAddr);
-  loadAddr(memAddr);
-  for (i = 0; i < 0x100; i+= 16) {
-    for (j = 0; j < 16; j++) {
-      row[j] = readMemByteInc();
-    }
-    log0("%04X ", memAddr + i);
-    for (j = 0; j < 16; j++) {
-      log0("%02X ", row[j]);
-    }
-    log0(" ");
-    for (j = 0; j < 16; j++) {
-      unsigned int c = row[j];
-      if (c < 32 || c > 126) {
-	c = '.';
-      }
-      log0("%c", c);
-    }
-    log0("\n");
-  }
-  memAddr += 0x100;
-}
-
 void doCmdDis(char *params) {
   int i;
   sscanf(params, "%x", &memAddr);
@@ -655,44 +631,13 @@ void doCmdDis(char *params) {
   }
 }
 
-void doCmdWrite(char *params) {
-  unsigned int addr;
-  unsigned int data;
-  long count = 1;
-  sscanf(params, "%x %x %ld", &addr, &data, &count);
-  log0("Wr: %04X = %X\n", addr, data);
-  loadData(data);
-  loadAddr(addr);
-  while (count-- > 0) {
-    writeMemByte();
-  }
-}
-
-void doCmdRead(char *params) {
-  unsigned int addr;
-  unsigned int data;
-  unsigned int data2;
-  long count = 1;
-  sscanf(params, "%x %ld", &addr, &count);
-  loadAddr(addr);
-  data = readMemByte();
-  log0("Rd: %04X = %X\n", addr, data);
-  while (count-- > 1) {
-    data2 = readMemByte();
-    if (data2 != data) {
-      log0("Inconsistent Rd: %02X <> %02X\n", data2, data);
-    }
-    data = data2;
-  }
-}
-
 void doCmdFill(char *params) {
   long i;
   unsigned int start;
   unsigned int end;
   unsigned int data;
   sscanf(params, "%x %x %x", &start, &end, &data);
-  log0("Wr: %04X to %04X = %X\n", start, end, data);
+  log0("Wr: %04X to %04X = %02X\n", start, end, data);
   loadData(data);
   loadAddr(start);
   for (i = start; i <= end; i++) {
@@ -722,7 +667,91 @@ void doCmdCrc(char *params) {
   log0("crc: %04X\n", crc);
 }
 
-#if (CPU != Z80)
+void genericDump(char *params, unsigned int (*readFunc)()) {
+  int i, j;
+  unsigned int row[16];
+  sscanf(params, "%x", &memAddr);
+  loadAddr(memAddr);
+  for (i = 0; i < 0x100; i+= 16) {
+    for (j = 0; j < 16; j++) {
+      row[j] = (*readFunc)();
+    }
+    log0("%04X ", memAddr + i);
+    for (j = 0; j < 16; j++) {
+      log0("%02X ", row[j]);
+    }
+    log0(" ");
+    for (j = 0; j < 16; j++) {
+      unsigned int c = row[j];
+      if (c < 32 || c > 126) {
+	c = '.';
+      }
+      log0("%c", c);
+    }
+    log0("\n");
+  }
+  memAddr += 0x100;
+}
+
+void genericWrite(char *params, void (*writeFunc)()) {
+  unsigned int addr;
+  unsigned int data;
+  long count = 1;
+  sscanf(params, "%x %x %ld", &addr, &data, &count);
+  log0("Wr: %04X = %02X\n", addr, data);
+  loadData(data);
+  loadAddr(addr);
+  while (count-- > 0) {
+    (*writeFunc)();
+  }
+}
+
+void genericRead(char *params, unsigned int (*readFunc)()) {
+  unsigned int addr;
+  unsigned int data;
+  unsigned int data2;
+  long count = 1;
+  sscanf(params, "%x %ld", &addr, &count);
+  loadAddr(addr);
+  data = (*readFunc)();
+  log0("Rd: %04X = %02X\n", addr, data);
+  while (count-- > 1) {
+    data2 = (*readFunc)();
+    if (data2 != data) {
+      log0("Inconsistent Rd: %02X <> %02X\n", data2, data);
+    }
+    data = data2;
+  }
+}
+
+void doCmdMem(char *params) {
+  genericDump(params, readMemByteInc);
+}
+
+void doCmdReadMem(char *params) {
+  genericRead(params, readMemByte);
+}
+
+void doCmdWriteMem(char *params) {
+  genericWrite(params, writeMemByte);
+}
+
+#if (CPU == Z80)
+
+void doCmdIO(char *params) {
+  genericDump(params, readIOByteInc);
+}
+
+void doCmdReadIO(char *params) {
+  genericRead(params, readIOByte);
+}
+
+void doCmdWriteIO(char *params) {
+  genericWrite(params, writeIOByte);
+}
+
+#else
+
 unsigned int getData(unsigned int addr, int data) {
   if (data == -1) {
     // checkerboard
@@ -1058,13 +1087,17 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdContinue,
 #ifdef CPUEMBEDDED
   doCmdRegs,
-  doCmdMem,
   doCmdDis,
-  doCmdRead,
-  doCmdWrite,
   doCmdFill,
   doCmdCrc,
-#if (CPU != Z80)
+  doCmdMem,
+  doCmdReadMem,
+  doCmdWriteMem,
+#if (CPU == Z80)
+  doCmdIO,
+  doCmdReadIO,
+  doCmdWriteIO,
+#else
   doCmdTest,
 #endif
 #endif
