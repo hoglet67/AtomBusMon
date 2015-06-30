@@ -98,6 +98,7 @@ signal SS_Single : std_logic;
 signal SS_Step : std_logic;
 signal SS_Step_held : std_logic;
 signal CountCycle : std_logic;
+signal skipNextOpcode : std_logic;
 
 signal Regs : std_logic_vector(255 downto 0);        
 signal io_not_mem    : std_logic;
@@ -119,8 +120,14 @@ signal Read_n0    : std_logic;
 signal Read_n1    : std_logic;
 signal Write_n    : std_logic;
 signal Write_n0   : std_logic;
+signal ReadIO_n   : std_logic;
+signal ReadIO_n0  : std_logic;
+signal ReadIO_n1  : std_logic;
+signal WriteIO_n  : std_logic;
+signal WriteIO_n0 : std_logic;
 signal Sync       : std_logic;
 signal Sync0      : std_logic;
+signal Mem_IO_n   : std_logic;
 signal nRST       : std_logic;
 
 signal MemState   : std_logic_vector(2 downto 0);
@@ -145,6 +152,8 @@ begin
         Phi2       => busmon_clk,
         Rd_n       => Read_n,
         Wr_n       => Write_n,
+        RdIO_n     => ReadIO_n,
+        WrIO_n     => WriteIO_n,
         Sync       => Sync,
         Rdy        => Rdy,
         nRSTin     => RESET_n_int,
@@ -217,7 +226,7 @@ begin
         elsif rising_edge(CLK_n) then
             NMI_n_sync <= NMI_n;
             INT_n_sync <= INT_n;
-            if (M1_n_int = '0' and TState = "001") then
+            if (Sync0 = '1') then
                 -- stop at the end of T1 instruction fetch
                 SS_Step_held <= '0';
             elsif (SS_Step = '1') then
@@ -227,19 +236,33 @@ begin
         end if;
     end process;
     
+        
+    -- Logic to ignore the second M1 in multi-byte opcodes
+    skip_opcode_latch : process(CLK_n)
+    begin
+        if rising_edge(CLK_n) then
+            if (M1_n_int = '0' and WAIT_n_int = '1' and TState = "010") then
+                if (skipNextOpcode = '0' and (Data = x"CB" or Data = x"DD" or Data = x"ED" or Data = x"FD")) then
+                    skipNextOpcode <= '1';
+                else
+                    skipNextOpcode <= '0';
+                end if;
+            end if;
+        end if;
+    end process;
+    
     -- For instruction breakpoints, we make the monitoring decision as early as possibe
     -- to allow time to stop the current instruction, which is possible because we don't
     -- really care about the data (it's re-read from memory by the disassembler).
-    Sync0    <= not M1_n_int when TState = "001" else '0'; 
+    Sync0    <= '1' when M1_n_int = '0' and TState = "001" and skipNextOpcode = '0' else '0'; 
 
-    -- For reads/write breakpoints we make the monitoring decision in the middle of T2
+    -- For memory reads/write breakpoints we make the monitoring decision in the middle of T2
     -- but only if WAIT_n is '1' so we catch the right data.
     Read_n0  <= not (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
     Write_n0 <= not (WAIT_n_int and (not WR_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
 
-    -- These are useful for debugging IO Requests:
-    -- Read_n0  <= not (WAIT_n_int and (not RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
-    -- Write_n0 <= not (               (    RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "011" else '1'; 
+    ReadIO_n0  <= not (WAIT_n_int and (not RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
+    WriteIO_n0 <= not (               (    RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "011" else '1'; 
 
     -- Hold the monitoring decision so it is valid on the rising edge of the clock
     -- For instruction fetches and writes, the monitor sees these at the start of T3
@@ -247,10 +270,13 @@ begin
     watch_gen : process(CLK_n)
     begin
         if falling_edge(CLK_n) then
-            Sync    <= Sync0;
-            Read_n1 <= Read_n0;
-            Read_n  <= Read_n1;
-            Write_n <= Write_n0;
+            Sync     <= Sync0;
+            Read_n1  <= Read_n0;
+            Read_n   <= Read_n1;
+            Write_n  <= Write_n0;
+            ReadIO_n1  <= ReadIO_n0;
+            ReadIO_n   <= ReadIO_n1;
+            WriteIO_n  <= WriteIO_n0;
         end if;
     end process;
 
@@ -258,7 +284,7 @@ begin
     ex_data_latch : process(CLK_n)
     begin
         if rising_edge(CLK_n) then
-            if (Sync = '1' or Write_n = '0') then            
+            if (Sync = '1' or Write_n = '0' or WriteIO_n = '0') then            
                 ex_data <= Data;
             end if;
         end if;
@@ -268,7 +294,7 @@ begin
     rd_data_latch : process(CLK_n)
     begin
         if falling_edge(CLK_n) then
-            if (Read_n1 = '0') then            
+            if (Read_n1 = '0' or ReadIO_n1 = '0') then            
                 rd_data <= Data;
             end if;
             memory_din <= Data;
@@ -276,7 +302,7 @@ begin
     end process;
 
     -- Mux the data seen by the bus monitor appropriately
-    mon_data <= rd_data when Read_n <= '0' else ex_data;
+    mon_data <= rd_data when Read_n <= '0' or ReadIO_n = '0' else ex_data;
 
     -- Memory access
     Addr   <= memory_addr when (state /= idle)   else Addr_int;

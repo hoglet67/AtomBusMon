@@ -25,18 +25,20 @@ use work.OhoPack.all ;
 entity BusMonCore is
     generic (
         num_comparators : integer := 8;
-        reg_width       : integer := 42;
+        reg_width       : integer := 46;
         fifo_width      : integer := 72
     );
     port (
         clock49         : in    std_logic;
 
-        -- 6502 Signals
+        -- CPU Signals
         Addr             : in    std_logic_vector(15 downto 0);
         Data             : in    std_logic_vector(7 downto 0);
         Phi2             : in    std_logic;
         Rd_n             : in    std_logic;
         Wr_n             : in    std_logic;
+        RdIO_n           : in    std_logic;
+        WrIO_n           : in    std_logic;
         Sync             : in    std_logic;
         Rdy              : out   std_logic;
         nRSTin           : in    std_logic;
@@ -44,11 +46,11 @@ entity BusMonCore is
 
         CountCycle       : in    std_logic;
         
-        -- 6502 Registers
+        -- CPU Registers
         -- unused in pure bus monitor mode
         Regs             : in    std_logic_vector(255 downto 0);
 
-        -- 6502 Memory Read/Write
+        -- CPU Memory Read/Write
         -- unused in pure bus monitor mode
         RdMemOut         : out std_logic;
         WrMemOut         : out std_logic;
@@ -296,52 +298,22 @@ begin
            
            Regs(8 * to_integer(unsigned(muxsel(4 downto 0))) + 7 downto 8 * to_integer(unsigned(muxsel(4 downto 0))));
 
---           Regs( 15 downto   8)             when muxsel = 33 else
---           Regs( 23 downto  16)             when muxsel = 34 else
---           Regs( 31 downto  24)             when muxsel = 35 else
---           Regs( 39 downto  32)             when muxsel = 36 else
---           Regs( 47 downto  40)             when muxsel = 37 else
---           Regs( 55 downto  48)             when muxsel = 38 else
---           Regs( 63 downto  56)             when muxsel = 39 else           
---           Regs(  7 downto  64)             when muxsel = 40 else
---           Regs( 15 downto  72)             when muxsel = 41 else
---           Regs( 23 downto  80)             when muxsel = 42 else
---           Regs( 31 downto  88)             when muxsel = 43 else
---           Regs( 39 downto  96)             when muxsel = 44 else
---           Regs( 47 downto 104)             when muxsel = 45 else
---           Regs( 55 downto 112)             when muxsel = 46 else
---           Regs( 63 downto 120)             when muxsel = 47 else           
---           Regs(  7 downto 128)             when muxsel = 48 else
---           Regs( 15 downto 136)             when muxsel = 49 else
---           Regs( 23 downto 144)             when muxsel = 50 else
---           Regs( 31 downto  24)             when muxsel = 51 else
---           Regs( 39 downto  32)             when muxsel = 52 else
---           Regs( 47 downto  40)             when muxsel = 53 else
---           Regs( 55 downto  48)             when muxsel = 54 else
---           Regs( 63 downto  56)             when muxsel = 55 else           
---           Regs(  7 downto   0)             when muxsel = 56 else
---           Regs( 15 downto   8)             when muxsel = 57 else
---           Regs( 23 downto  16)             when muxsel = 58 else
---           Regs( 31 downto  24)             when muxsel = 59 else
---           Regs( 39 downto  32)             when muxsel = 60 else
---           Regs( 47 downto  40)             when muxsel = 61 else
---           Regs( 55 downto  48)             when muxsel = 62 else
---           Regs( 63 downto  56)             when muxsel = 63 else           
---
---
---           "10101010";
-
     -- Combinatorial set of comparators to decode breakpoint/watch addresses
-    brkpt_active_process: process (brkpt_reg, brkpt_enable, Addr, Sync)
+    brkpt_active_process: process (brkpt_reg, brkpt_enable, Addr, Sync, Rd_n, Wr_n, RdIO_n, WrIO_n)
         variable i            : integer;
         variable reg_addr     : std_logic_vector(15 downto 0);
         variable reg_mask     : std_logic_vector(15 downto 0);
-        variable reg_mode_bi  : std_logic;
-        variable reg_mode_bar : std_logic;
-        variable reg_mode_baw : std_logic;
-        variable reg_mode_wi  : std_logic;
-        variable reg_mode_war : std_logic;
-        variable reg_mode_waw : std_logic;
+        variable reg_mode_bmr : std_logic;
+        variable reg_mode_bmw : std_logic;
+        variable reg_mode_bir : std_logic;
+        variable reg_mode_biw : std_logic;
+        variable reg_mode_bx  : std_logic;
+        variable reg_mode_wmr : std_logic;
+        variable reg_mode_wmw : std_logic;        
+        variable reg_mode_wir : std_logic;
+        variable reg_mode_wiw : std_logic;
+        variable reg_mode_wx  : std_logic;
+        variable reg_mode_all : std_logic_vector(9 downto 0);
         variable bactive      : std_logic;
         variable wactive      : std_logic;
         variable status       : std_logic_vector(3 downto 0);
@@ -354,47 +326,60 @@ begin
             for i in 0 to num_comparators - 1 loop
                 reg_addr     := brkpt_reg(i * reg_width + 15 downto i * reg_width);
                 reg_mask     := brkpt_reg(i * reg_width + 31 downto i * reg_width + 16);
-                reg_mode_bi  := brkpt_reg(i * reg_width + 32);
-                reg_mode_bar := brkpt_reg(i * reg_width + 33);
-                reg_mode_baw := brkpt_reg(i * reg_width + 34);
-                reg_mode_wi  := brkpt_reg(i * reg_width + 35);
-                reg_mode_war := brkpt_reg(i * reg_width + 36);
-                reg_mode_waw := brkpt_reg(i * reg_width + 37);
-                trigval      := brkpt_reg(i * reg_width + 38 + to_integer(unsigned(trig)));
-                if (trigval = '1' and ((Addr and reg_mask) = reg_addr or
-                   (reg_mode_bi = '0' and reg_mode_bar = '0' and reg_mode_baw = '0' and
-                   (reg_mode_wi = '0' and reg_mode_war = '0' and reg_mode_waw = '0')))) then
+                reg_mode_bmr := brkpt_reg(i * reg_width + 32);
+                reg_mode_wmr := brkpt_reg(i * reg_width + 33);
+                reg_mode_bmw := brkpt_reg(i * reg_width + 34);
+                reg_mode_wmw := brkpt_reg(i * reg_width + 35);
+                reg_mode_bir := brkpt_reg(i * reg_width + 36);
+                reg_mode_wir := brkpt_reg(i * reg_width + 37);
+                reg_mode_biw := brkpt_reg(i * reg_width + 38);
+                reg_mode_wiw := brkpt_reg(i * reg_width + 39);
+                reg_mode_bx  := brkpt_reg(i * reg_width + 40);
+                reg_mode_wx  := brkpt_reg(i * reg_width + 41);
+                reg_mode_all := brkpt_reg(i * reg_width + 41 downto i * reg_width + 32);
+                trigval      := brkpt_reg(i * reg_width + 42 + to_integer(unsigned(trig)));
+                if (trigval = '1' and ((Addr and reg_mask) = reg_addr or (reg_mode_all = "0000000000"))) then
                     if (Sync = '1') then
-                        if (reg_mode_bi = '1') then
+                        if (reg_mode_bx = '1') then
                             bactive := '1';
-                            status  := "0001";
-                        end if;
-                        if (reg_mode_wi = '1') then
+                            status  := "1000";
+                        elsif (reg_mode_wx = '1') then
                             wactive := '1';
                             status  := "1001";
                         end if;
-                    else
-                        if (Rd_n = '0') then
-                            if (reg_mode_bar = '1') then
-                                bactive := '1';
-                                status  := "0010";
-                            end if;
-                            if (reg_mode_war = '1') then
-                                wactive := '1';
-                                status  := "1010";
-                            end if;
+                    elsif (Rd_n = '0') then
+                        if (reg_mode_bmr = '1') then
+                            bactive := '1';
+                            status  := "0000";
+                        elsif (reg_mode_wmr = '1') then
+                            wactive := '1';
+                            status  := "0001";
                         end if;
-                        if (Wr_n = '0') then
-                            if (reg_mode_baw = '1') then
-                                bactive := '1';
-                                status  := "0100";
-                            end if;
-                            if (reg_mode_waw = '1') then
-                                wactive := '1';
-                                status  := "1100";
-                            end if;
+                    elsif (Wr_n = '0') then
+                        if (reg_mode_bmw = '1') then
+                            bactive := '1';
+                            status  := "0010";
+                        elsif (reg_mode_wmw = '1') then
+                            wactive := '1';
+                            status  := "0011";
                         end if;
-                     end if;
+                    elsif (RdIO_n = '0') then
+                        if (reg_mode_bir = '1') then
+                            bactive := '1';
+                            status  := "0100";
+                        elsif (reg_mode_wir = '1') then
+                            wactive := '1';
+                            status  := "0101";
+                        end if;
+                    elsif (WrIO_n = '0') then
+                        if (reg_mode_biw = '1') then
+                            bactive := '1';
+                            status  := "0110";
+                        elsif (reg_mode_wiw = '1') then
+                            wactive := '1';
+                            status  := "0111";
+                        end if;
+                    end if;
                 end if;
             end loop;
         end if;
@@ -515,7 +500,7 @@ begin
                 Rdy_int <= (not Sync);
             end if;
             
-            -- 6502 Reset needs to be open collector
+            -- CPU Reset needs to be open collector
             if (reset = '1') then
                  nRSTout <= '0';
             else

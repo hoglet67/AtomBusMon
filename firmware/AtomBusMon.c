@@ -6,7 +6,7 @@
 
 #include "AtomBusMon.h"
 
-#define VERSION "0.46"
+#define VERSION "0.47"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -16,7 +16,7 @@
 
 #ifdef CPUEMBEDDED
   #if (CPU == Z80)
-    #define NUM_CMDS 24
+    #define NUM_CMDS 28
   #else
     #define NUM_CMDS 22
   #endif
@@ -136,19 +136,49 @@
 #define BW_ACTIVE_MASK    0x80
 
 // Breakpoint Modes
-#define BRKPT_EXEC  0
-#define BRKPT_READ  1
-#define BRKPT_WRITE 2
-#define WATCH_EXEC  3
-#define WATCH_READ  4
-#define WATCH_WRITE 5
-#define UNDEFINED   6
+#define BRKPT_MEM_READ  0
+#define WATCH_MEM_READ  1
+#define BRKPT_MEM_WRITE 2
+#define WATCH_MEM_WRITE 3
+#define BRKPT_IO_READ   4
+#define WATCH_IO_READ   5
+#define BRKPT_IO_WRITE  6
+#define WATCH_IO_WRITE  7
+#define BRKPT_EXEC      8
+#define WATCH_EXEC      9
+#define UNDEFINED      10
 
-#define B_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE) | (1<<BRKPT_EXEC))
-#define W_MASK  ((1<<WATCH_READ) | (1<<WATCH_WRITE) | (1<<WATCH_EXEC))
-#define B_MEM_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE))
-#define W_MEM_MASK  ((1<<BRKPT_WRITE) | (1<<WATCH_WRITE))
-#define BW_MEM_MASK  ((1<<BRKPT_READ) | (1<<BRKPT_WRITE) | (1<<WATCH_READ) | (1<<WATCH_WRITE))
+// Breakpoint Mode Strings, should match the modes
+char *modeStrings[10] = {
+  "Mem Rd Brkpt",
+  "Mem Rd Watch",
+  "Mem Wr Brkpt",
+  "Mem Wr Watch",
+  "IO Rd Brkpt",
+  "IO Rd Watch",
+  "IO Wr Brkpt",
+  "IO Wr Watch",
+  "Ex Brkpt",
+  "Ex Watch"
+};
+
+// Mask for all breakpoint types
+#define B_MASK       ((1<<BRKPT_MEM_READ) | (1<<BRKPT_MEM_WRITE) | (1<<BRKPT_IO_READ) | (1<<BRKPT_IO_WRITE) | (1<<BRKPT_EXEC))
+
+// Mask for all watch types
+#define W_MASK       ((1<<WATCH_MEM_READ) | (1<<WATCH_MEM_WRITE) | (1<<WATCH_IO_READ) | (1<<WATCH_IO_WRITE) | (1<<WATCH_EXEC))
+
+// Mask for all breakpoints/watches that read memory or IO
+#define BW_RD_MASK   ((1<<BRKPT_MEM_READ) | (1<<WATCH_MEM_READ) | (1<<BRKPT_IO_READ) | (1<<WATCH_IO_READ))
+
+// Mask for all breakpoints/watches that write memory or IO
+#define BW_WR_MASK   ((1<<BRKPT_MEM_WRITE) | (1<<WATCH_MEM_WRITE) | (1<<BRKPT_IO_WRITE) | (1<<WATCH_IO_WRITE))
+
+// Mask for all breakpoint or watches that read/write Memory or IO
+#define BW_RDWR_MASK (BW_RD_MASK | BW_WR_MASK)
+
+// Mask for all breakpoints that read/write Memory or IO
+#define B_RDWR_MASK  (BW_RD_MASK & B_MASK)
 
 char *testNames[6] = {
   "Fixed",
@@ -157,16 +187,6 @@ char *testNames[6] = {
   "Address pattern",
   "Inverse address pattern",
   "Random"
-};
-
-char *modeStrings[7] = {
-  "Ex Breakpoint",
-  "Rn Breakpoint",
-  "Wr Breakpoint",
-  "Ex watch",
-  "Rd watch",
-  "Wr watch",
-  "Undefined"
 };
 
 #define NUM_TRIGGERS 16
@@ -224,12 +244,12 @@ char *cmdStrings[NUM_CMDS] = {
   "fill",
   "crc",
   "mem",
-  "readmem",
-  "writemem",
+  "rdm",
+  "wrm",
 #if (CPU == Z80)
   "io",
-  "readio",
-  "writeio",
+  "rdi",
+  "wri",
 #else
   "test",
 #endif
@@ -238,12 +258,18 @@ char *cmdStrings[NUM_CMDS] = {
   "step",
   "trace",
   "blist",
-  "breaki",
-  "breakr",
-  "breakw",
-  "watchi",
-  "watchr",
-  "watchw",
+  "breakx",
+  "watchx",
+  "breakrm",
+  "watchrm",
+  "breakwm",
+  "watchwm",
+#if (CPU == Z80)
+  "breakri",
+  "watchri",
+  "breakwi",
+  "watchwi",
+#endif
   "clear",
   "trigger"
 };
@@ -396,11 +422,10 @@ void logMode(unsigned int mode) {
   int first = 1;
   for (i = 0; i < UNDEFINED; i++) {
     if (mode & 1) {
-      if (first) {
-	log0("%s", modeStrings[i]);
-      } else {
-	log0(", %c%s", tolower(*modeStrings[i]), modeStrings[i] + 1);
+      if (!first) {
+	log0(", ");
       }
+      log0("%s", modeStrings[i]);
       first = 0;
     }
     mode >>= 1;
@@ -420,21 +445,19 @@ int logDetails() {
   unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
   unsigned int b_data = hwRead8(OFFSET_BW_BD);
   unsigned int mode   = hwRead8(OFFSET_BW_M);
-  unsigned int watch = mode & 8;
+  unsigned int watch  = mode & 1;
 
+  // Convert from 4-bit compressed to 10 bit expanded mode representation
+  mode = 1 << mode;
 
-  // Convert from 4-bit compressed to 6 bit expanded mode representation
-  if (watch) {
-    mode = (mode & 7) << 3;
-  }
   // Update the serial console
   if (mode & W_MASK) {
     logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
   }
   logMode(mode);
   log0(" hit at %04X", i_addr);
-  if (mode & BW_MEM_MASK) {
-    if (mode & W_MEM_MASK) {
+  if (mode & BW_RDWR_MASK) {
+    if (mode & BW_WR_MASK) {
       log0(" writing");
     } else {
       log0(" reading");
@@ -444,7 +467,7 @@ int logDetails() {
     log0("\n");
   } 
 #ifdef CPUEMBEDDED
-  if (mode & B_MEM_MASK) {
+  if (mode & B_RDWR_MASK) {
     // It's only safe to do this for brkpts, as it makes memory accesses
     logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
     disMem(i_addr);
@@ -846,7 +869,7 @@ void doCmdTrace(char *params) {
   setTrace(i);
 }
   
-void doCmdBList(char *params) {
+void doCmdList(char *params) {
   int i;
   if (numbkpts) {
     for (i = 0; i < numbkpts; i++) {
@@ -913,29 +936,50 @@ void doCmdBreak(char *params, unsigned int mode) {
   }
 }
 
+
 void doCmdBreakI(char *params) {
   doCmdBreak(params, 1 << BRKPT_EXEC);
-}
-
-void doCmdBreakR(char *params) {
-  doCmdBreak(params, 1 << BRKPT_READ);
-}
-
-void doCmdBreakW(char *params) {
-  doCmdBreak(params, 1 << BRKPT_WRITE);
 }
 
 void doCmdWatchI(char *params) {
   doCmdBreak(params, 1 << WATCH_EXEC);
 }
 
-void doCmdWatchR(char *params) {
-  doCmdBreak(params, 1 << WATCH_READ);
+void doCmdBreakRdMem(char *params) {
+  doCmdBreak(params, 1 << BRKPT_MEM_READ);
 }
 
-void doCmdWatchW(char *params) {
-  doCmdBreak(params, 1 << WATCH_WRITE);
+void doCmdWatchRdMem(char *params) {
+  doCmdBreak(params, 1 << WATCH_MEM_READ);
 }
+
+void doCmdBreakWrMem(char *params) {
+  doCmdBreak(params, 1 << BRKPT_MEM_WRITE);
+}
+
+void doCmdWatchWrMem(char *params) {
+  doCmdBreak(params, 1 << WATCH_MEM_WRITE);
+}
+
+#if (CPU == Z80)
+
+void doCmdBreakRdIO(char *params) {
+  doCmdBreak(params, 1 << BRKPT_IO_READ);
+}
+
+void doCmdWatchRdIO(char *params) {
+  doCmdBreak(params, 1 << WATCH_IO_READ);
+}
+
+void doCmdBreakWrIO(char *params) {
+  doCmdBreak(params, 1 << BRKPT_IO_WRITE);
+}
+
+void doCmdWatchWrIO(char *params) {
+  doCmdBreak(params, 1 << WATCH_IO_WRITE);
+}
+
+#endif
 
 void doCmdClear(char *params) {
   int i;
@@ -983,7 +1027,7 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int 
     hwCmd(CMD_LOAD_BRKPT, mask & 1);
     mask >>= 1;
   }
-  for (i = 0; i <= 5; i++) {
+  for (i = 0; i <= 9; i++) {
     hwCmd(CMD_LOAD_BRKPT, mode & 1);
     mode >>= 1;
   }
@@ -1106,13 +1150,19 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdReset,
   doCmdStep,
   doCmdTrace,
-  doCmdBList,
+  doCmdList,
   doCmdBreakI,
-  doCmdBreakR,
-  doCmdBreakW,
   doCmdWatchI,
-  doCmdWatchR,
-  doCmdWatchW,
+  doCmdBreakRdMem,
+  doCmdWatchRdMem,
+  doCmdBreakWrMem,
+  doCmdWatchWrMem,
+#if (CPU == Z80)
+  doCmdBreakRdIO,
+  doCmdWatchRdIO,
+  doCmdBreakWrIO,
+  doCmdWatchWrIO,
+#endif
   doCmdClear,
   doCmdTrigger
 };
