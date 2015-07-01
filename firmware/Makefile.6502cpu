@@ -25,7 +25,7 @@ OBJCOPY=avr-objcopy
 
 CFLAGS=-DCPU=6502 -DCPUEMBEDDED -DF_CPU=${F_CPU}UL -DSERIAL_STATUS -DCOOKED_SERIAL -DNOUSART1 -mmcu=$(MCU) -Wall -Os -mcall-prologues
 
-OBJECTS=AtomBusMon.o dis6502.o status.o
+OBJECTS=AtomBusMon.o dis6502.o regs6502.o status.o
 
 build: avr6502cpu.bit
 

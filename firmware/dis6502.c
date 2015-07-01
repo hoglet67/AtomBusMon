@@ -189,10 +189,10 @@ unsigned char dopaddr[256] =
 unsigned int disassemble(unsigned int addr)
 {
 	unsigned int temp;
-	unsigned int op = readByteInc();
+	unsigned int op = readMemByteInc();
         int mode = dopaddr[op];
-	unsigned int p1 = (mode > MARK2) ? readByteInc() : 0;
-	unsigned int p2 = (mode > MARK3) ? readByteInc() : 0;
+	unsigned int p1 = (mode > MARK2) ? readMemByteInc() : 0;
+	unsigned int p2 = (mode > MARK3) ? readMemByteInc() : 0;
 
 	log0("%04X : %s ", addr, opStrings[dopname[op]]);
 	switch (mode)

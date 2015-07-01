@@ -6,13 +6,23 @@
 
 #include "AtomBusMon.h"
 
-#define VERSION "0.47"
+/********************************************************
+ * VERSION and NAME are used in the start-up message
+ ********************************************************/
+
+#define VERSION "0.48"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
-#else
+#elif (CPU == 6502)
   #define NAME "ICE-T65"
+#else
+  #error "Unsupported CPU type"
 #endif
+
+/********************************************************
+ * User Command Definitions
+ ********************************************************/
 
 #ifdef CPUEMBEDDED
   #if (CPU == Z80)
@@ -24,217 +34,10 @@
   #define NUM_CMDS 14
 #endif
 
-#define CRC_POLY       0x002d
+// The command process accepts abbreviated forms, for example
+// if h is entered, then help will match.
 
-#define CTRL_PORT      PORTB
-#define CTRL_DDR       DDRB
-#define CTRL_DIN       PINB
-
-#define MUXSEL_PORT    PORTD
-
-#define STATUS_PORT    PORTD
-#define STATUS_DDR     DDRD
-#define STATUS_DIN     PIND
-
-#define MUX_PORT       PORTE
-#define MUX_DDR        DDRE
-#define MUX_DIN        PINE
-
-// Hardware registers
-#define OFFSET_IAL     0
-#define OFFSET_IAH     1
-#define OFFSET_DATA    2
-#define OFFSET_CNTH    3
-#define OFFSET_CNTL    4
-#define OFFSET_CNTM    5
-
-// Hardware fifo
-#define OFFSET_BW_IAL  6
-#define OFFSET_BW_IAH  7
-#define OFFSET_BW_BAL  8
-#define OFFSET_BW_BAH  9
-#define OFFSET_BW_BD   10
-#define OFFSET_BW_M    11
-#define OFFSET_BW_CNTL 12
-#define OFFSET_BW_CNTM 13
-#define OFFSET_BW_CNTH 14
-
-// Processor registers
-#if (CPU == Z80) 
-#define OFFSET_REG_BC  32
-#define OFFSET_REG_DE  34
-#define OFFSET_REG_HL  36
-#define OFFSET_REG_IX  38
-#define OFFSET_REG_BCp 40
-#define OFFSET_REG_DEp 42
-#define OFFSET_REG_HLp 44
-#define OFFSET_REG_IY  46
-#define OFFSET_REG_AF  48
-#define OFFSET_REG_AFp 50
-#define OFFSET_REG_SP  52
-#define OFFSET_REG_PC  54
-#define OFFSET_REG_I   56
-#define OFFSET_REG_R   57
-#define OFFSET_REG_IFF 58
-#else
-#define OFFSET_REG_A   32
-#define OFFSET_REG_X   33
-#define OFFSET_REG_Y   34
-#define OFFSET_REG_P   35
-#define OFFSET_REG_SP  36
-#define OFFSET_REG_PC  38
-#endif
-
-// Commands:
-//
-// 0000x Enable/Disable single strpping
-// 0001x Enable/Disable breakpoints / watches
-// 0010x Load breakpoint / watch register
-// 0011x Reset CPU
-// 01000 Singe Step CPU
-// 01001 Read FIFO
-// 01010 Reset FIFO
-// 01011 Unused
-// 0110x Load address/data register
-// 0111x Unused
-// 10000 Read Memory
-// 10001 Read Memory and Auto Inc Address
-// 10010 Write Memory
-// 10011 Write Memory and Auto Inc Address
-// 10000 Read Memory
-// 10001 Read Memory and Auto Inc Address
-// 10010 Write Memory
-// 10011 Write Memory and Auto Inc Address
-// 1x1xx Unused
-// 11xxx Unused
-
-#define CMD_SINGLE_ENABLE 0x00
-#define CMD_BRKPT_ENABLE  0x02
-#define CMD_LOAD_BRKPT    0x04
-#define CMD_RESET         0x06
-#define CMD_STEP          0x08
-#define CMD_WATCH_READ    0x09
-#define CMD_FIFO_RST      0x0A
-#define CMD_LOAD_MEM      0x0C
-#define CMD_RD_MEM        0x10
-#define CMD_RD_MEM_INC    0x11
-#define CMD_WR_MEM        0x12
-#define CMD_WR_MEM_INC    0x13
-#define CMD_RD_IO         0x14
-#define CMD_RD_IO_INC     0x15
-#define CMD_WR_IO         0x16
-#define CMD_WR_IO_INC     0x17
-
-// Control bits
-#define CMD_MASK          0x3F
-#define CMD_EDGE          0x20
-#define MUXSEL_MASK       0x3F
-#define MUXSEL_BIT           0
-
-// Status bits
-#define INTERRUPTED_MASK  0x40
-#define BW_ACTIVE_MASK    0x80
-
-// Breakpoint Modes
-#define BRKPT_MEM_READ  0
-#define WATCH_MEM_READ  1
-#define BRKPT_MEM_WRITE 2
-#define WATCH_MEM_WRITE 3
-#define BRKPT_IO_READ   4
-#define WATCH_IO_READ   5
-#define BRKPT_IO_WRITE  6
-#define WATCH_IO_WRITE  7
-#define BRKPT_EXEC      8
-#define WATCH_EXEC      9
-#define UNDEFINED      10
-
-// Breakpoint Mode Strings, should match the modes
-char *modeStrings[10] = {
-  "Mem Rd Brkpt",
-  "Mem Rd Watch",
-  "Mem Wr Brkpt",
-  "Mem Wr Watch",
-  "IO Rd Brkpt",
-  "IO Rd Watch",
-  "IO Wr Brkpt",
-  "IO Wr Watch",
-  "Ex Brkpt",
-  "Ex Watch"
-};
-
-// Mask for all breakpoint types
-#define B_MASK       ((1<<BRKPT_MEM_READ) | (1<<BRKPT_MEM_WRITE) | (1<<BRKPT_IO_READ) | (1<<BRKPT_IO_WRITE) | (1<<BRKPT_EXEC))
-
-// Mask for all watch types
-#define W_MASK       ((1<<WATCH_MEM_READ) | (1<<WATCH_MEM_WRITE) | (1<<WATCH_IO_READ) | (1<<WATCH_IO_WRITE) | (1<<WATCH_EXEC))
-
-// Mask for all breakpoints/watches that read memory or IO
-#define BW_RD_MASK   ((1<<BRKPT_MEM_READ) | (1<<WATCH_MEM_READ) | (1<<BRKPT_IO_READ) | (1<<WATCH_IO_READ))
-
-// Mask for all breakpoints/watches that write memory or IO
-#define BW_WR_MASK   ((1<<BRKPT_MEM_WRITE) | (1<<WATCH_MEM_WRITE) | (1<<BRKPT_IO_WRITE) | (1<<WATCH_IO_WRITE))
-
-// Mask for all breakpoint or watches that read/write Memory or IO
-#define BW_RDWR_MASK (BW_RD_MASK | BW_WR_MASK)
-
-// Mask for all breakpoints that read/write Memory or IO
-#define B_RDWR_MASK  (BW_RD_MASK & B_MASK)
-
-char *testNames[6] = {
-  "Fixed",
-  "Checkerboard",
-  "Inverse checkerboard",
-  "Address pattern",
-  "Inverse address pattern",
-  "Random"
-};
-
-#define NUM_TRIGGERS 16
-#define TRIGGER_ALWAYS 15
-
-char *triggerStrings[NUM_TRIGGERS] = {
-  "Never",
-  "~T0 and ~T1",
-  "T0 and ~T1",
-  "~T1",
-  "~T0 and T1",
-  "~T0",
-  "T0 xor T1",
-  "~T0 or ~T1",
-  "T0 and T1",
-  "T0 xnor T1",
-  "T0",
-  "T0 or ~T1",
-  "T1",
-  "~T0 or T1",
-  "T0 or T1",
-  "Always",
-};
-
-long trace;
-long instructions = 1;
-
-unsigned int memAddr = 0;
-
-#if (CPU == Z80)
-char statusString[8] = "SZIH-P-C";
-#else
-char statusString[8] = "NV-BDIZC";
-#endif
-
-int numbkpts = 0;
-
-#if (CPU == Z80)
-#define MAXBKPTS 4
-#else
-#define MAXBKPTS 8
-#endif
-
-unsigned int breakpoints[MAXBKPTS];
-unsigned int       masks[MAXBKPTS];
-unsigned int       modes[MAXBKPTS];
-int             triggers[MAXBKPTS];
-
+// Must be kept in step with cmdFuncs (just below)
 char *cmdStrings[NUM_CMDS] = {
   "help",
   "continue",
@@ -274,18 +77,329 @@ char *cmdStrings[NUM_CMDS] = {
   "trigger"
 };
 
-#define Delay_us(__us) \
-    if((unsigned long) (F_CPU/1000000.0 * __us) != F_CPU/1000000.0 * __us)\
-          __builtin_avr_delay_cycles((unsigned long) ( F_CPU/1000000.0 * __us)+1);\
-    else __builtin_avr_delay_cycles((unsigned long) ( F_CPU/1000000.0 * __us))
+// Must be kept in step with cmdStrings (just above)
+void (*cmdFuncs[NUM_CMDS])(char *params) = {
+  doCmdHelp,
+  doCmdContinue,
+#ifdef CPUEMBEDDED
+  doCmdRegs,
+  doCmdDis,
+  doCmdFill,
+  doCmdCrc,
+  doCmdMem,
+  doCmdReadMem,
+  doCmdWriteMem,
+#if (CPU == Z80)
+  doCmdIO,
+  doCmdReadIO,
+  doCmdWriteIO,
+#else
+  doCmdTest,
+#endif
+#endif
+  doCmdReset,
+  doCmdStep,
+  doCmdTrace,
+  doCmdList,
+  doCmdBreakI,
+  doCmdWatchI,
+  doCmdBreakRdMem,
+  doCmdWatchRdMem,
+  doCmdBreakWrMem,
+  doCmdWatchWrMem,
+#if (CPU == Z80)
+  doCmdBreakRdIO,
+  doCmdWatchRdIO,
+  doCmdBreakWrIO,
+  doCmdWatchWrIO,
+#endif
+  doCmdClear,
+  doCmdTrigger
+};
 
-#define Delay_ms(__ms) \
-    if((unsigned long) (F_CPU/1000.0 * __ms) != F_CPU/1000.0 * __ms)\
-          __builtin_avr_delay_cycles((unsigned long) ( F_CPU/1000.0 * __ms)+1);\
-    else __builtin_avr_delay_cycles((unsigned long) ( F_CPU/1000.0 * __ms))
+/********************************************************
+ * AVR Control Register Definitions
+ ********************************************************/
 
-char message[32];
-char command[32];
+// The control register allows commands to be sent to the AVR
+#define CTRL_PORT         PORTB
+#define CTRL_DDR          DDRB
+#define CTRL_DIN          PINB
+
+// A 0->1 transition on bit 5 actually sends a command
+#define CMD_EDGE          0x20
+
+// Commands are placed on bits 4..0
+// Currently bits 6 and 7 are unused
+#define CMD_MASK          0x3F
+
+// Hardware Commands:
+//
+// 0000x Enable/Disable single strpping
+// 0001x Enable/Disable breakpoints / watches
+// 0010x Load breakpoint / watch register
+// 0011x Reset CPU
+// 01000 Singe Step CPU
+// 01001 Read FIFO
+// 01010 Reset FIFO
+// 01011 Unused
+// 0110x Load address/data register
+// 0111x Unused
+// 10000 Read Memory
+// 10001 Read Memory and Auto Inc Address
+// 10010 Write Memory
+// 10011 Write Memory and Auto Inc Address
+// 10000 Read Memory
+// 10001 Read Memory and Auto Inc Address
+// 10010 Write Memory
+// 10011 Write Memory and Auto Inc Address
+// 1x1xx Unused
+// 11xxx Unused
+
+#define CMD_SINGLE_ENABLE 0x00
+#define CMD_BRKPT_ENABLE  0x02
+#define CMD_LOAD_BRKPT    0x04
+#define CMD_RESET         0x06
+#define CMD_STEP          0x08
+#define CMD_WATCH_READ    0x09
+#define CMD_FIFO_RST      0x0A
+#define CMD_LOAD_MEM      0x0C
+#define CMD_RD_MEM        0x10
+#define CMD_RD_MEM_INC    0x11
+#define CMD_WR_MEM        0x12
+#define CMD_WR_MEM_INC    0x13
+#define CMD_RD_IO         0x14
+#define CMD_RD_IO_INC     0x15
+#define CMD_WR_IO         0x16
+#define CMD_WR_IO_INC     0x17
+
+/********************************************************
+ * AVR Status Register Definitions
+ ********************************************************/
+
+// The status register shares the same port as the mux select register
+// Bits 5..0 are the mux select bits (outputs)
+// Bits 7..6 are the status bist (inputs)
+
+#define STATUS_PORT       PORTD
+#define STATUS_DDR        DDRD
+#define STATUS_DIN        PIND
+
+// This bit indicates the interrupt button on the hardware has been pressed
+#define INTERRUPTED_MASK  0x40
+
+// This bit indicates the hardware FIFO contains data
+// which will be either a watch or a breakpoint event
+#define BW_ACTIVE_MASK    0x80
+
+/********************************************************
+ * AVR MUX Select Register Definitions
+ ********************************************************/
+
+// The mux select register shares the same port as the status register
+// This register controls what data is visible through the mux data register
+// Bits 5..0 are the mux select bits (outputs)
+// Bits 7..6 are the status bist (inputs)
+
+#define MUXSEL_PORT       PORTD
+#define MUXSEL_MASK       0x3F
+#define MUXSEL_BIT        0
+
+// Additional hardware registers defined below are accessed by writing the offset
+// to the MUX Select register, waiting a couple of microseconds, then reading
+// the MUX Data register
+
+// Offsets 0-15 are defined below
+// Offsets 16-31 are used to return the processor registers
+
+// Instruction Address register: address of the last executed instruction
+#define OFFSET_IAL        0
+#define OFFSET_IAH        1
+
+// Data register: Memory and IO read/write commands return data via this register  
+#define OFFSET_DATA       2
+
+// Cycle count register: a 24 bit register that runs while the CPU is running
+// this gives visibility of how long (in cycles) each instruction takes
+#define OFFSET_CNTH       3
+#define OFFSET_CNTL       4
+#define OFFSET_CNTM       5
+
+// Watch/Breakpoint Event FIFO
+//
+// Watch and breakpoint events are queued in a 512 (deep) x 72 (wide) FIFO
+//
+// Status register BW_ACTIVE indicates the FIFO is non empty.  There is currently
+// no indication if events are lost due overflow.
+//
+// The CMD_WATCH_READ command reads the next word from this FIFO.
+//
+// The following 9 register provide read access to the word at the head of the
+// FIFO, i.e. the FIFO is write-through:
+
+// Instruction address of the watch/breakpoint
+#define OFFSET_BW_IAL     6
+#define OFFSET_BW_IAH     7
+
+// IO or Memory Read/write address of the watch/breakpoint
+#define OFFSET_BW_BAL     8
+#define OFFSET_BW_BAH     9
+
+// IO or Memory Read/write data of the watch/breakpoint
+#define OFFSET_BW_BD      10
+
+// Type of event, see the watch/breakpoint modes below
+// Only bits 0-3 are currently used
+#define OFFSET_BW_M       11
+
+// Cycle count at the start of the instruction that caused the event
+#define OFFSET_BW_CNTL    12
+#define OFFSET_BW_CNTM    13
+#define OFFSET_BW_CNTH    14
+
+// Offset 15 is currently unused
+
+/********************************************************
+ * AVR MUX Data Register Definitions
+ ********************************************************/
+
+// The mux data register is used for reading back the 8-bit register
+// addressed by the mux select register.
+
+// This port is input only
+#define MUX_PORT          PORTE
+#define MUX_DDR           DDRE
+#define MUX_DIN           PINE
+
+/********************************************************
+ * Watch/Breakpoint Definitions
+ ********************************************************/
+
+// The space available for address comparators depends on the size of the CPU core
+#if (CPU == Z80)
+#define MAXBKPTS 4
+#else
+#define MAXBKPTS 8
+#endif
+
+// The current number of watches/breakpoints
+int numbkpts = 0;
+
+// Watches/Breakpoints are loaded into a massive shift register by the
+// continue command. The following variables in the AVR track what the
+// user has requested. These are updated by the watch/break/clear/trigger
+// commands.
+
+// Each watch/breakpoint is defined with 46 bits in the shift register
+// MS Bit ............................................ LS Bit
+// <Trigger:4> <Mode:10> <Address Mask:16> <Address Value:16>
+
+// A 16 bit breakpoint address
+unsigned int breakpoints[MAXBKPTS];
+
+// A 16 bit breakpoint address mask
+unsigned int       masks[MAXBKPTS];
+
+// The type (aka mode) of breakpoint (a 10 bit values), allowing
+// multiple types to be defined. The bits correspond to the mode
+// definitions below.
+unsigned int       modes[MAXBKPTS];
+
+// The number of different watch/breakpoint modes
+#define NUM_MODES   10
+
+// The following watch/breakpoint modes are defined
+#define BRKPT_MEM_READ  0
+#define WATCH_MEM_READ  1
+#define BRKPT_MEM_WRITE 2
+#define WATCH_MEM_WRITE 3
+#define BRKPT_IO_READ   4
+#define WATCH_IO_READ   5
+#define BRKPT_IO_WRITE  6
+#define WATCH_IO_WRITE  7
+#define BRKPT_EXEC      8
+#define WATCH_EXEC      9
+
+// Breakpoint Mode Strings, should match the modes above
+char *modeStrings[NUM_MODES] = {
+  "Mem Rd Brkpt",
+  "Mem Rd Watch",
+  "Mem Wr Brkpt",
+  "Mem Wr Watch",
+  "IO Rd Brkpt",
+  "IO Rd Watch",
+  "IO Wr Brkpt",
+  "IO Wr Watch",
+  "Ex Brkpt",
+  "Ex Watch"
+};
+
+// For convenience, several masks are defined that group similar types of breakpoint/watch
+
+// Mask for all breakpoint types
+#define B_MASK       ((1<<BRKPT_MEM_READ) | (1<<BRKPT_MEM_WRITE) | (1<<BRKPT_IO_READ) | (1<<BRKPT_IO_WRITE) | (1<<BRKPT_EXEC))
+
+// Mask for all watch types
+#define W_MASK       ((1<<WATCH_MEM_READ) | (1<<WATCH_MEM_WRITE) | (1<<WATCH_IO_READ) | (1<<WATCH_IO_WRITE) | (1<<WATCH_EXEC))
+
+// Mask for all breakpoints/watches that read memory or IO
+#define BW_RD_MASK   ((1<<BRKPT_MEM_READ) | (1<<WATCH_MEM_READ) | (1<<BRKPT_IO_READ) | (1<<WATCH_IO_READ))
+
+// Mask for all breakpoints/watches that write memory or IO
+#define BW_WR_MASK   ((1<<BRKPT_MEM_WRITE) | (1<<WATCH_MEM_WRITE) | (1<<BRKPT_IO_WRITE) | (1<<WATCH_IO_WRITE))
+
+// Mask for all breakpoint or watches that read/write Memory or IO
+#define BW_RDWR_MASK (BW_RD_MASK | BW_WR_MASK)
+
+// Mask for all breakpoints that read/write Memory or IO
+#define B_RDWR_MASK  (BW_RD_MASK & B_MASK)
+
+/********************************************************
+ * External Trigger definitions
+ ********************************************************/
+
+// A boolean function of the external trigger inputs that
+// is used to gate the watch/breakpoint.
+int             triggers[MAXBKPTS];
+
+#define NUM_TRIGGERS 16
+
+char *triggerStrings[NUM_TRIGGERS] = {
+  "Never",
+  "~T0 and ~T1",
+  "T0 and ~T1",
+  "~T1",
+  "~T0 and T1",
+  "~T0",
+  "T0 xor T1",
+  "~T0 or ~T1",
+  "T0 and T1",
+  "T0 xnor T1",
+  "T0",
+  "T0 or ~T1",
+  "T1",
+  "~T0 or T1",
+  "T0 or T1",
+  "Always",
+};
+
+#define TRIGGER_ALWAYS 15
+
+/********************************************************
+ * Other global variables
+ ********************************************************/
+
+// The current memory address (e.g. used when disassembling)
+unsigned int memAddr = 0;
+
+// When single stepping, trace (i.e. log) event N instructions
+// Setting this to 0 will disable logging
+long trace;
+
+
+/********************************************************
+ * User Command Processor
+ ********************************************************/
 
 void readCmd(char *cmd) {
   char c;
@@ -322,6 +436,11 @@ void readCmd(char *cmd) {
   }
 }
 
+/********************************************************
+ * Low-level hardware commands
+ ********************************************************/
+
+// Send a single hardware command
 void hwCmd(unsigned int cmd, unsigned int param) {
   cmd |= param;
   CTRL_PORT &= ~CMD_MASK;
@@ -331,6 +450,7 @@ void hwCmd(unsigned int cmd, unsigned int param) {
   Delay_us(2);
 }
 
+// Read an 8-bit register via the Mux
 unsigned int hwRead8(unsigned int offset) {
   MUXSEL_PORT &= ~MUXSEL_MASK;
   MUXSEL_PORT |= offset << MUXSEL_BIT;
@@ -338,6 +458,7 @@ unsigned int hwRead8(unsigned int offset) {
   return MUX_DIN;
 }
 
+// Read an 16-bit register via the Mux
 unsigned int hwRead16(unsigned int offset) {
   unsigned int lsb;
   MUXSEL_PORT &= ~MUXSEL_MASK;
@@ -349,31 +470,29 @@ unsigned int hwRead16(unsigned int offset) {
   return (MUX_DIN << 8) | lsb;
 }
 
-void setSingle(int single) {
-  hwCmd(CMD_SINGLE_ENABLE, single ? 1 : 0);
-}
-
-void setTrace(long i) {
-  trace = i;
-  if (trace) {
-    log0("Tracing every %ld instructions while single stepping\n", trace);
-  } else {
-    log0("Tracing disabled\n");
+// Shift a breakpoint definition into the breakpoint shift register
+void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
+  int i;
+  for (i = 0; i <= 15; i++) {
+    hwCmd(CMD_LOAD_BRKPT, addr & 1);
+    addr >>= 1;
+  }
+  for (i = 0; i <= 15; i++) {
+    hwCmd(CMD_LOAD_BRKPT, mask & 1);
+    mask >>= 1;
+  }
+  for (i = 0; i <= 9; i++) {
+    hwCmd(CMD_LOAD_BRKPT, mode & 1);
+    mode >>= 1;
+  }
+  for (i = 0; i <= 3; i++) {
+    hwCmd(CMD_LOAD_BRKPT, trigger & 1);
+    trigger >>= 1;
   }
 }
 
-void version() {
-#ifdef CPUEMBEDDED
-  log0("%s In-Circuit Emulator version %s\n", NAME, VERSION);
-#else
-  log0("%s Bus Monitor version %s\n", NAME, VERSION);
-#endif
-  log0("Compiled at %s on %s\n",__TIME__,__DATE__);
-  log0("%d watches/breakpoints implemented\n",MAXBKPTS);
-}
-
-
 #ifdef LCD
+//  LCD support code (will be depricated soon)
 void lcdAddr(unsigned int addr) {
   int i;
   int nibble;
@@ -391,90 +510,9 @@ void lcdAddr(unsigned int addr) {
 }
 #endif
 
-int lookupBreakpoint(char *params) {
-  int i;
-  int n = -1;
-  sscanf(params, "%x", &n);
-  // First, look assume n is an address, and try to map to an index
-  for (i = 0; i < numbkpts; i++) {
-    if (breakpoints[i] == n) {
-      n = i;
-      break;
-    }
-  }
-  if (n < numbkpts) {
-    return n;
-  }
-  log0("Breakpoint/watch not set at %04X\n", n);
-  return -1;
-}
-
-
-void logCycleCount(int offsetLow, int offsetHigh) {
-  unsigned long count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow); 
-  unsigned long countSecs = count / 1000000;
-  unsigned long countMicros = count % 1000000;
-  log0("%02ld.%06ld: ", countSecs, countMicros);
-}
-
-void logMode(unsigned int mode) {
-  int i;
-  int first = 1;
-  for (i = 0; i < UNDEFINED; i++) {
-    if (mode & 1) {
-      if (!first) {
-	log0(", ");
-      }
-      log0("%s", modeStrings[i]);
-      first = 0;
-    }
-    mode >>= 1;
-  }
-}
-
-void logTrigger(int trigger) {
-  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
-    log0("trigger: %s", triggerStrings[trigger]);
-  } else {
-    log0("trigger: ILLEGAL");
-  }
-}
-
-int logDetails() {
-  unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
-  unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
-  unsigned int b_data = hwRead8(OFFSET_BW_BD);
-  unsigned int mode   = hwRead8(OFFSET_BW_M);
-  unsigned int watch  = mode & 1;
-
-  // Convert from 4-bit compressed to 10 bit expanded mode representation
-  mode = 1 << mode;
-
-  // Update the serial console
-  if (mode & W_MASK) {
-    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
-  }
-  logMode(mode);
-  log0(" hit at %04X", i_addr);
-  if (mode & BW_RDWR_MASK) {
-    if (mode & BW_WR_MASK) {
-      log0(" writing");
-    } else {
-      log0(" reading");
-    }
-    log0(" %04X = %02X\n", b_addr, b_data);
-  } else {
-    log0("\n");
-  } 
-#ifdef CPUEMBEDDED
-  if (mode & B_RDWR_MASK) {
-    // It's only safe to do this for brkpts, as it makes memory accesses
-    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
-    disMem(i_addr);
-  }
-#endif
-  return watch;
-}
+/********************************************************
+ * Host Memory/IO Access helpers
+ ********************************************************/
 
 #ifdef CPUEMBEDDED
 void loadData(unsigned int data) {
@@ -538,160 +576,6 @@ unsigned int disMem(unsigned int addr) {
   return disassemble(addr);
 }
 
-#endif
-
-void logAddr() {
-  memAddr = hwRead16(OFFSET_IAL);
-  // Update the LCD display
-#ifdef LCD
-  lcdAddr(memAddr);
-#endif
-  // Update the serial console
-  logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
-#ifdef CPUEMBEDDED
-  //log0("%04X\n", i_addr);
-  disMem(memAddr);
-#else
-  log0("%04X\n", memAddr);
-#endif
-  return;
-}
-
-/*******************************************
- * Commands
- *******************************************/
-
-void doCmdHelp(char *params) {
-  int i;
-  version();
-  log0("Commands:\n");
-  for (i = 0; i < NUM_CMDS; i++) {
-    log0("    %s\n", cmdStrings[i]);
-  }
-}
-
-
-void doCmdStep(char *params) {
-  long i;
-  long j;
-
-  sscanf(params, "%ld", &instructions);
-  if (instructions <= 0) {
-    log0("Number of instuctions must be positive\n");
-    return;
-  }
-
-  log0("Stepping %ld instructions\n", instructions);
-  
-  j = trace;
-  for (i = 1; i <= instructions; i++) {
-    // Step the CPU
-    hwCmd(CMD_STEP, 0);
-    if (i == instructions || (trace && (--j == 0))) {
-      Delay_us(10);
-      logAddr();
-      j = trace;
-    }
-  }
-}
-
-void doCmdReset(char *params) {
-  log0("Resetting CPU\n");
-  hwCmd(CMD_RESET, 1);
-  Delay_us(50);
-  hwCmd(CMD_STEP, 0);
-  Delay_us(50);
-  hwCmd(CMD_RESET, 0);
-}
-
-#ifdef CPUEMBEDDED
-void doCmdRegs(char *params) {
-  int i;
-#if (CPU == Z80)
-  unsigned int p = hwRead16(OFFSET_REG_AF);
-  log0("Z80 Registers:\n");
-  log0("   AF=%04X  BC=%04X  DE=%04X  HL=%04X\n",
-       p,
-       hwRead16(OFFSET_REG_BC),
-       hwRead16(OFFSET_REG_DE),
-       hwRead16(OFFSET_REG_HL));
-  log0("  'AF=%04X 'BC=%04X 'DE=%04X 'HL=%04X\n",
-       hwRead16(OFFSET_REG_AFp),
-       hwRead16(OFFSET_REG_BCp),
-       hwRead16(OFFSET_REG_DEp),
-       hwRead16(OFFSET_REG_HLp));
-  log0("   IX=%04X  IY=%04X  PC=%04X  SP=%04X I=%02X R=%02X IFF=%02X\n",
-       hwRead16(OFFSET_REG_IX),
-       hwRead16(OFFSET_REG_IY),
-       hwRead16(OFFSET_REG_PC),
-       hwRead16(OFFSET_REG_SP),
-       hwRead8(OFFSET_REG_I),
-       hwRead8(OFFSET_REG_R),
-       hwRead8(OFFSET_REG_IFF));
-#else
-  unsigned int p = hwRead8(OFFSET_REG_P);
-  log0("6502 Registers:\n  A=%02X X=%02X Y=%02X SP=%04X PC=%04X\n",
-       hwRead8(OFFSET_REG_A),
-       hwRead8(OFFSET_REG_X),
-       hwRead8(OFFSET_REG_Y),
-       hwRead16(OFFSET_REG_SP),
-       hwRead16(OFFSET_REG_PC));
-#endif
-  char *sp = statusString;
-  log0("  Status: ");
-  for (i = 0; i <= 7; i++) {
-    log0("%c",  ((p & 128) ? (*sp) : '-'));
-    p <<= 1;
-    sp++;
-  }
-  log0("\n");
-}
-
-void doCmdDis(char *params) {
-  int i;
-  sscanf(params, "%x", &memAddr);
-  loadAddr(memAddr);
-  for (i = 0; i < 10; i++) {
-    memAddr = disassemble(memAddr);
-  }
-}
-
-void doCmdFill(char *params) {
-  long i;
-  unsigned int start;
-  unsigned int end;
-  unsigned int data;
-  sscanf(params, "%x %x %x", &start, &end, &data);
-  log0("Wr: %04X to %04X = %02X\n", start, end, data);
-  loadData(data);
-  loadAddr(start);
-  for (i = start; i <= end; i++) {
-    writeMemByteInc();
-  }
-}
-
-void doCmdCrc(char *params) {
-  long i;
-  int j;
-  unsigned int start;
-  unsigned int end;
-  unsigned int data;
-  unsigned long crc = 0;
-  sscanf(params, "%x %x", &start, &end);
-  loadAddr(start);
-  for (i = start; i <= end; i++) {
-    data = readMemByteInc();
-    for (j = 0; j < 8; j++) {
-      crc = crc << 1;
-      crc = crc | (data & 1);
-      data >>= 1;
-      if (crc & 0x10000)
-	crc = (crc ^ CRC_POLY) & 0xFFFF;
-    }
-  }
-  log0("crc: %04X\n", crc);
-}
-
 void genericDump(char *params, unsigned int (*readFunc)()) {
   int i, j;
   unsigned int row[16];
@@ -749,33 +633,212 @@ void genericRead(char *params, unsigned int (*readFunc)()) {
   }
 }
 
-void doCmdMem(char *params) {
-  genericDump(params, readMemByteInc);
+#endif
+
+/********************************************************
+ * Logging Helpers
+ ********************************************************/
+
+void logCycleCount(int offsetLow, int offsetHigh) {
+  unsigned long count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow); 
+  unsigned long countSecs = count / 1000000;
+  unsigned long countMicros = count % 1000000;
+  log0("%02ld.%06ld: ", countSecs, countMicros);
 }
 
-void doCmdReadMem(char *params) {
-  genericRead(params, readMemByte);
+void logMode(unsigned int mode) {
+  int i;
+  int first = 1;
+  for (i = 0; i < NUM_MODES; i++) {
+    if (mode & 1) {
+      if (!first) {
+	log0(", ");
+      }
+      log0("%s", modeStrings[i]);
+      first = 0;
+    }
+    mode >>= 1;
+  }
 }
 
-void doCmdWriteMem(char *params) {
-  genericWrite(params, writeMemByte);
+void logTrigger(int trigger) {
+  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
+    log0("trigger: %s", triggerStrings[trigger]);
+  } else {
+    log0("trigger: ILLEGAL");
+  }
 }
 
-#if (CPU == Z80)
+int logDetails() {
+  unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
+  unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
+  unsigned int b_data = hwRead8(OFFSET_BW_BD);
+  unsigned int mode   = hwRead8(OFFSET_BW_M);
+  unsigned int watch  = mode & 1;
 
-void doCmdIO(char *params) {
-  genericDump(params, readIOByteInc);
+  // Convert from 4-bit compressed to 10 bit expanded mode representation
+  mode = 1 << mode;
+
+  // Update the serial console
+  if (mode & W_MASK) {
+    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
+  }
+  logMode(mode);
+  log0(" hit at %04X", i_addr);
+  if (mode & BW_RDWR_MASK) {
+    if (mode & BW_WR_MASK) {
+      log0(" writing");
+    } else {
+      log0(" reading");
+    }
+    log0(" %04X = %02X\n", b_addr, b_data);
+  } else {
+    log0("\n");
+  } 
+#ifdef CPUEMBEDDED
+  if (mode & B_RDWR_MASK) {
+    // It's only safe to do this for brkpts, as it makes memory accesses
+    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
+    disMem(i_addr);
+  }
+#endif
+  return watch;
 }
 
-void doCmdReadIO(char *params) {
-  genericRead(params, readIOByte);
-}
-
-void doCmdWriteIO(char *params) {
-  genericWrite(params, writeIOByte);
-}
-
+void logAddr() {
+  memAddr = hwRead16(OFFSET_IAL);
+  // Update the LCD display
+#ifdef LCD
+  lcdAddr(memAddr);
+#endif
+  // Update the serial console
+  logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
+#ifdef CPUEMBEDDED
+  //log0("%04X\n", i_addr);
+  disMem(memAddr);
 #else
+  log0("%04X\n", memAddr);
+#endif
+  return;
+}
+
+void version() {
+#ifdef CPUEMBEDDED
+  log0("%s In-Circuit Emulator version %s\n", NAME, VERSION);
+#else
+  log0("%s Bus Monitor version %s\n", NAME, VERSION);
+#endif
+  log0("Compiled at %s on %s\n",__TIME__,__DATE__);
+  log0("%d watches/breakpoints implemented\n",MAXBKPTS);
+}
+
+/********************************************************
+ * Watch/Breakpoint helpers
+ ********************************************************/
+
+// Return the index of a breakpoint from the user specified address
+int lookupBreakpoint(char *params) {
+  int i;
+  int n = -1;
+  sscanf(params, "%x", &n);
+  // First, look assume n is an address, and try to map to an index
+  for (i = 0; i < numbkpts; i++) {
+    if (breakpoints[i] == n) {
+      n = i;
+      break;
+    }
+  }
+  if (n < numbkpts) {
+    return n;
+  }
+  log0("Breakpoint/watch not set at %04X\n", n);
+  return -1;
+}
+
+// Enable/Disable single stepping
+void setSingle(int single) {
+  hwCmd(CMD_SINGLE_ENABLE, single ? 1 : 0);
+}
+
+// Enable/Disable tracing
+void setTrace(long i) {
+  trace = i;
+  if (trace) {
+    log0("Tracing every %ld instructions while single stepping\n", trace);
+  } else {
+    log0("Tracing disabled\n");
+  }
+}
+
+// Set the breakpoint state variables
+void setBreakpoint(int i, unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
+  logMode(mode);
+  log0(" set at %04X\n", addr);
+  breakpoints[i] = addr & mask;
+  masks[i] = mask;
+  modes[i] = mode;
+  triggers[i] = trigger;
+}
+
+// A generic helper that does most of the work of the watch/breakpoint commands
+void genericBreakpoint(char *params, unsigned int mode) {
+  int i;
+  unsigned int addr;
+  unsigned int mask = 0xFFFF;
+  int trigger = -1;
+  sscanf(params, "%x %x %x", &addr, &mask, &trigger);
+  for (i = 0; i < numbkpts; i++) {
+    if (breakpoints[i] == addr) {
+      if (modes[i] & mode) {
+	logMode(mode);
+	log0(" already set at %04X\n", addr);
+      } else {
+	// Preserve the existing trigger, unless it is overridden
+	if (trigger == -1) {
+	  trigger = triggers[i];
+	}
+	setBreakpoint(i, addr, mask, modes[i] | mode, trigger);
+      }
+      return;
+    }
+  }
+  if (numbkpts == MAXBKPTS) {
+    log0("All %d breakpoints are already set\n", numbkpts);
+    return;
+  }
+  numbkpts++;
+  // New breakpoint, so if trigger not specified, set to ALWAYS
+  if (trigger == -1) {
+    trigger = TRIGGER_ALWAYS;
+  }
+  for (i = numbkpts - 2; i >= -1; i--) {
+    if (i == -1 || breakpoints[i] < addr) {
+      setBreakpoint(i + 1, addr, mask, mode, trigger);
+      return;
+    } else {
+      breakpoints[i + 1] = breakpoints[i];
+      masks[i + 1] = masks[i];
+      modes[i + 1] = modes[i];
+      triggers[i + 1] = triggers[i];
+    }
+  }
+}
+
+
+/********************************************************
+ * Test Helpers
+ ********************************************************/
+
+#ifdef CPUEMBEDDED
+#if (CPU != Z80)
+char *testNames[6] = {
+  "Fixed",
+  "Checkerboard",
+  "Inverse checkerboard",
+  "Address pattern",
+  "Inverse address pattern",
+  "Random"
+};
 
 unsigned int getData(unsigned int addr, int data) {
   if (data == -1) {
@@ -840,6 +903,131 @@ void test(unsigned int start, unsigned int end, int data) {
     log0(": passed\n");
   }
 }
+#endif
+#endif // CPUEMBEDDED
+
+/*******************************************
+ * User Commands
+ *******************************************/
+
+void doCmdHelp(char *params) {
+  int i;
+  version();
+  log0("Commands:\n");
+  for (i = 0; i < NUM_CMDS; i++) {
+    log0("    %s\n", cmdStrings[i]);
+  }
+}
+
+void doCmdStep(char *params) {
+  static long instructions = 1;
+  long i;
+  long j;
+  sscanf(params, "%ld", &instructions);
+  if (instructions <= 0) {
+    log0("Number of instuctions must be positive\n");
+    return;
+  }
+
+  log0("Stepping %ld instructions\n", instructions);
+  
+  j = trace;
+  for (i = 1; i <= instructions; i++) {
+    // Step the CPU
+    hwCmd(CMD_STEP, 0);
+    if (i == instructions || (trace && (--j == 0))) {
+      Delay_us(10);
+      logAddr();
+      j = trace;
+    }
+  }
+}
+
+void doCmdReset(char *params) {
+  log0("Resetting CPU\n");
+  hwCmd(CMD_RESET, 1);
+  Delay_us(50);
+  hwCmd(CMD_STEP, 0);
+  Delay_us(50);
+  hwCmd(CMD_RESET, 0);
+}
+
+#ifdef CPUEMBEDDED
+
+// doCmdRegs is now in regs<cpu>.c
+
+void doCmdDis(char *params) {
+  int i;
+  sscanf(params, "%x", &memAddr);
+  loadAddr(memAddr);
+  for (i = 0; i < 10; i++) {
+    memAddr = disassemble(memAddr);
+  }
+}
+
+void doCmdFill(char *params) {
+  long i;
+  unsigned int start;
+  unsigned int end;
+  unsigned int data;
+  sscanf(params, "%x %x %x", &start, &end, &data);
+  log0("Wr: %04X to %04X = %02X\n", start, end, data);
+  loadData(data);
+  loadAddr(start);
+  for (i = start; i <= end; i++) {
+    writeMemByteInc();
+  }
+}
+
+void doCmdCrc(char *params) {
+  long i;
+  int j;
+  unsigned int start;
+  unsigned int end;
+  unsigned int data;
+  unsigned long crc = 0;
+  sscanf(params, "%x %x", &start, &end);
+  loadAddr(start);
+  for (i = start; i <= end; i++) {
+    data = readMemByteInc();
+    for (j = 0; j < 8; j++) {
+      crc = crc << 1;
+      crc = crc | (data & 1);
+      data >>= 1;
+      if (crc & 0x10000)
+	crc = (crc ^ CRC_POLY) & 0xFFFF;
+    }
+  }
+  log0("crc: %04X\n", crc);
+}
+
+void doCmdMem(char *params) {
+  genericDump(params, readMemByteInc);
+}
+
+void doCmdReadMem(char *params) {
+  genericRead(params, readMemByte);
+}
+
+void doCmdWriteMem(char *params) {
+  genericWrite(params, writeMemByte);
+}
+
+#if (CPU == Z80)
+
+void doCmdIO(char *params) {
+  genericDump(params, readIOByteInc);
+}
+
+void doCmdReadIO(char *params) {
+  genericRead(params, readIOByte);
+}
+
+void doCmdWriteIO(char *params) {
+  genericWrite(params, writeIOByte);
+}
+
+#else
 
 void doCmdTest(char *params) {
   unsigned int start;
@@ -861,7 +1049,7 @@ void doCmdTest(char *params) {
 
 #endif
 
-#endif
+#endif // CPUEMBEDDED
 
 void doCmdTrace(char *params) {
   long i;
@@ -884,99 +1072,46 @@ void doCmdList(char *params) {
   }
 }
 
-void setBreakpoint(int i, unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
-  logMode(mode);
-  log0(" set at %04X\n", addr);
-  breakpoints[i] = addr & mask;
-  masks[i] = mask;
-  modes[i] = mode;
-  triggers[i] = trigger;
-}
-
-void doCmdBreak(char *params, unsigned int mode) {
-  int i;
-  unsigned int addr;
-  unsigned int mask = 0xFFFF;
-  int trigger = -1;
-  sscanf(params, "%x %x %x", &addr, &mask, &trigger);
-  for (i = 0; i < numbkpts; i++) {
-    if (breakpoints[i] == addr) {
-      if (modes[i] & mode) {
-	logMode(mode);
-	log0(" already set at %04X\n", addr);
-      } else {
-	// Preserve the existing trigger, unless it is overridden
-	if (trigger == -1) {
-	  trigger = triggers[i];
-	}
-	setBreakpoint(i, addr, mask, modes[i] | mode, trigger);
-      }
-      return;
-    }
-  }
-  if (numbkpts == MAXBKPTS) {
-    log0("All %d breakpoints are already set\n", numbkpts);
-    return;
-  }
-  numbkpts++;
-  // New breakpoint, so if trigger not specified, set to ALWAYS
-  if (trigger == -1) {
-    trigger = TRIGGER_ALWAYS;
-  }
-  for (i = numbkpts - 2; i >= -1; i--) {
-    if (i == -1 || breakpoints[i] < addr) {
-      setBreakpoint(i + 1, addr, mask, mode, trigger);
-      return;
-    } else {
-      breakpoints[i + 1] = breakpoints[i];
-      masks[i + 1] = masks[i];
-      modes[i + 1] = modes[i];
-      triggers[i + 1] = triggers[i];
-    }
-  }
-}
-
-
 void doCmdBreakI(char *params) {
-  doCmdBreak(params, 1 << BRKPT_EXEC);
+  genericBreakpoint(params, 1 << BRKPT_EXEC);
 }
 
 void doCmdWatchI(char *params) {
-  doCmdBreak(params, 1 << WATCH_EXEC);
+  genericBreakpoint(params, 1 << WATCH_EXEC);
 }
 
 void doCmdBreakRdMem(char *params) {
-  doCmdBreak(params, 1 << BRKPT_MEM_READ);
+  genericBreakpoint(params, 1 << BRKPT_MEM_READ);
 }
 
 void doCmdWatchRdMem(char *params) {
-  doCmdBreak(params, 1 << WATCH_MEM_READ);
+  genericBreakpoint(params, 1 << WATCH_MEM_READ);
 }
 
 void doCmdBreakWrMem(char *params) {
-  doCmdBreak(params, 1 << BRKPT_MEM_WRITE);
+  genericBreakpoint(params, 1 << BRKPT_MEM_WRITE);
 }
 
 void doCmdWatchWrMem(char *params) {
-  doCmdBreak(params, 1 << WATCH_MEM_WRITE);
+  genericBreakpoint(params, 1 << WATCH_MEM_WRITE);
 }
 
 #if (CPU == Z80)
 
 void doCmdBreakRdIO(char *params) {
-  doCmdBreak(params, 1 << BRKPT_IO_READ);
+  genericBreakpoint(params, 1 << BRKPT_IO_READ);
 }
 
 void doCmdWatchRdIO(char *params) {
-  doCmdBreak(params, 1 << WATCH_IO_READ);
+  genericBreakpoint(params, 1 << WATCH_IO_READ);
 }
 
 void doCmdBreakWrIO(char *params) {
-  doCmdBreak(params, 1 << BRKPT_IO_WRITE);
+  genericBreakpoint(params, 1 << BRKPT_IO_WRITE);
 }
 
 void doCmdWatchWrIO(char *params) {
-  doCmdBreak(params, 1 << WATCH_IO_WRITE);
+  genericBreakpoint(params, 1 << WATCH_IO_WRITE);
 }
 
 #endif
@@ -1014,26 +1149,6 @@ void doCmdTrigger(char *params) {
     triggers[n] = trigger;
   } else {
     log0("Illegal trigger code (see help for trigger codes)\n"); 
-  }
-}
-
-void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
-  int i;
-  for (i = 0; i <= 15; i++) {
-    hwCmd(CMD_LOAD_BRKPT, addr & 1);
-    addr >>= 1;
-  }
-  for (i = 0; i <= 15; i++) {
-    hwCmd(CMD_LOAD_BRKPT, mask & 1);
-    mask >>= 1;
-  }
-  for (i = 0; i <= 9; i++) {
-    hwCmd(CMD_LOAD_BRKPT, mode & 1);
-    mode >>= 1;
-  }
-  for (i = 0; i <= 3; i++) {
-    hwCmd(CMD_LOAD_BRKPT, trigger & 1);
-    trigger >>= 1;
   }
 }
 
@@ -1128,45 +1243,6 @@ void initialize() {
   setTrace(1);
 }
 
-void (*cmdFuncs[NUM_CMDS])(char *params) = {
-  doCmdHelp,
-  doCmdContinue,
-#ifdef CPUEMBEDDED
-  doCmdRegs,
-  doCmdDis,
-  doCmdFill,
-  doCmdCrc,
-  doCmdMem,
-  doCmdReadMem,
-  doCmdWriteMem,
-#if (CPU == Z80)
-  doCmdIO,
-  doCmdReadIO,
-  doCmdWriteIO,
-#else
-  doCmdTest,
-#endif
-#endif
-  doCmdReset,
-  doCmdStep,
-  doCmdTrace,
-  doCmdList,
-  doCmdBreakI,
-  doCmdWatchI,
-  doCmdBreakRdMem,
-  doCmdWatchRdMem,
-  doCmdBreakWrMem,
-  doCmdWatchWrMem,
-#if (CPU == Z80)
-  doCmdBreakRdIO,
-  doCmdWatchRdIO,
-  doCmdBreakWrIO,
-  doCmdWatchWrIO,
-#endif
-  doCmdClear,
-  doCmdTrigger
-};
-
 void dispatchCmd(char *cmd) {
   int i;
   char *cmdString;
@@ -1181,7 +1257,7 @@ void dispatchCmd(char *cmd) {
     cmdStringLen = strlen(cmdString);    
     minLen = cmdLen < cmdStringLen ? cmdLen : cmdStringLen;
     if (strncmp(cmdString, cmd, minLen) == 0) {
-      (*cmdFuncs[i])(command + cmdLen);
+      (*cmdFuncs[i])(cmd + cmdLen);
       return;
     }
   }
@@ -1189,6 +1265,7 @@ void dispatchCmd(char *cmd) {
 }
 
 int main(void) {
+  static char command[32]; 
   initialize();
   doCmdContinue(NULL);
   while (1) {
