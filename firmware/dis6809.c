@@ -22,8 +22,6 @@ unsigned char get_memb(unsigned int addr) {
   return readMemByteInc();
 }
 
-#ifdef FULLDISASSEMBLER
-
 #include <stdio.h>
 
 typedef unsigned char tt_u8;
