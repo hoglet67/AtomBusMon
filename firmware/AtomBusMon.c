@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.49"
+#define VERSION "0.50"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -29,8 +29,10 @@
 #ifdef CPUEMBEDDED
   #if (CPU == Z80)
     #define NUM_CMDS 28
-  #else
+  #elif (CPU == 6502)
     #define NUM_CMDS 22
+  #else
+    #define NUM_CMDS 21
   #endif
 #else
   #define NUM_CMDS 14
@@ -55,7 +57,8 @@ char *cmdStrings[NUM_CMDS] = {
   "io",
   "rdi",
   "wri",
-#else
+#endif
+#if (CPU == 6502)
   "test",
 #endif
 #endif
@@ -95,7 +98,8 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdIO,
   doCmdReadIO,
   doCmdWriteIO,
-#else
+#endif
+#if (CPU == 6502)
   doCmdTest,
 #endif
 #endif
@@ -473,24 +477,19 @@ unsigned int hwRead16(unsigned int offset) {
 }
 
 // Shift a breakpoint definition into the breakpoint shift register
+
+void shift(unsigned int value, int numbits) {
+  while (numbits-- > 0) {
+    hwCmd(CMD_LOAD_BRKPT, value & 1);
+    value >>= 1;
+  }
+}
+
 void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
-  int i;
-  for (i = 0; i <= 15; i++) {
-    hwCmd(CMD_LOAD_BRKPT, addr & 1);
-    addr >>= 1;
-  }
-  for (i = 0; i <= 15; i++) {
-    hwCmd(CMD_LOAD_BRKPT, mask & 1);
-    mask >>= 1;
-  }
-  for (i = 0; i <= 9; i++) {
-    hwCmd(CMD_LOAD_BRKPT, mode & 1);
-    mode >>= 1;
-  }
-  for (i = 0; i <= 3; i++) {
-    hwCmd(CMD_LOAD_BRKPT, trigger & 1);
-    trigger >>= 1;
-  }
+  shift(addr, 16);
+  shift(mask, 16);
+  shift(mode, 10);
+  shift(trigger, 4);
 }
 
 #ifdef LCD
@@ -832,7 +831,7 @@ void genericBreakpoint(char *params, unsigned int mode) {
  ********************************************************/
 
 #ifdef CPUEMBEDDED
-#if (CPU != Z80)
+#if (CPU == 6502)
 char *testNames[6] = {
   "Fixed",
   "Checkerboard",
@@ -1029,7 +1028,9 @@ void doCmdWriteIO(char *params) {
   genericWrite(params, writeIOByte);
 }
 
-#else
+#endif
+
+#if (CPU == 6502)
 
 void doCmdTest(char *params) {
   unsigned int start;
