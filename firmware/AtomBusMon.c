@@ -10,12 +10,14 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.48"
+#define VERSION "0.49"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
 #elif (CPU == 6502)
   #define NAME "ICE-T65"
+#elif (CPU == 6809)
+  #define NAME "ICE-6809"
 #else
   #error "Unsupported CPU type"
 #endif
@@ -276,7 +278,7 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
  ********************************************************/
 
 // The space available for address comparators depends on the size of the CPU core
-#if (CPU == Z80)
+#if ((CPU == Z80) || (CPU == 6809))
 #define MAXBKPTS 4
 #else
 #define MAXBKPTS 8

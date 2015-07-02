@@ -152,7 +152,7 @@ architecture behavioral of BusMonCore is
     
 begin
 
-    inst_dcm5 : entity work.DCM0 port map(
+    inst_dcm0 : entity work.DCM0 port map(
         CLKIN_IN          => clock49,
         CLK0_OUT          => clock_avr,
         CLK0_OUT1         => open,

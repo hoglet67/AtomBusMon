@@ -92,11 +92,13 @@ architecture behavioral of AtomCpuMon is
     signal busmon_clk    : std_logic;
     
     signal Regs          : std_logic_vector(63 downto 0);
+    signal Regs1         : std_logic_vector(255 downto 0);
     signal memory_rd     : std_logic;
     signal memory_wr     : std_logic;
     signal memory_addr   : std_logic_vector(15 downto 0);
     signal memory_dout   : std_logic_vector(7 downto 0);
     signal memory_din    : std_logic_vector(7 downto 0);
+    signal memory_done   : std_logic;
     
 begin
 
@@ -107,6 +109,8 @@ begin
         Phi2    => busmon_clk,
         Rd_n    => not R_W_n_int,
         Wr_n    => R_W_n_int,
+        RdIO_n  => '1',
+        WrIO_n  => '1',
         Sync    => Sync_int,
         Rdy     => Rdy_int,
         nRSTin  => Res_n,
@@ -127,8 +131,7 @@ begin
         tmosi   => tmosi,
         tdin    => tdin,
         tcclk   => tcclk,
-        Regs(63 downto 0)   => Regs,
-        Regs(255 downto 64) => (others <= '0'),
+        Regs    => Regs1,
         RdMemOut=> memory_rd,
         WrMemOut=> memory_wr,
         RdIOOut => open,
@@ -136,10 +139,12 @@ begin
         AddrOut => memory_addr,
         DataOut => memory_dout,
         DataIn  => memory_din,
-        Done    => memory_rd,
+        Done    => memory_done,
         SS_Step => open,
         SS_Single => open
     );
+    Regs1(63 downto 0) <= Regs;
+    Regs1(255 downto 64) <= (others => '0');
 
     GenT65Core: if UseT65Core generate
         inst_t65: entity work.T65 port map (
@@ -212,6 +217,8 @@ begin
                          Dout when Phi0_c = '1' and R_W_n_int = '0' and memory_rd = '0' else
                (others => 'Z');
 
+    memory_done <= memory_rd or memory_wr;
+    
     clk_gen : process(clock49)
     begin
         if rising_edge(clock49) then
