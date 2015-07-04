@@ -29,13 +29,13 @@ entity MC6809ECpuMon is
         clock49         : in    std_logic;
 
         -- A locally generated test clock
-        -- 1.8457 MHz in E     Mode (6809E) so it can drive E    (PIN34)
-        -- 7.3728 MHz in Normal Mode (6809) so it can drive XTAL (PIN39)
+        -- 1.8457 MHz in E     Mode (6809E) so it can drive E     (PIN34)
+        -- 7.3728 MHz in Normal Mode (6809) so it can drive EXTAL (PIN38)
         clock_test      : out   std_logic;
           
         -- 6809/6809E mode selection
         -- Jumper is between pins B1 and D1
-        -- Jumper off is 6809 mode, where a 4x clock should be fed into XTAL (PIN39)
+        -- Jumper off is 6809 mode, where a 4x clock should be fed into EXTAL (PIN38)
         -- Jumper on is 6909E mode, where a 1x clock should be fed into E (PIN34)
         EMode_n         : in   std_logic;
           
@@ -319,14 +319,14 @@ begin
     MRDY         <= '1'   when EMode_n = '0' else PIN36;
 
     PIN38        <= LIC   when EMode_n = '0' else 'Z';
-    EXTAL        <= PIN38 when EMode_n = '0' else '0';
+    EXTAL        <= '0'   when EMode_n = '0' else PIN38;
     
     TSC          <= PIN39 when EMode_n = '0' else '0';
     XTAL         <= '0'   when EMode_n = '0' else PIN39; 
 
     -- A locally generated test clock
-    -- 1.8457 MHz in E     Mode (6809E) so it can drive E    (PIN34)
-    -- 7.3728 MHz in Normal Mode (6809) so it can drive XTAL (PIN39)
+    -- 1.8457 MHz in E     Mode (6809E) so it can drive E     (PIN34)
+    -- 7.3728 MHz in Normal Mode (6809) so it can drive EXTAL (PIN38)
     clock_test   <= clk_count(1) when EMode_n = '0' else clock7_3728;
 
     -- Main clocks
@@ -334,9 +334,9 @@ begin
     busmon_clk <= E;
     
     -- Quadrature clock generator, unused in 6809E mode
-    quadrature_gen : process(XTAL)
+    quadrature_gen : process(EXTAL)
     begin
-        if rising_edge(XTAL) then
+        if rising_edge(EXTAL) then
             if (MRDY = '1') then
                 if (quadrature = "00") then
                     quadrature <= "01";
