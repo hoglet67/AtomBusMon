@@ -358,7 +358,7 @@ char *modeStrings[NUM_MODES] = {
 #define BW_RDWR_MASK (BW_RD_MASK | BW_WR_MASK)
 
 // Mask for all breakpoints that read/write Memory or IO
-#define B_RDWR_MASK  (BW_RD_MASK & B_MASK)
+#define B_RDWR_MASK  (BW_RDWR_MASK & B_MASK)
 
 /********************************************************
  * External Trigger definitions
@@ -951,6 +951,7 @@ void doCmdReset(char *params) {
   hwCmd(CMD_STEP, 0);
   Delay_us(50);
   hwCmd(CMD_RESET, 0);
+  logAddr();
 }
 
 #ifdef CPUEMBEDDED

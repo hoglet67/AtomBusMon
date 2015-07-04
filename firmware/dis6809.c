@@ -32,7 +32,7 @@ typedef signed short tt_s16;
 
 unsigned int get_memw(unsigned int addr) {
   loadAddr(addr);
-  return readMemByteInc() + (readMemByteInc() << 8);
+  return (readMemByteInc() << 8) + readMemByteInc();
 }
 
 enum opcodes {
