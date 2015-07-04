@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.50"
+#define VERSION "0.52"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -282,7 +282,7 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
  ********************************************************/
 
 // The space available for address comparators depends on the size of the CPU core
-#if ((CPU == Z80) || (CPU == 6809))
+#if (CPU == Z80)
 #define MAXBKPTS 4
 #else
 #define MAXBKPTS 8

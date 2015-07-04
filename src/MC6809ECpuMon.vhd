@@ -27,22 +27,36 @@ entity MC6809ECpuMon is
        );
     port (
         clock49         : in    std_logic;
+
+        -- A locally generated test clock
+        -- 1.8457 MHz in E     Mode (6809E) so it can drive E    (PIN34)
+        -- 7.3728 MHz in Normal Mode (6809) so it can drive XTAL (PIN39)
+        clock_test      : out   std_logic;
+          
+        -- 6809/6809E mode selection
+        -- Jumper is between pins B1 and D1
+        -- Jumper off is 6809 mode, where a 4x clock should be fed into XTAL (PIN39)
+        -- Jumper on is 6909E mode, where a 1x clock should be fed into E (PIN34)
+        EMode_n         : in   std_logic;
           
         --6809 Signals
-        E               : in    std_logic;
-        Q               : in    std_logic;        
+        PIN33           : inout std_logic;        
+        PIN34           : inout std_logic;
+        PIN35           : inout std_logic;        
+        PIN36           : inout std_logic;
+        PIN37           : inout std_logic;
+        PIN38           : inout std_logic;
+        PIN39           : in    std_logic;
+
+        -- Signals common to both 6809 and 6809E
         RES_n           : inout std_logic;
         NMI_n           : in    std_logic;
         IRQ_n           : in    std_logic;
         FIRQ_n          : in    std_logic;
         HALT_n          : in    std_logic;
-        TSC             : in    std_logic;
         BS              : out   std_logic;
         BA              : out   std_logic;
-        BUSY            : out   std_logic;
         R_W_n           : out   std_logic;
-        LIC             : out   std_logic;
-        AVMA            : out   std_logic;
 
         Addr            : out   std_logic_vector(15 downto 0);
         Data            : inout std_logic_vector(7 downto 0);
@@ -70,10 +84,8 @@ entity MC6809ECpuMon is
         
         -- Debugging signals
         test1           : out   std_logic;
-        test2           : out   std_logic;
-        test3           : out   std_logic;
-        test4           : out   std_logic
-        
+        test2           : out   std_logic
+                
     );
 end MC6809ECpuMon;
 
@@ -82,7 +94,6 @@ architecture behavioral of MC6809ECpuMon is
 signal cpu_clk       : std_logic;
 signal busmon_clk    : std_logic;
 signal R_W_n_int     : std_logic;
-signal LIC_int       : std_logic;
 signal NMI_sync      : std_logic;
 signal IRQ_sync      : std_logic;
 signal FIRQ_sync     : std_logic;
@@ -112,21 +123,26 @@ signal SS_Single     : std_logic;
 signal SS_Step       : std_logic;
 signal CountCycle    : std_logic;
 
-signal clock7_3728   : std_logic;
 signal clk_count     : std_logic_vector(1 downto 0);
+signal quadrature    : std_logic_vector(1 downto 0);
+signal LIC           : std_logic;
+signal AVMA          : std_logic;
+signal XTAL          : std_logic;
+signal EXTAL         : std_logic;
+signal MRDY          : std_logic;
+signal TSC           : std_logic;
+signal BUSY          : std_logic;
+signal Q             : std_logic;
+signal E             : std_logic;
+signal DMA_n_BREQ_n  : std_logic;
 
+signal clock7_3728   : std_logic;
+    
 begin
 
-    inst_dcm1 : entity work.DCM1 port map(
-        CLKIN_IN          => clock49,
-        CLK0_OUT          => clock7_3728,
-        CLK0_OUT1         => open,
-        CLK2X_OUT         => open
-    );
-    
     mon : entity work.BusMonCore
       generic map (
-        num_comparators => 4
+        num_comparators => 8
       )
       port map (  
         clock49 => clock49,
@@ -201,7 +217,7 @@ begin
             clk      => cpu_clk,
             rst      => RES_sync,
             vma      => AVMA,
-            lic_out  => LIC_int,
+            lic_out  => LIC,
             ifetch   => ifetch,
             opfetch  => open,
             ba       => BA,
@@ -219,12 +235,6 @@ begin
         );
     end generate;
 
-    clk_gen : process(clock7_3728)
-    begin
-        if rising_edge(clock7_3728) then
-            clk_count <= clk_count + 1;
-        end if;
-    end process;
 
     -- Synchronize all external inputs, to avoid subtle bugs like missed interrupts
     irq_gen : process(cpu_clk)
@@ -245,7 +255,7 @@ begin
     begin
         if rising_edge(cpu_clk) then
             if (hold = '0') then
-                ifetch1 <= ifetch and not LIC_int;
+                ifetch1 <= ifetch and not LIC;
             end if;
         end if;
     end process;
@@ -270,9 +280,6 @@ begin
     -- Only count cycles when the 6809 is actually running
     CountCycle <= not hold;
    
-    cpu_clk    <= not E;
-    busmon_clk <= E;
-    
     R_W_n <= 'Z' when TSC = '1' else
              '1' when memory_rd = '1' else
              '0' when memory_wr = '1' else
@@ -290,13 +297,78 @@ begin
                   (others => 'Z');
     
     memory_done <= memory_rd or memory_wr;
-    
+
+    -- The following outputs are not implemented
+    -- BUSY          (6809E mode)
     BUSY    <= '0';
-    LIC     <= LIC_int;
+
+    -- The following inputs are not implemented
+    -- DMA_n_BREQ_n  (6809 mode)
     
+    -- Pins whose functions are dependent on "E" mode
+    PIN33        <= BUSY  when EMode_n = '0' else 'Z';
+    DMA_n_BREQ_n <= '1'   when EMode_n = '0' else PIN33;
+
+    PIN34        <= 'Z'   when EMode_n = '0' else E;
+    E            <= PIN34 when EMode_n = '0' else quadrature(1);
+
+    PIN35        <= 'Z'   when EMode_n = '0' else Q;
+    Q            <= PIN35 when EMode_n = '0' else quadrature(0);
+
+    PIN36        <= AVMA  when EMode_n = '0' else 'Z';
+    MRDY         <= '1'   when EMode_n = '0' else PIN36;
+
+    PIN38        <= LIC   when EMode_n = '0' else 'Z';
+    EXTAL        <= PIN38 when EMode_n = '0' else '0';
+    
+    TSC          <= PIN39 when EMode_n = '0' else '0';
+    XTAL         <= '0'   when EMode_n = '0' else PIN39; 
+
+    -- A locally generated test clock
+    -- 1.8457 MHz in E     Mode (6809E) so it can drive E    (PIN34)
+    -- 7.3728 MHz in Normal Mode (6809) so it can drive XTAL (PIN39)
+    clock_test   <= clk_count(1) when EMode_n = '0' else clock7_3728;
+
+    -- Main clocks
+    cpu_clk    <= not E;
+    busmon_clk <= E;
+    
+    -- Quadrature clock generator, unused in 6809E mode
+    quadrature_gen : process(XTAL)
+    begin
+        if rising_edge(XTAL) then
+            if (MRDY = '1') then
+                if (quadrature = "00") then
+                    quadrature <= "01";
+                elsif (quadrature = "01") then
+                    quadrature <= "11";
+                elsif (quadrature = "11") then
+                    quadrature <= "10";
+                else
+                    quadrature <= "00";
+                end if;
+            end if;
+        end if;
+    end process;    
+
+    -- Seperate piece of circuitry that emits a 7.3728MHz clock
+
+    inst_dcm1 : entity work.DCM1 port map(
+        CLKIN_IN          => clock49,
+        CLK0_OUT          => clock7_3728,
+        CLK0_OUT1         => open,
+        CLK2X_OUT         => open
+    );
+    
+    clk_gen : process(clock7_3728)
+    begin
+        if rising_edge(clock7_3728) then
+            clk_count <= clk_count + 1;
+        end if;
+    end process;
+       
+    -- Spare pins used for testing
     test1   <= Sync_int;
     test2   <= RDY_int;
-    test3   <= LIC_int;
-    test4   <= clk_count(1);
-    
+
 end behavioral;
