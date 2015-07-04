@@ -93,6 +93,7 @@ signal Din           : std_logic_vector(7 downto 0);
 signal Dout          : std_logic_vector(7 downto 0);
 signal Sync_int      : std_logic;
 signal Rdy_int       : std_logic;
+signal hold          : std_logic;
 
 signal memory_rd     : std_logic;
 signal memory_wr     : std_logic;
@@ -103,6 +104,13 @@ signal memory_done   : std_logic;
 
 signal Regs          : std_logic_vector(111 downto 0);
 signal Regs1         : std_logic_vector(255 downto 0);
+signal last_PC       : std_logic_vector(15 downto 0);
+
+signal ifetch        : std_logic;
+signal ifetch1       : std_logic;
+signal SS_Single     : std_logic;
+signal SS_Step       : std_logic;
+signal CountCycle    : std_logic;
 
 signal clock7_3728   : std_logic;
 signal clk_count     : std_logic_vector(1 downto 0);
@@ -133,7 +141,7 @@ begin
         Rdy     => Rdy_int,
         nRSTin  => RES_n,
         nRSTout => RES_n,
-        CountCycle => Rdy_int,
+        CountCycle => CountCycle,
         trig    => trig,
         lcd_rs  => open,
         lcd_rw  => open,
@@ -158,11 +166,34 @@ begin
         DataOut => memory_dout,
         DataIn  => memory_din,
         Done    => memory_done,
-        SS_Step => open,
-        SS_Single => open
+        SS_Step => SS_Step,
+        SS_Single => SS_Single
     );
     
-    Regs1(111 downto 0) <= Regs;
+    -- The CPU09 is slightly pipelined and the register update of the last
+    -- instruction overlaps with the opcode fetch of the next instruction.
+    --
+    -- If the single stepping stopped on the opcode fetch cycle, then the registers
+    -- valued would not accurately reflect the previous instruction.
+    --
+    -- To work around this, when single stepping, we stop on the cycle after
+    -- the opcode fetch, which means the program counter has advanced.
+    --
+    -- To hide this from the user single stepping, all we need to do is to
+    -- also pipeline the value of the program counter by one stage to compensate.
+    
+    last_pc_gen : process(cpu_clk)
+    begin
+        if rising_edge(cpu_clk) then
+            if (hold = '0') then
+                last_PC <= Regs(95 downto 80);
+            end if;
+        end if;
+    end process;
+    
+    Regs1( 79 downto   0) <= Regs( 79 downto   0);
+    Regs1( 95 downto  80) <= last_PC;
+    Regs1(111 downto  96) <= Regs(111 downto  96);
     Regs1(255 downto 112) <= (others => '0');
 
     GenCPU09Core: if UseCPU09Core generate
@@ -171,7 +202,7 @@ begin
             rst      => RES_sync,
             vma      => AVMA,
             lic_out  => LIC_int,
-            ifetch   => open,
+            ifetch   => ifetch,
             opfetch  => open,
             ba       => BA,
             bs       => BS,
@@ -183,7 +214,7 @@ begin
             firq     => FIRQ_sync,
             nmi      => NMI_sync,
             halt     => HALT_sync,
-            hold     => not RDY_int,
+            hold     => hold,
             Regs     => Regs
         );
     end generate;
@@ -195,6 +226,7 @@ begin
         end if;
     end process;
 
+    -- Synchronize all external inputs, to avoid subtle bugs like missed interrupts
     irq_gen : process(cpu_clk)
     begin
         if falling_edge(cpu_clk) then
@@ -206,15 +238,38 @@ begin
         end if;
     end process;
     
+    -- This block generates a sync signal that has the same characteristic as
+    -- a 6502 sync, i.e. asserted during the fetching the first byte of each instruction.
+    -- The below logic copes ifetch being active for all bytes of the instruction.
     sync_gen : process(cpu_clk)
     begin
         if rising_edge(cpu_clk) then
-            if (RDY_int = '1') then
-                Sync_int <= LIC_int;
+            if (hold = '0') then
+                ifetch1 <= ifetch and not LIC_int;
             end if;
         end if;
-    end process;    
+    end process;
+    Sync_int <= ifetch and not ifetch1;
 
+    -- This block generates a hold signal that acts as the inverse of a clock enable
+    -- for the 6809. See comments above for why this is a cycle later than the way
+    -- we would do if for the 6502.
+    hold_gen : process(cpu_clk)
+    begin
+        if rising_edge(cpu_clk) then
+            if (Sync_int = '1') then
+                -- stop after the opcode has been fetched
+                hold <= SS_Single;
+            elsif (SS_Step = '1') then
+                -- start again when the single step command is issues
+                hold <= '0';
+            end if;
+        end if;
+    end process;
+
+    -- Only count cycles when the 6809 is actually running
+    CountCycle <= not hold;
+   
     cpu_clk    <= not E;
     busmon_clk <= E;
     
