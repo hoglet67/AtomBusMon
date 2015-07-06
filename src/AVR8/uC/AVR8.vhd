@@ -78,7 +78,7 @@ constant CImplSPI            				: boolean := FALSE;   -- adding SPI master
 constant CImplTmrCnt     					: boolean := FALSE;	--AVR8 Timer
 constant CImplExtIRQ				: boolean := FALSE;	--AVR8 Interrupt Unit
 
-component XDM4Kx8	port(
+component XDM2Kx8	port(
 	                cp2       : in  std_logic;
 						 ce        : in  std_logic;
 	                address   : in  std_logic_vector(CDATAMEMSIZE downto 0); 
@@ -88,7 +88,7 @@ component XDM4Kx8	port(
 					   );
 end component;
 
-component XPM8Kx16 port(
+component XPM9Kx16 port(
 	                  cp2     : in  std_logic;
 					  ce      : in  std_logic;
 	                  address : in  std_logic_vector(CPROGMEMSIZE downto 0); 
@@ -773,7 +773,7 @@ end generate;
 ram_cp2_n <= not clk16M;
 
 ---- Data memory(8-bit)					   
-DRAM_Inst:component XDM4Kx8 
+DRAM_Inst:component XDM2Kx8 
 port map(
 	                    cp2       => ram_cp2_n,
 						ce        => vcc,
@@ -784,7 +784,7 @@ port map(
 					   );
 
 -- Program memory					   
-PM_Inst:component XPM8Kx16 
+PM_Inst:component XPM9Kx16 
 port map(
 	                  cp2     => ram_cp2_n, 
 					  ce      => vcc,

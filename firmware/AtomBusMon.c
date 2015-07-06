@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.53"
+#define VERSION "0.60"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -28,11 +28,9 @@
 
 #ifdef CPUEMBEDDED
   #if (CPU == Z80)
-    #define NUM_CMDS 28
-  #elif (CPU == 6502)
-    #define NUM_CMDS 22
+    #define NUM_CMDS 29
   #else
-    #define NUM_CMDS 21
+    #define NUM_CMDS 22
   #endif
 #else
   #define NUM_CMDS 14
@@ -58,9 +56,7 @@ char *cmdStrings[NUM_CMDS] = {
   "rdi",
   "wri",
 #endif
-#if (CPU == 6502)
   "test",
-#endif
 #endif
   "reset",
   "step",
@@ -99,9 +95,7 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdReadIO,
   doCmdWriteIO,
 #endif
-#if (CPU == 6502)
   doCmdTest,
-#endif
 #endif
   doCmdReset,
   doCmdStep,
@@ -370,7 +364,7 @@ int             triggers[MAXBKPTS];
 
 #define NUM_TRIGGERS 16
 
-char *triggerStrings[NUM_TRIGGERS] = {
+char * triggerStrings[NUM_TRIGGERS] = {
   "Never",
   "~T0 and ~T1",
   "T0 and ~T1",
@@ -831,7 +825,6 @@ void genericBreakpoint(char *params, unsigned int mode) {
  ********************************************************/
 
 #ifdef CPUEMBEDDED
-#if (CPU == 6502)
 char *testNames[6] = {
   "Fixed",
   "Checkerboard",
@@ -904,7 +897,6 @@ void test(unsigned int start, unsigned int end, int data) {
     log0(": passed\n");
   }
 }
-#endif
 #endif // CPUEMBEDDED
 
 /*******************************************
@@ -946,11 +938,23 @@ void doCmdStep(char *params) {
 
 void doCmdReset(char *params) {
   log0("Resetting CPU\n");
-  hwCmd(CMD_RESET, 1);
-  Delay_us(50);
-  hwCmd(CMD_STEP, 0);
-  Delay_us(50);
-  hwCmd(CMD_RESET, 0);
+#if (CPU == 6502)
+  // For the 6502 cores, to get the single stepping to stop correctly
+  // on the first instruction after reset, it helps to assert reset twice.
+  // I haven't looked into why this is, as it doesn't seem very important.
+  // It's mostly cosmetic, but nice on the Atom to consisently show FF3F.
+  int i;
+  for (i = 0; i < 2; i++) { 
+#endif
+   hwCmd(CMD_RESET, 1);
+   Delay_us(50);
+   hwCmd(CMD_STEP, 0);
+   Delay_us(50);
+   hwCmd(CMD_RESET, 0);
+   Delay_us(50);
+#if (CPU == 6502)
+  }
+#endif
   logAddr();
 }
 
@@ -1031,8 +1035,6 @@ void doCmdWriteIO(char *params) {
 
 #endif
 
-#if (CPU == 6502)
-
 void doCmdTest(char *params) {
   unsigned int start;
   unsigned int end;
@@ -1050,8 +1052,6 @@ void doCmdTest(char *params) {
     test(start, end, data);
   }
 }
-
-#endif
 
 #endif // CPUEMBEDDED
 

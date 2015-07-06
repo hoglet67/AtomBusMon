@@ -13,8 +13,8 @@ package SynthCtrlPack is
 
 -- Please note: Do not change these settings, this is not quite ready yet. Jack Gassett
 -- Control the size of Program and Data memory.
-constant CDATAMEMSIZE	: integer := 11;			--2^(x+1)=Data SRAM Memory Size   	(10=2048) (Default 11=4096) (12=8192)
-constant CPROGMEMSIZE	: integer := 12;		--(2^(x+1))*2)=Program Memory Size	(10=4096) (11=8192) (Default 12=16384)
+constant CDATAMEMSIZE	: integer := 10;			--2^(x+1)=Data SRAM Memory Size   	(10=2048) (Default 11=4096) (12=8192)
+constant CPROGMEMSIZE	: integer := 13;		--(2^(x+1))*2)=Program Memory Size	(10=4096) (11=8192) (Default 12=16384)
 -- Calculate at Wolfram Alpha (http://www.wolframalpha.com/input/?i=%282^%28x%2B1%29%29*2%29%2Cx%3D12)
 
 -- Reset generator

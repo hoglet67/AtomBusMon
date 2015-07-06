@@ -1,3 +1,4 @@
+#include <avr/pgmspace.h>
 #include "AtomBusMon.h"
 
 enum
@@ -76,77 +77,77 @@ enum
     I_XXX
   };
 
-char *opStrings[67] = {
-    "ADC",
-    "AND",
-    "ASL",
-    "BCC",
-    "BCS",
-    "BEQ",
-    "BIT",
-    "BMI",
-    "BNE",
-    "BPL",
-    "BRA",
-    "BRK",
-    "BVC",
-    "BVS",
-    "CLC",
-    "CLD",
-    "CLI",
-    "CLV",
-    "CMP",
-    "CPX",
-    "CPY",
-    "DEC",
-    "DEX",
-    "DEY",
-    "EOR",
-    "INC",
-    "INX",
-    "INY",
-    "JMP",
-    "JSR",
-    "LDA",
-    "LDX",
-    "LDY",
-    "LSR",
-    "NOP",
-    "ORA",
-    "PHA",
-    "PHP",
-    "PHX",
-    "PHY",
-    "PLA",
-    "PLP",
-    "PLX",
-    "PLY",
-    "ROL",
-    "ROR",
-    "RTI",
-    "RTS",
-    "SBC",
-    "SEC",
-    "SED",
-    "SEI",
-    "STA",
-    "STP",
-    "STX",
-    "STY",
-    "STZ",
-    "TAX",
-    "TAY",
-    "TRB",
-    "TSB",
-    "TSX",
-    "TXA",
-    "TXS",
-    "TYA",
-    "WAI",
-    "---"
-};
+static const char opString[] PROGMEM = "\
+ADC\
+AND\
+ASL\
+BCC\
+BCS\
+BEQ\
+BIT\
+BMI\
+BNE\
+BPL\
+BRA\
+BRK\
+BVC\
+BVS\
+CLC\
+CLD\
+CLI\
+CLV\
+CMP\
+CPX\
+CPY\
+DEC\
+DEX\
+DEY\
+EOR\
+INC\
+INX\
+INY\
+JMP\
+JSR\
+LDA\
+LDX\
+LDY\
+LSR\
+NOP\
+ORA\
+PHA\
+PHP\
+PHX\
+PHY\
+PLA\
+PLP\
+PLX\
+PLY\
+ROL\
+ROR\
+RTI\
+RTS\
+SBC\
+SEC\
+SED\
+SEI\
+STA\
+STP\
+STX\
+STY\
+STZ\
+TAX\
+TAY\
+TRB\
+TSB\
+TSX\
+TXA\
+TXS\
+TYA\
+WAI\
+---\
+";
 
-unsigned char dopname[256] =
+static const unsigned char dopname[256] PROGMEM =
 {
 /*00*/ I_BRK, I_ORA, I_XXX, I_XXX, I_TSB, I_ORA, I_ASL, I_XXX, I_PHP, I_ORA, I_ASL, I_XXX, I_TSB, I_ORA, I_ASL, I_XXX,
 /*10*/ I_BPL, I_ORA, I_ORA, I_XXX, I_TRB, I_ORA, I_ASL, I_XXX, I_CLC, I_ORA, I_INC, I_XXX, I_TRB, I_ORA, I_ASL, I_XXX,
@@ -166,7 +167,7 @@ unsigned char dopname[256] =
 /*F0*/ I_BEQ, I_SBC, I_SBC, I_XXX, I_XXX, I_SBC, I_INC, I_XXX, I_SED, I_SBC, I_PLX, I_XXX, I_XXX, I_SBC, I_INC, I_XXX
 };
 
-unsigned char dopaddr[256] =
+static const unsigned char dopaddr[256] PROGMEM =
 {
 /*00*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  ABS,	  ABS,	 ABS,  IMP,
 /*10*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMPA,  IMP,  ABS,	  ABSX,	 ABSX, IMP,
@@ -188,13 +189,20 @@ unsigned char dopaddr[256] =
 
 unsigned int disassemble(unsigned int addr)
 {
+  
 	unsigned int temp;
 	unsigned int op = readMemByteInc();
-        int mode = dopaddr[op];
+        int mode = pgm_read_byte(dopaddr + op);
 	unsigned int p1 = (mode > MARK2) ? readMemByteInc() : 0;
 	unsigned int p2 = (mode > MARK3) ? readMemByteInc() : 0;
 
-	log0("%04X : %s ", addr, opStrings[dopname[op]]);
+	int opIndex = pgm_read_byte(dopname + op) * 3;
+	log0("%04X : ", addr);
+	for (temp = 0; temp < 3; temp++) {
+	  log0("%c", pgm_read_byte(opString + opIndex + temp));
+	}
+	log0(" ");
+
 	switch (mode)
 	{
 	case IMP:

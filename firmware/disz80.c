@@ -31,6 +31,8 @@ PERFORMANCE OF THIS SOFTWARE.
 */
 
 #include <string.h>
+#include <avr/pgmspace.h>
+
 #include "AtomBusMon.h"
 
 #define legal       0
@@ -94,208 +96,208 @@ char* word[] =
       "XH",     "XL",     "YH",     "YL",     "DIS(IX)","DIS(IY)"
   };
     
-unsigned char cmd_00[64][3] = 
+static const unsigned char cmd_00[192] PROGMEM = 
   {
-    {NOP,0,0},    
-    {LD,BC,NN},   
-    {LD,XBC,A},   
-    {INC,BC,0},   
-    {INC,B,0},    
-    {DEC,B,0},    
-    {LD,B,N},     
-    {RLCA,0,0},
-    {EX,AF,AF2},  
-    {ADD,HL,BC},  
-    {LD,A,XBC},   
-    {DEC,BC,0},   
-    {INC,C,0},    
-    {DEC,C,0},    
-    {LD,C,N},     
-    {RRCA,0,0},
-    {DJNZ,DIS,0}, 
-    {LD,DE,NN},   
-    {LD,XDE,A},   
-    {INC,DE,0},   
-    {INC,D,0},    
-    {DEC,D,0},    
-    {LD,D,N},     
-    {RLA,0,0},
-    {JR,DIS,0},   
-    {ADD,HL,DE},  
-    {LD,A,XDE},   
-    {DEC,DE,0},   
-    {INC,E,0},    
-    {DEC,E,0},    
-    {LD,E,N},     
-    {RRA,0,0},
-    {JR,NZ,DIS},  
-    {LD,HL,NN},   
-    {LD,XNN,HL},  
-    {INC,HL,0},   
-    {INC,H,0},    
-    {DEC,H,0},    
-    {LD,H,N},     
-    {DAA,0,0},
-    {JR,Z,DIS},   
-    {ADD,HL,HL},  
-    {LD,HL,XNN},  
-    {DEC,HL,0},   
-    {INC,L,0},    
-    {DEC,L,0},    
-    {LD,L,N},     
-    {CPL,0,0},
-    {JR,NC,DIS},  
-    {LD,SP,NN},   
-    {LD,XNN,A},   
-    {INC,SP,0},   
-    {INC,XHL,0},  
-    {DEC,XHL,0},  
-    {LD,XHL,N},   
-    {SCF,0,0},
-    {JR,C,N},     
-    {ADD,HL,SP},  
-    {LD,A,XNN},   
-    {DEC,SP,0},   
-    {INC,A,0},    
-    {DEC,A,0},    
-    {LD,A,N},     
-    {CCF,0,0}
+    NOP,0,0,    
+    LD,BC,NN,   
+    LD,XBC,A,   
+    INC,BC,0,   
+    INC,B,0,    
+    DEC,B,0,    
+    LD,B,N,     
+    RLCA,0,0,
+    EX,AF,AF2,  
+    ADD,HL,BC,  
+    LD,A,XBC,   
+    DEC,BC,0,   
+    INC,C,0,    
+    DEC,C,0,    
+    LD,C,N,     
+    RRCA,0,0,
+    DJNZ,DIS,0, 
+    LD,DE,NN,   
+    LD,XDE,A,   
+    INC,DE,0,   
+    INC,D,0,    
+    DEC,D,0,    
+    LD,D,N,     
+    RLA,0,0,
+    JR,DIS,0,   
+    ADD,HL,DE,  
+    LD,A,XDE,   
+    DEC,DE,0,   
+    INC,E,0,    
+    DEC,E,0,    
+    LD,E,N,     
+    RRA,0,0,
+    JR,NZ,DIS,  
+    LD,HL,NN,   
+    LD,XNN,HL,  
+    INC,HL,0,   
+    INC,H,0,    
+    DEC,H,0,    
+    LD,H,N,     
+    DAA,0,0,
+    JR,Z,DIS,   
+    ADD,HL,HL,  
+    LD,HL,XNN,  
+    DEC,HL,0,   
+    INC,L,0,    
+    DEC,L,0,    
+    LD,L,N,     
+    CPL,0,0,
+    JR,NC,DIS,  
+    LD,SP,NN,   
+    LD,XNN,A,   
+    INC,SP,0,   
+    INC,XHL,0,  
+    DEC,XHL,0,  
+    LD,XHL,N,   
+    SCF,0,0,
+    JR,C,N,     
+    ADD,HL,SP,  
+    LD,A,XNN,   
+    DEC,SP,0,   
+    INC,A,0,    
+    DEC,A,0,    
+    LD,A,N,     
+    CCF,0,0
   };
 
-unsigned char cmd_C0[64][3] = 
-  {
-    {RET,NZ,0},   
-    {POP,BC,0},   
-    {JP,NZ,NN},   
-    {JP,NN,0},    
-    {CALL,NZ,NN}, 
-    {PUSH,BC,0},  
-    {ADD,A,N},    
-    {RST,N0,0},
-    {RET,Z,0},    
-    {RET,0,0},    
-    {JP,Z,NN},    
-    {PFX,CB,0},   
-    {CALL,Z,NN},  
-    {CALL,NN,0},  
-    {ADC,A,N},    
-    {RST,N1,0},
-    {RET,NC,0},   
-    {POP,DE,0},   
-    {JP,NC,NN},   
-    {OUT,XN,A},   
-    {CALL,NC,NN}, 
-    {PUSH,DE,0},  
-    {SUB,A,N},    
-    {RST,N2,0},
-    {RET,C,0},    
-    {EXX,0,0},    
-    {JP,C,NN},    
-    {IN,A,XN},    
-    {CALL,C,NN},  
-    {PFX,IX,0},   
-    {SBC,A,N},    
-    {RST,N3,0},
-    {RET,PO,0},   
-    {POP,HL,0},   
-    {JP,PO,NN},   
-    {EX,HL,XSP},  
-    {CALL,PO,NN}, 
-    {PUSH,HL,0},  
-    {AND,A,N},    
-    {RST,N4,0},
-    {RET,PE,0},   
-    {LD,PC,HL},   
-    {JP,PE,NN},   
-    {EX,DE,HL},   
-    {CALL,PE,NN}, 
-    {PFX,ED,0},   
-    {XOR,A,N},    
-    {RST,N5,0},
-    {RET,P,0},    
-    {POP,AF,0},   
-    {JP,P,NN},    
-    {DI,0,0},     
-    {CALL,P,NN},  
-    {PUSH,AF,0},  
-    {OR,A,N},     
-    {RST,N6,0},
-    {RET,M,0},    
-    {LD,SP,HL},   
-    {JP,M,NN},    
-    {EI,0,0},     
-    {CALL,M,NN},  
-    {PFX,IY,0},   
-    {CP,A,N},     
-    {RST,N7,0}
-  };
+static const unsigned char cmd_C0[192] PROGMEM = { 
+  
+    RET,NZ,0,   
+    POP,BC,0,   
+    JP,NZ,NN,   
+    JP,NN,0,    
+    CALL,NZ,NN, 
+    PUSH,BC,0,  
+    ADD,A,N,    
+    RST,N0,0,
+    RET,Z,0,    
+    RET,0,0,    
+    JP,Z,NN,    
+    PFX,CB,0,   
+    CALL,Z,NN,  
+    CALL,NN,0,  
+    ADC,A,N,    
+    RST,N1,0,
+    RET,NC,0,   
+    POP,DE,0,   
+    JP,NC,NN,   
+    OUT,XN,A,   
+    CALL,NC,NN, 
+    PUSH,DE,0,  
+    SUB,A,N,    
+    RST,N2,0,
+    RET,C,0,    
+    EXX,0,0,    
+    JP,C,NN,    
+    IN,A,XN,    
+    CALL,C,NN,  
+    PFX,IX,0,   
+    SBC,A,N,    
+    RST,N3,0,
+    RET,PO,0,   
+    POP,HL,0,   
+    JP,PO,NN,   
+    EX,HL,XSP,  
+    CALL,PO,NN, 
+    PUSH,HL,0,  
+    AND,A,N,    
+    RST,N4,0,
+    RET,PE,0,   
+    LD,PC,HL,   
+    JP,PE,NN,   
+    EX,DE,HL,   
+    CALL,PE,NN, 
+    PFX,ED,0,   
+    XOR,A,N,    
+    RST,N5,0,
+    RET,P,0,    
+    POP,AF,0,   
+    JP,P,NN,    
+    DI,0,0,     
+    CALL,P,NN,  
+    PUSH,AF,0,  
+    OR,A,N,     
+    RST,N6,0,
+    RET,M,0,    
+    LD,SP,HL,   
+    JP,M,NN,    
+    EI,0,0,     
+    CALL,M,NN,  
+    PFX,IY,0,   
+    CP,A,N,     
+    RST,N7,0
+};
 
-unsigned char cmd_ED40[64][3] = 
-  {
-    {IN,B,XC},    
-    {OUT,XC,B},   
-    {SBC,HL,BC},  
-    {LD,XNN,BC},  
-    {NEG,0,0},    
-    {RETN,0,0},   
-    {IM,N0,0},    
-    {LD,I,A},
-    {IN,C,XC},    
-    {OUT,XC,C},   
-    {ADC,HL,BC},  
-    {LD,BC,XNN},  
-    {NEG,0,0},    
-    {RETI,0,0},   
-    {IM,N0,0},    
-    {LD,R,A},
-    {IN,D,XC},    
-    {OUT,XC,D},   
-    {SBC,HL,DE},  
-    {LD,XNN,DE},  
-    {NEG,0,0},    
-    {RETN,0,0},   
-    {IM,N1,0},    
-    {LD,A,I},
-    {IN,E,XC},    
-    {OUT,XC,E},   
-    {ADC,HL,DE},  
-    {LD,DE,XNN},  
-    {NEG,0,0},    
-    {RETI,0,0},   
-    {IM,N2,0},    
-    {LD,A,R},
-    {IN,H,XC},    
-    {OUT,XC,H},   
-    {SBC,HL,HL},  
-    {LD,XNN,HL},  
-    {NEG,0,0},    
-    {RETN,0,0},   
-    {IM,N0,0},    
-    {RRD,0,0},
-    {IN,L,XC},    
-    {OUT,XC,L},   
-    {ADC,HL,HL},  
-    {LD,HL,XNN},  
-    {NEG,0,0},    
-    {RETI,0,0},   
-    {IM,N0,0},    
-    {RLD,0,0},
-    {IN,F,XC},    
-    {OUT,XC,N0},  
-    {SBC,HL,SP},  
-    {LD,XNN,SP},  
-    {NEG,0,0},    
-    {RETN,0,0},   
-    {IM,N1,0},    
-    {NOP,0,0},
-    {IN,A,XC},    
-    {OUT,XC,A},   
-    {ADC,HL,SP},  
-    {LD,SP,XNN},  
-    {NEG,0,0},    
-    {RETI,0,0},   
-    {IM,N2,0},    
-    {NOP,0,0} 
+static const unsigned char cmd_ED40[192] PROGMEM = {
+  
+    IN,B,XC,    
+    OUT,XC,B,   
+    SBC,HL,BC,  
+    LD,XNN,BC,  
+    NEG,0,0,    
+    RETN,0,0,   
+    IM,N0,0,    
+    LD,I,A,
+    IN,C,XC,    
+    OUT,XC,C,   
+    ADC,HL,BC,  
+    LD,BC,XNN,  
+    NEG,0,0,    
+    RETI,0,0,   
+    IM,N0,0,    
+    LD,R,A,
+    IN,D,XC,    
+    OUT,XC,D,   
+    SBC,HL,DE,  
+    LD,XNN,DE,  
+    NEG,0,0,    
+    RETN,0,0,   
+    IM,N1,0,    
+    LD,A,I,
+    IN,E,XC,    
+    OUT,XC,E,   
+    ADC,HL,DE,  
+    LD,DE,XNN,  
+    NEG,0,0,    
+    RETI,0,0,   
+    IM,N2,0,    
+    LD,A,R,
+    IN,H,XC,    
+    OUT,XC,H,   
+    SBC,HL,HL,  
+    LD,XNN,HL,  
+    NEG,0,0,    
+    RETN,0,0,   
+    IM,N0,0,    
+    RRD,0,0,
+    IN,L,XC,    
+    OUT,XC,L,   
+    ADC,HL,HL,  
+    LD,HL,XNN,  
+    NEG,0,0,    
+    RETI,0,0,   
+    IM,N0,0,    
+    RLD,0,0,
+    IN,F,XC,    
+    OUT,XC,N0,  
+    SBC,HL,SP,  
+    LD,XNN,SP,  
+    NEG,0,0,    
+    RETN,0,0,   
+    IM,N1,0,    
+    NOP,0,0,
+    IN,A,XC,    
+    OUT,XC,A,   
+    ADC,HL,SP,  
+    LD,SP,XNN,  
+    NEG,0,0,    
+    RETI,0,0,   
+    IM,N2,0,    
+    NOP,0,0 
   };
 
 unsigned char cmd_halt[] = { HALT,0,0 };
@@ -317,15 +319,24 @@ unsigned char Peek(unsigned int addr) {
   return readMemByte();
 }
 
+const unsigned char *copyFromPgmMem(const unsigned char *mem) {
+  static unsigned char buffer[3];
+  buffer[0] = pgm_read_byte(mem++);
+  buffer[1] = pgm_read_byte(mem++);
+  buffer[2] = pgm_read_byte(mem++);
+  return buffer;
+}
+
+
 // ---- return mnenonic descriptor for normal instructions
 //      note: for immediate use only, returned result becomes invalid with next call!
-unsigned char* mnemo(unsigned char op) {
+const unsigned char* mnemo(unsigned char op) {
   static unsigned char cl[3]={LD,A,A};
   static unsigned char ca[3]={ADD,A,A};
 
   switch (op>>6)
     {
-    case 0: return cmd_00[op];
+    case 0: return copyFromPgmMem(cmd_00 + op * 3);
     case 1: if (op==0x76) return cmd_halt;
       cl[1] = B + ((op>>3)&0x07); 
       cl[2] = B + (op&0x07); 
@@ -333,7 +344,7 @@ unsigned char* mnemo(unsigned char op) {
     case 2: ca[0] = c_ari[(op>>3)&0x07];
       ca[2] = B + (op&0x07); 
       return ca;
-    case 3: return cmd_C0[op&0x3f];
+    case 3: return copyFromPgmMem(cmd_C0 + (op&0x3f) * 3);
     }
   return NULL;
 }
@@ -386,7 +397,7 @@ unsigned char* mnemoIYCB(unsigned char op) {
 
 // ---- return mnenonic descriptor for ED instructions
 //      note: for immediate use only!
-unsigned char* mnemoED(unsigned char op) {
+const unsigned char* mnemoED(unsigned char op) {
   static unsigned char cmd[3]={0,0,0};
 
   if (op<0x40) return cmd_nop;
@@ -397,7 +408,7 @@ unsigned char* mnemoED(unsigned char op) {
       return cmd;
     };
     
-  return cmd_ED40[op-0x40];   
+  return copyFromPgmMem(cmd_ED40 + (op-0x40) * 3);   
 }
 
 
@@ -471,7 +482,7 @@ int IllegalED (unsigned char op) {
 //      all illegal instructions, which don't use XH or XL are weird
 //      prefixes are legal
 int IllegalXX (unsigned char op) {
-  unsigned char *c;
+  const unsigned char *c;
     
   c = mnemo(op);
 
@@ -569,7 +580,7 @@ void xword (unsigned char n, unsigned int *ip) {
 
 
 // ---- expand 3-char descriptor m[3] to mnemonic with arguments via pc
-void disass (unsigned char *m, unsigned int *ip) {
+void disass (const unsigned char *m, unsigned int *ip) {
   log0("%-5s", word[*m++]);
   if (*m) {
     xword(*m++,ip);

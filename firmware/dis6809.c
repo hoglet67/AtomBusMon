@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#include <avr/pgmspace.h>
 #include "AtomBusMon.h"
 
 unsigned char get_memb(unsigned int addr) {
@@ -172,7 +173,7 @@ enum opcodes {
   OP_TSTB
 };
 
-static const char inst[] = "\
+static const char inst[] PROGMEM = "\
 --  \
 ??  \
 ABX \
@@ -319,7 +320,7 @@ TSTB";
 //	5 inherent
 //	6 relative
 
-unsigned char map0[] = {
+static const unsigned char map0[] = {
    OP_NEG , 0x22,
    OP_XX  , 0x22,
    OP_XX  , 0x12,
@@ -578,7 +579,7 @@ unsigned char map0[] = {
    OP_STU , 0x34,
 };
 
-unsigned char map1[] = {
+static const unsigned char map1[] = {
     33,	OP_LBRN, 0x46,
     34,	OP_LBHI, 0x46,
     35,	OP_LBLS, 0x46,
@@ -619,7 +620,7 @@ unsigned char map1[] = {
    255,	OP_STS , 0x44,
 };
 
-unsigned char map2[] = {
+static const unsigned char map2[] = {
     63,	OP_SWI3, 0x25,
    131,	OP_CMPU, 0x41,
    140,	OP_CMPS, 0x41,
@@ -700,7 +701,7 @@ unsigned int disassemble(unsigned int addr)
   int s, i;
   tt_u8 pb;
   char reg;
-  unsigned char *map = NULL;
+  const unsigned char *map = NULL;
 
   // Default for most undefined opcodes
   unsigned char sm = 0x10; // size_mode byte
@@ -748,8 +749,9 @@ unsigned int disassemble(unsigned int addr)
     fputs("   ", stream);
   }
 
+  const char *ip = inst + oi * 4; 
   for (i = 0; i < 4; i++)
-    fputc(inst[oi * 4 + i], stream);
+    fputc(pgm_read_byte(ip++), stream);
 
   fputs("  ", stream);
 
