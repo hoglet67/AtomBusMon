@@ -76,24 +76,254 @@ enum {
   N,      NN,     XNN,    XN,     DIS,    CB,     ED,
   XH,     XL,     YH,     YL,     XIX,    XIY
 };
-    
-char* word[] = 
-  {   "",       "NOP",    "LD",     "INC",    "DEC",    "RLCA",   "EX",     "ADD",    
-      "RRCA",   "DJNZ",   "RLA",    "JR",     "RRA",    "DAA",    "CPL",    "HALT",
-      "SCF",    "CCF",    "RLC",    "RRC",    "RL",     "RR",     "SLA",    "SRA",
-      "SLL",    "SRL",    "IN",     "OUT",    "SBC",    "NEG",    "RETN",   "IM",
-      "ADC",    "RETI",   "RRD",    "RLD",    "SUB",    "AND",    "XOR",
-      "OR",     "CP",     "BIT",    "RES",    "SET",    "LDI",    "CPI",    "INI",
-      "OUTI",   "LDD",    "CPD",    "IND",    "OUTD",   "LDIR",   "CPIR",   "INIR",
-      "OTIR",   "LDDR",   "CPDR",   "INDR",   "OTDR",   "RET",    "POP",    "JP",
-      "CALL",   "PUSH",   "RST",    "PREFIX", "EXX",    "DI",     "EI",
-      "BC",     "DE",     "HL",     "IX",     "IY",     "SP",     "AF",     "AF'",
-      "B",      "C",      "D",      "E",      "H",      "L",      "(HL)",   "A",
-      "(BC)",   "(DE)",   "R",      "I",      "(C)",    "(SP)",   "PC",     "F",
-      "0",      "1",      "2",      "3",      "4",      "5",      "6",      "7",
-      "Z",      "NZ",     "NC",     "PO",     "PE",     "M",      "P",  
-      "N",      "NN",     "XNN",    "XN",     "DIS",    "CB",     "ED",
-      "XH",     "XL",     "YH",     "YL",     "DIS(IX)","DIS(IY)"
+
+static const char word_NIX[] PROGMEM = "";    
+static const char word_NOP[] PROGMEM = "NOP";
+static const char word_LD[] PROGMEM = "LD";
+static const char word_INC[] PROGMEM = "INC";
+static const char word_DEC[] PROGMEM = "DEC";
+static const char word_RLCA[] PROGMEM = "RLCA";
+static const char word_EX[] PROGMEM = "EX";
+static const char word_ADD[] PROGMEM = "ADD";
+static const char word_RRCA[] PROGMEM = "RRCA";
+static const char word_DJNZ[] PROGMEM = "DJNZ";
+static const char word_RLA[] PROGMEM = "RLA";
+static const char word_JR[] PROGMEM = "JR";
+static const char word_RRA[] PROGMEM = "RRA";
+static const char word_DAA[] PROGMEM = "DAA";
+static const char word_CPL[] PROGMEM = "CPL";
+static const char word_HALT[] PROGMEM = "HALT";
+static const char word_SCF[] PROGMEM = "SCF";
+static const char word_CCF[] PROGMEM = "CCF";
+static const char word_RLC[] PROGMEM = "RLC";
+static const char word_RRC[] PROGMEM = "RRC";
+static const char word_RL[] PROGMEM = "RL";
+static const char word_RR[] PROGMEM = "RR";
+static const char word_SLA[] PROGMEM = "SLA";
+static const char word_SRA[] PROGMEM = "SRA";
+static const char word_SLL[] PROGMEM = "SLL";
+static const char word_SRL[] PROGMEM = "SRL";
+static const char word_IN[] PROGMEM = "IN";
+static const char word_OUT[] PROGMEM = "OUT";
+static const char word_SBC[] PROGMEM = "SBC";
+static const char word_NEG[] PROGMEM = "NEG";
+static const char word_RETN[] PROGMEM = "RETN";
+static const char word_IM[] PROGMEM = "IM";
+static const char word_ADC[] PROGMEM = "ADC";
+static const char word_RETI[] PROGMEM = "RETI";
+static const char word_RRD[] PROGMEM = "RRD";
+static const char word_RLD[] PROGMEM = "RLD";
+static const char word_SUB[] PROGMEM = "SUB";
+static const char word_AND[] PROGMEM = "AND";
+static const char word_XOR[] PROGMEM = "XOR";
+static const char word_OR[] PROGMEM = "OR";
+static const char word_CP[] PROGMEM = "CP";
+static const char word_BIT[] PROGMEM = "BIT";
+static const char word_RES[] PROGMEM = "RES";
+static const char word_SET[] PROGMEM = "SET";
+static const char word_LDI[] PROGMEM = "LDI";
+static const char word_CPI[] PROGMEM = "CPI";
+static const char word_INI[] PROGMEM = "INI";
+static const char word_OUTI[] PROGMEM = "OUTI";
+static const char word_LDD[] PROGMEM = "LDD";
+static const char word_CPD[] PROGMEM = "CPD";
+static const char word_IND[] PROGMEM = "IND";
+static const char word_OUTD[] PROGMEM = "OUTD";
+static const char word_LDIR[] PROGMEM = "LDIR";
+static const char word_CPIR[] PROGMEM = "CPIR";
+static const char word_INIR[] PROGMEM = "INIR";
+static const char word_OTIR[] PROGMEM = "OTIR";
+static const char word_LDDR[] PROGMEM = "LDDR";
+static const char word_CPDR[] PROGMEM = "CPDR";
+static const char word_INDR[] PROGMEM = "INDR";
+static const char word_OTDR[] PROGMEM = "OTDR";
+static const char word_RET[] PROGMEM = "RET";
+static const char word_POP[] PROGMEM = "POP";
+static const char word_JP[] PROGMEM = "JP";
+static const char word_CALL[] PROGMEM = "CALL";
+static const char word_PUSH[] PROGMEM = "PUSH";
+static const char word_RST[] PROGMEM = "RST";
+static const char word_PFX[] PROGMEM = "PREFIX";
+static const char word_EXX[] PROGMEM = "EXX";
+static const char word_DI[] PROGMEM = "DI";
+static const char word_EI[] PROGMEM = "EI";
+static const char word_BC[] PROGMEM = "BC";
+static const char word_DE[] PROGMEM = "DE";
+static const char word_HL[] PROGMEM = "HL";
+static const char word_IX[] PROGMEM = "IX";
+static const char word_IY[] PROGMEM = "IY";
+static const char word_SP[] PROGMEM = "SP";
+static const char word_AF[] PROGMEM = "AF";
+static const char word_AF2[] PROGMEM = "AF'";
+static const char word_B[] PROGMEM = "B";
+static const char word_C[] PROGMEM = "C";
+static const char word_D[] PROGMEM = "D";
+static const char word_E[] PROGMEM = "E";
+static const char word_H[] PROGMEM = "H";
+static const char word_L[] PROGMEM = "L";
+static const char word_XHL[] PROGMEM = "(HL)";
+static const char word_A[] PROGMEM = "A";
+static const char word_XBC[] PROGMEM = "(BC)";
+static const char word_XDE[] PROGMEM = "(DE)";
+static const char word_R[] PROGMEM = "R";
+static const char word_I[] PROGMEM = "I";
+static const char word_XC[] PROGMEM = "(C)";
+static const char word_XSP[] PROGMEM = "(SP)";
+static const char word_PC[] PROGMEM = "PC";
+static const char word_F[] PROGMEM = "F";
+static const char word_N0[] PROGMEM = "0";
+static const char word_N1[] PROGMEM = "1";
+static const char word_N2[] PROGMEM = "2";
+static const char word_N3[] PROGMEM = "3";
+static const char word_N4[] PROGMEM = "4";
+static const char word_N5[] PROGMEM = "5";
+static const char word_N6[] PROGMEM = "6";
+static const char word_N7[] PROGMEM = "7";
+static const char word_Z[] PROGMEM = "Z";
+static const char word_NZ[] PROGMEM = "NZ";
+static const char word_NC[] PROGMEM = "NC";
+static const char word_PO[] PROGMEM = "PO";
+static const char word_PE[] PROGMEM = "PE";
+static const char word_M[] PROGMEM = "M";
+static const char word_P[] PROGMEM = "P";
+static const char word_N[] PROGMEM = "N";
+static const char word_NN[] PROGMEM = "NN";
+static const char word_XNN[] PROGMEM = "XNN";
+static const char word_XN[] PROGMEM = "XN";
+static const char word_DIS[] PROGMEM = "DIS";
+static const char word_CB[] PROGMEM = "CB";
+static const char word_ED[] PROGMEM = "ED";
+static const char word_XH[] PROGMEM = "XH";
+static const char word_XL[] PROGMEM = "XL";
+static const char word_YH[] PROGMEM = "YH";
+static const char word_YL[] PROGMEM = "YL";
+static const char word_XIX[] PROGMEM = "DIS(IX)";
+static const char word_XIY[] PROGMEM = "DIS(IY)";
+
+static const char * const word[] PROGMEM = 
+  {
+    word_NIX,
+    word_NOP,
+    word_LD,
+    word_INC,
+    word_DEC,
+    word_RLCA,
+    word_EX,
+    word_ADD,
+    word_RRCA,
+    word_DJNZ,
+    word_RLA,
+    word_JR,
+    word_RRA,
+    word_DAA,
+    word_CPL,
+    word_HALT,
+    word_SCF,
+    word_CCF,
+    word_RLC,
+    word_RRC,
+    word_RL,
+    word_RR,
+    word_SLA,
+    word_SRA,
+    word_SLL,
+    word_SRL,
+    word_IN,
+    word_OUT,
+    word_SBC,
+    word_NEG,
+    word_RETN,
+    word_IM,
+    word_ADC,
+    word_RETI,
+    word_RRD,
+    word_RLD,
+    word_SUB,
+    word_AND,
+    word_XOR,
+    word_OR,
+    word_CP,
+    word_BIT,
+    word_RES,
+    word_SET,
+    word_LDI,
+    word_CPI,
+    word_INI,
+    word_OUTI,
+    word_LDD,
+    word_CPD,
+    word_IND,
+    word_OUTD,
+    word_LDIR,
+    word_CPIR,
+    word_INIR,
+    word_OTIR,
+    word_LDDR,
+    word_CPDR,
+    word_INDR,
+    word_OTDR,
+    word_RET,
+    word_POP,
+    word_JP,
+    word_CALL,
+    word_PUSH,
+    word_RST,
+    word_PFX,
+    word_EXX,
+    word_DI,
+    word_EI,
+    word_BC,
+    word_DE,
+    word_HL,
+    word_IX,
+    word_IY,
+    word_SP,
+    word_AF,
+    word_AF2,
+    word_B,
+    word_C,
+    word_D,
+    word_E,
+    word_H,
+    word_L,
+    word_XHL,
+    word_A,
+    word_XBC,
+    word_XDE,
+    word_R,
+    word_I,
+    word_XC,
+    word_XSP,
+    word_PC,
+    word_F,
+    word_N0,
+    word_N1,
+    word_N2,
+    word_N3,
+    word_N4,
+    word_N5,
+    word_N6,
+    word_N7,
+    word_Z,
+    word_NZ,
+    word_NC,
+    word_PO,
+    word_PE,
+    word_M,
+    word_P,
+    word_N,
+    word_NN,
+    word_XNN,
+    word_XN,
+    word_DIS,
+    word_CB,
+    word_ED,
+    word_XH,
+    word_XL,
+    word_YH,
+    word_YL,
+    word_XIX,
+    word_XIY
   };
     
 static const unsigned char cmd_00[192] PROGMEM = 
@@ -310,6 +540,8 @@ unsigned char c_blk[]    = { LDI,CPI,INI,OUTI,0,0,0,0,LDD,CPD,IND,OUTD,0,0,0,0,
 
 unsigned char c_sh[]     = { RLC,RRC,RL,RR,SLA,SRA,SLL,SRL };
 
+
+char buffer[10];
 
 // ============================================================================================
 
@@ -528,7 +760,6 @@ int OpcodeLength (unsigned char op1, unsigned char op2) {
 
 // ===================================================================================
 
-
 void xword (unsigned char n, unsigned int *ip) {
   unsigned int nn;
 
@@ -573,7 +804,8 @@ void xword (unsigned char n, unsigned int *ip) {
       }
       break;
     default:
-      log0("%s", word[n]);
+      strcpy_P(buffer, (PGM_P)pgm_read_word(&(word[n])));
+      log0("%s", buffer);
       break;
     }
 }
@@ -581,7 +813,8 @@ void xword (unsigned char n, unsigned int *ip) {
 
 // ---- expand 3-char descriptor m[3] to mnemonic with arguments via pc
 void disass (const unsigned char *m, unsigned int *ip) {
-  log0("%-5s", word[*m++]);
+  strcpy_P(buffer, (PGM_P)pgm_read_word(&(word[*m++])));
+  log0("%-5s", buffer);
   if (*m) {
     xword(*m++,ip);
   }
