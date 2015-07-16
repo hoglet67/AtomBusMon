@@ -289,8 +289,13 @@ begin
              memory_addr when (memory_rd = '1' or memory_wr = '1') else
              Addr_int;
 
-    Din        <= Data;
-    memory_din <= Data;
+    data_latch : process(E)
+    begin
+        if falling_edge(E) then
+            Din        <= Data;
+            memory_din <= Data;
+        end if;
+    end process;
 
     Data       <= memory_dout when TSC = '0' and E = '1' and memory_wr = '1' else
                          Dout when TSC = '0' and E = '1' and R_W_n_int = '0' and memory_rd = '0' else
@@ -330,8 +335,8 @@ begin
     clock_test   <= clk_count(1) when EMode_n = '0' else clock7_3728;
 
     -- Main clocks
-    cpu_clk    <= not E;
-    busmon_clk <= E;
+    cpu_clk    <= Q;
+    busmon_clk <= not Q;
     
     -- Quadrature clock generator, unused in 6809E mode
     quadrature_gen : process(EXTAL)
