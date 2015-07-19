@@ -293,9 +293,9 @@ begin
     begin
         if falling_edge(E) then
             Din        <= Data;
-            memory_din <= Data;
         end if;
     end process;
+    memory_din <= Data;
 
     Data       <= memory_dout when TSC = '0' and E = '1' and memory_wr = '1' else
                          Dout when TSC = '0' and E = '1' and R_W_n_int = '0' and memory_rd = '0' else
@@ -336,7 +336,7 @@ begin
 
     -- Main clocks
     cpu_clk    <= Q;
-    busmon_clk <= not Q;
+    busmon_clk <= E;
     
     -- Quadrature clock generator, unused in 6809E mode
     quadrature_gen : process(EXTAL)
