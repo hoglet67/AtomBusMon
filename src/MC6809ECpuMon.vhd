@@ -44,12 +44,11 @@ entity MC6809ECpuMon is
         PIN34           : inout std_logic;
         PIN35           : inout std_logic;        
         PIN36           : inout std_logic;
-        PIN37           : inout std_logic;
         PIN38           : inout std_logic;
         PIN39           : in    std_logic;
 
         -- Signals common to both 6809 and 6809E
-        RES_n           : inout std_logic;
+        RES_n           : in    std_logic;
         NMI_n           : in    std_logic;
         IRQ_n           : in    std_logic;
         FIRQ_n          : in    std_logic;
@@ -97,7 +96,7 @@ signal R_W_n_int     : std_logic;
 signal NMI_sync      : std_logic;
 signal IRQ_sync      : std_logic;
 signal FIRQ_sync     : std_logic;
-signal RES_sync      : std_logic;
+signal nRST_sync      : std_logic;
 signal HALT_sync     : std_logic;
 signal Addr_int      : std_logic_vector(15 downto 0);
 signal Din           : std_logic_vector(7 downto 0);
@@ -108,7 +107,10 @@ signal hold          : std_logic;
 
 signal memory_rd     : std_logic;
 signal memory_wr     : std_logic;
+signal memory_rd1    : std_logic;
+signal memory_wr1    : std_logic;
 signal memory_addr   : std_logic_vector(15 downto 0);
+signal memory_addr1  : std_logic_vector(15 downto 0);
 signal memory_dout   : std_logic_vector(7 downto 0);
 signal memory_din    : std_logic_vector(7 downto 0);
 signal memory_done   : std_logic;
@@ -137,7 +139,15 @@ signal E             : std_logic;
 signal DMA_n_BREQ_n  : std_logic;
 
 signal clock7_3728   : std_logic;
-    
+
+signal E_a           : std_logic; -- E delayed by 0..20ns
+signal E_b           : std_logic; -- E delayed by 20..40ns
+signal E_c           : std_logic; -- E delayed by 40..60ns
+signal E_d           : std_logic; -- E delayed by 60..80ns
+signal E_e           : std_logic; -- E delayed by 80..100ns
+signal data_wr       : std_logic;
+signal nRSTout       : std_logic;
+
 begin
 
     mon : entity work.BusMonCore
@@ -155,8 +165,8 @@ begin
         WrIO_n  => '1',
         Sync    => Sync_int,
         Rdy     => Rdy_int,
-        nRSTin  => RES_n,
-        nRSTout => RES_n,
+        nRSTin  => nRST_sync,
+        nRSTout => nRSTout,
         CountCycle => CountCycle,
         trig    => trig,
         lcd_rs  => open,
@@ -215,7 +225,7 @@ begin
     GenCPU09Core: if UseCPU09Core generate
         inst_cpu09: entity work.cpu09 port map (
             clk      => cpu_clk,
-            rst      => RES_sync,
+            rst      => not nRST_sync,
             vma      => AVMA,
             lic_out  => LIC,
             ifetch   => ifetch,
@@ -243,7 +253,7 @@ begin
             NMI_sync   <= not NMI_n;
             IRQ_sync   <= not IRQ_n;
             FIRQ_sync  <= not FIRQ_n;
-            RES_sync   <= not RES_n;
+            nRST_sync  <= RES_n and nRSTout;
             HALT_sync  <= not HALT_n;
         end if;
     end process;
@@ -279,29 +289,41 @@ begin
 
     -- Only count cycles when the 6809 is actually running
     CountCycle <= not hold;
-   
+
+    -- this block delays memory_rd, memory_wr, memory_addr until the start of the next cpu clk cycle
+    -- necessary because the cpu mon block is clocked of the opposite edge of the clock
+    -- this allows a full cpu clk cycle for cpu mon reads and writes
+    mem_gen : process(cpu_clk)
+    begin
+        if rising_edge(cpu_clk) then
+            memory_rd1   <= memory_rd;
+            memory_wr1   <= memory_wr;
+            memory_addr1 <= memory_addr;
+        end if;
+    end process;
+    
     R_W_n <= 'Z' when TSC = '1' else
-             '1' when memory_rd = '1' else
-             '0' when memory_wr = '1' else
+             '1' when memory_rd1 = '1' else
+             '0' when memory_wr1 = '1' else
              R_W_n_int;
 
     Addr <=  (others => 'Z') when TSC = '1' else
-             memory_addr when (memory_rd = '1' or memory_wr = '1') else
+             memory_addr1 when (memory_rd1 = '1' or memory_wr1 = '1') else
              Addr_int;
 
     data_latch : process(E)
     begin
         if falling_edge(E) then
             Din        <= Data;
-        end if;
+            memory_din <= Data;
+       end if;
     end process;
-    memory_din <= Data;
-
-    Data       <= memory_dout when TSC = '0' and E = '1' and memory_wr = '1' else
-                         Dout when TSC = '0' and E = '1' and R_W_n_int = '0' and memory_rd = '0' else
+ 
+    Data       <= memory_dout when TSC = '0' and data_wr = '1' and memory_wr1 = '1' else
+                         Dout when TSC = '0' and data_wr = '1' and R_W_n_int = '0' and memory_rd1 = '0' else
                   (others => 'Z');
-    
-    memory_done <= memory_rd or memory_wr;
+
+    memory_done <= memory_rd1 or memory_wr1;
 
     -- The following outputs are not implemented
     -- BUSY          (6809E mode)
@@ -334,9 +356,24 @@ begin
     -- 7.3728 MHz in Normal Mode (6809) so it can drive EXTAL (PIN38)
     clock_test   <= clk_count(1) when EMode_n = '0' else clock7_3728;
 
+    -- Delayed version of the E clock
+    -- E_e is delayed by 80-100ns which is a close approximation to the real 6809
+    -- E_c is delayed by 40-60ns which is used to provide extra data hold time on writes
+    e_gen : process(clock49)
+    begin
+        if rising_edge(clock49) then
+          E_a <= E;
+          E_b <= E_a;
+          E_c <= E_b;
+          E_d <= E_c;
+          E_e <= E_d;
+        end if;
+    end process;
+    
     -- Main clocks
-    cpu_clk    <= Q;
-    busmon_clk <= E;
+    cpu_clk    <= not E_e;
+    busmon_clk <= E_e;
+    data_wr    <= E_c;
     
     -- Quadrature clock generator, unused in 6809E mode
     quadrature_gen : process(EXTAL)
