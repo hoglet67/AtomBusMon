@@ -437,7 +437,7 @@ begin
           if RstCycle = '1' then
 --            P(Flag_I) <= '0';
 --            P(Flag_D) <= '0';
-            tmpP(Flag_I) := '0';
+            tmpP(Flag_I) := '1';
             tmpP(Flag_D) := '0';
           end if;
 --          P(Flag_1) <= '1';
