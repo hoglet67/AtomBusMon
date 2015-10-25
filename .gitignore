@@ -19,7 +19,6 @@ ipcore_dir/WatchEvents.ncf
 ipcore_dir/WatchEvents.ngc
 ipcore_dir/WatchEvents.sym
 ipcore_dir/WatchEvents.vho
-ipcore_dir/WatchEvents.xco
 ipcore_dir/WatchEvents/
 ipcore_dir/WatchEvents_flist.txt
 ipcore_dir/WatchEvents_xmdf.tcl
