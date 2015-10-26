@@ -16,7 +16,6 @@ firmware/avr_progmem.*
 ipcore_dir/WatchEvents.asy
 ipcore_dir/WatchEvents.gise
 ipcore_dir/WatchEvents.ncf
-ipcore_dir/WatchEvents.ngc
 ipcore_dir/WatchEvents.sym
 ipcore_dir/WatchEvents.vho
 ipcore_dir/WatchEvents/
