@@ -94,8 +94,11 @@ architecture behavioral of AtomCpuMon is
     signal Regs          : std_logic_vector(63 downto 0);
     signal Regs1         : std_logic_vector(255 downto 0);
     signal memory_rd     : std_logic;
+    signal memory_rd1    : std_logic;
     signal memory_wr     : std_logic;
+    signal memory_wr1    : std_logic;
     signal memory_addr   : std_logic_vector(15 downto 0);
+    signal memory_addr1  : std_logic_vector(15 downto 0);
     signal memory_dout   : std_logic_vector(7 downto 0);
     signal memory_din    : std_logic_vector(7 downto 0);
     signal memory_done   : std_logic;
@@ -196,9 +199,21 @@ begin
           IRQ_n_sync <= IRQ_n;            
         end if;
     end process;
+
+    -- this block delays memory_rd, memory_wr, memory_addr until the start of the next cpu clk cycle
+    -- necessary because the cpu mon block is clocked of the opposite edge of the clock
+    -- this allows a full cpu clk cycle for cpu mon reads and writes
+    mem_gen : process(cpu_clk)
+    begin
+        if rising_edge(cpu_clk) then
+            memory_rd1   <= memory_rd;
+            memory_wr1   <= memory_wr;
+            memory_addr1 <= memory_addr;
+        end if;
+    end process;
     
-    R_W_n <= '1' when memory_rd = '1' else '0' when memory_wr = '1' else R_W_n_int;
-    Addr <= memory_addr when (memory_rd = '1' or memory_wr = '1') else Addr_int;
+    R_W_n <= '1' when memory_rd1 = '1' else '0' when memory_wr1 = '1' else R_W_n_int;
+    Addr <= memory_addr1 when (memory_rd1 = '1' or memory_wr1 = '1') else Addr_int;
     Sync <= Sync_int;
 
     data_latch : process(Phi0)
@@ -213,11 +228,11 @@ begin
         end if;
     end process;
     
-    Data       <= memory_dout when Phi0_c = '1' and memory_wr = '1' else
-                         Dout when Phi0_c = '1' and R_W_n_int = '0' and memory_rd = '0' else
+    Data       <= memory_dout when Phi0_c = '1' and memory_wr1 = '1' else
+                         Dout when Phi0_c = '1' and R_W_n_int = '0' and memory_rd1 = '0' else
                (others => 'Z');
 
-    memory_done <= memory_rd or memory_wr;
+    memory_done <= memory_rd1 or memory_wr1;
     
     clk_gen : process(clock49)
     begin
