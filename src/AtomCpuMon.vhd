@@ -76,7 +76,7 @@ architecture behavioral of AtomCpuMon is
     signal Dout          : std_logic_vector(7 downto 0);
     signal R_W_n_int     : std_logic;
     signal Sync_int      : std_logic;
-    signal Rdy_int       : std_logic;
+    signal hold          : std_logic;
     signal Addr_int      : std_logic_vector(15 downto 0);
     signal IRQ_n_sync    : std_logic;
     signal NMI_n_sync    : std_logic;
@@ -93,6 +93,11 @@ architecture behavioral of AtomCpuMon is
     
     signal Regs          : std_logic_vector(63 downto 0);
     signal Regs1         : std_logic_vector(255 downto 0);
+    signal last_PC       : std_logic_vector(15 downto 0);
+    signal SS_Single     : std_logic;
+    signal SS_Step       : std_logic;
+    signal CountCycle    : std_logic;
+
     signal memory_rd     : std_logic;
     signal memory_rd1    : std_logic;
     signal memory_wr     : std_logic;
@@ -115,10 +120,10 @@ begin
         RdIO_n  => '1',
         WrIO_n  => '1',
         Sync    => Sync_int,
-        Rdy     => Rdy_int,
+        Rdy     => open,
         nRSTin  => Res_n,
         nRSTout => Res_n,
-        CountCycle => Rdy_int,
+        CountCycle => CountCycle,
         trig    => trig,
         lcd_rs  => open,
         lcd_rw  => open,
@@ -143,10 +148,33 @@ begin
         DataOut => memory_dout,
         DataIn  => memory_din,
         Done    => memory_done,
-        SS_Step => open,
-        SS_Single => open
+        SS_Step => SS_Step,
+        SS_Single => SS_Single
     );
-    Regs1(63 downto 0) <= Regs;
+
+    -- The CPU09 is slightly pipelined and the register update of the last
+    -- instruction overlaps with the opcode fetch of the next instruction.
+    --
+    -- If the single stepping stopped on the opcode fetch cycle, then the registers
+    -- valued would not accurately reflect the previous instruction.
+    --
+    -- To work around this, when single stepping, we stop on the cycle after
+    -- the opcode fetch, which means the program counter has advanced.
+    --
+    -- To hide this from the user single stepping, all we need to do is to
+    -- also pipeline the value of the program counter by one stage to compensate.
+    
+    last_pc_gen : process(cpu_clk)
+    begin
+        if rising_edge(cpu_clk) then
+            if (hold = '0') then
+                last_PC <= Regs(63 downto 48);
+            end if;
+        end if;
+    end process;
+    
+    Regs1( 47 downto  0) <= Regs( 47 downto   0);
+    Regs1( 63 downto 48) <= last_PC;
     Regs1(255 downto 64) <= (others => '0');
 
     GenT65Core: if UseT65Core generate
@@ -155,9 +183,9 @@ begin
             Abort_n         => '1',
             SO_n            => SO_n,
             Res_n           => Res_n,
-            Enable          => '1',
+            Enable          => not hold,
             Clk             => cpu_clk,
-            Rdy             => Rdy_int,
+            Rdy             => '1',
             IRQ_n           => IRQ_n_sync,
             NMI_n           => NMI_n_sync,
             R_W_n           => R_W_n_int,
@@ -174,7 +202,7 @@ begin
         inst_r65c02: entity work.r65c02 port map (
             reset    => RES_n,
             clk      => cpu_clk,
-            enable   => Rdy_int,
+            enable   => not hold,
             nmi_n    => NMI_n_sync,
             irq_n    => IRQ_n_sync,
             di       => unsigned(Din),
@@ -199,6 +227,25 @@ begin
           IRQ_n_sync <= IRQ_n;            
         end if;
     end process;
+
+    -- This block generates a hold signal that acts as the inverse of a clock enable
+    -- for the 6809. See comments above for why this is a cycle later than the way
+    -- we would do if for the 6502.
+    hold_gen : process(cpu_clk)
+    begin
+        if rising_edge(cpu_clk) then
+            if (Sync_int = '1') then
+                -- stop after the opcode has been fetched
+                hold <= SS_Single;
+            elsif (SS_Step = '1') then
+                -- start again when the single step command is issues
+                hold <= '0';
+            end if;
+        end if;
+    end process;
+    
+    -- Only count cycles when the 6809 is actually running
+    CountCycle <= not hold;
 
     -- this block delays memory_rd, memory_wr, memory_addr until the start of the next cpu clk cycle
     -- necessary because the cpu mon block is clocked of the opposite edge of the clock
