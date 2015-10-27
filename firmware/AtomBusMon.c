@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.65"
+#define VERSION "0.66"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"

@@ -196,8 +196,11 @@ begin
             DO              => Dout,
             Regs            => Regs
         );
-    end generate;
+    end generate;    
     
+    -- IMPORTANT NOTE:
+    -- Single Stepping does not seem to be currently working with AlanD's 65C02 core
+    -- Commit 344e0318 likely broke it 
     GenAlanDCore: if UseAlanDCore generate
         inst_r65c02: entity work.r65c02 port map (
             reset    => RES_n,
@@ -217,12 +220,9 @@ begin
         Addr_int <= std_logic_vector(cpu_addr_us);
     end generate;
 
-    sync_gen : process(cpu_clk, Res_n)
+    sync_gen : process(cpu_clk)
     begin
-        if Res_n = '0' then
-          NMI_n_sync <= '1';
-          IRQ_n_sync <= '1';
-        elsif rising_edge(cpu_clk) then
+        if rising_edge(cpu_clk) then
           NMI_n_sync <= NMI_n;
           IRQ_n_sync <= IRQ_n;            
         end if;
