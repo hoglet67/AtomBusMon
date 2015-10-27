@@ -1187,7 +1187,7 @@ calcT: process(clk)
 -- -----------------------------------------------------------------------
 -- I flag interupt flag
 -- -----------------------------------------------------------------------
-	process(clk)
+	process(clk, reset)
 	begin
 	if reset = '0' then
       I <= '1';
@@ -1202,7 +1202,7 @@ calcT: process(clk)
 -- -----------------------------------------------------------------------
 -- D flag
 -- -----------------------------------------------------------------------
-	process(clk)
+	process(clk, reset)
 	begin
 	if reset = '0' then
       D <= '0';
@@ -1502,18 +1502,22 @@ calcAddr: process(clk)
 	myAddrDecrH <= myAddr(15 downto 8) - 1;
 	addr <= myAddr;
 	
-	calcsync: process(clk)
-	begin
-		
-			if enable = '1' then
-				case theCpuCycle is
-				when opcodeFetch =>			sync <= '1';
-				when others =>					sync <= '0';			
-				end case;
-			end if;
-	end process;
+-- DMB This looked plain broken and inferred a latch
+--    
+--	calcsync: process(clk)
+--	begin
+--		
+--			if enable = '1' then
+--				case theCpuCycle is
+--				when opcodeFetch =>			sync <= '1';
+--				when others =>					sync <= '0';			
+--				end case;
+--			end if;
+--	end process;
+
+   sync <= '1' when theCpuCycle = opcodeFetch else '0';
 	
-		sync_irq <= irqActive;
+   sync_irq <= irqActive;
 
    Regs <= std_logic_vector(PC) &
            "00000001" & std_logic_vector(S)& 

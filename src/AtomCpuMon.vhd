@@ -198,9 +198,6 @@ begin
         );
     end generate;    
     
-    -- IMPORTANT NOTE:
-    -- Single Stepping does not seem to be currently working with AlanD's 65C02 core
-    -- Commit 344e0318 likely broke it 
     GenAlanDCore: if UseAlanDCore generate
         inst_r65c02: entity work.r65c02 port map (
             reset    => RES_n,
