@@ -31,7 +31,7 @@ entity AtomFast6502 is
         clock49         : in    std_logic;
           
         -- 6502 Signals
-        Rdy             : in    std_logic;
+        --Rdy             : in    std_logic;
         Phi0            : in    std_logic;
         Phi1            : out   std_logic;
         Phi2            : out   std_logic;
@@ -63,7 +63,10 @@ entity AtomFast6502 is
         led6             : out   std_logic;
         led8             : out   std_logic;
 
-        test             : out    std_logic_vector(6 downto 0)
+        -- OHO_DY1 connected to test connector
+        tmosi            : out   std_logic;
+        tdin             : out   std_logic;
+        tcclk            : out   std_logic
 
     );
 end AtomFast6502;
@@ -71,7 +74,6 @@ end AtomFast6502;
 architecture behavioral of AtomFast6502 is
     
     signal Din           : std_logic_vector(7 downto 0);
-    signal Dout          : std_logic_vector(7 downto 0);
 
     -- Signal from the internal core
     signal Dout0          : std_logic_vector(7 downto 0);
@@ -84,12 +86,14 @@ architecture behavioral of AtomFast6502 is
     signal Addr1          : std_logic_vector(15 downto 0);
     signal R_W_n1         : std_logic;
     signal Sync1          : std_logic;
+    signal Rdy_int        : std_logic;
 
     signal cpu_addr_us: unsigned (15 downto 0);
     signal cpu_dout_us: unsigned (7 downto 0);
 
     signal clock_16x     : std_logic;
     signal cpu_clk       : std_logic;
+    signal busmon_clk    : std_logic;
     signal R_W_n_int     : std_logic;
 
     signal cpu_clken     : std_logic;
@@ -105,8 +109,61 @@ architecture behavioral of AtomFast6502 is
     signal edge0         : std_logic;
     signal edge1         : std_logic;
 
-
+    
+    signal Regs          : std_logic_vector(63 downto 0);
+    signal Regs1         : std_logic_vector(255 downto 0);
+    signal memory_rd     : std_logic;
+    signal memory_wr     : std_logic;
+    signal memory_addr   : std_logic_vector(15 downto 0);
+    signal memory_dout   : std_logic_vector(7 downto 0);
+    signal memory_din    : std_logic_vector(7 downto 0);
+    signal memory_done   : std_logic;
+    
 begin
+
+    mon : entity work.BusMonCore port map (  
+        clock49 => clock49,
+        Addr    => Addr1,
+        Data    => Data,
+        Phi2    => busmon_clk,
+        Rd_n    => not R_W_n1,
+        Wr_n    => R_W_n1,
+        RdIO_n  => '1',
+        WrIO_n  => '1',
+        Sync    => Sync1,
+        Rdy     => Rdy_int,
+        nRSTin  => Res_n,
+        nRSTout => Res_n,
+        CountCycle => Rdy_int,
+        trig    => trig,
+        lcd_rs  => open,
+        lcd_rw  => open,
+        lcd_e   => open,
+        lcd_db  => open,
+        avr_RxD => avr_RxD,
+        avr_TxD => avr_TxD,
+        sw1     => sw1,
+        nsw2    => nsw2,
+        led3    => led3,
+        led6    => led6,
+        led8    => led8,
+        tmosi   => tmosi,
+        tdin    => tdin,
+        tcclk   => tcclk,
+        Regs    => Regs1,
+        RdMemOut=> memory_rd,
+        WrMemOut=> memory_wr,
+        RdIOOut => open,
+        WrIOOut => open,
+        AddrOut => memory_addr,
+        DataOut => memory_dout,
+        DataIn  => memory_din,
+        Done    => memory_done,
+        SS_Step => open,
+        SS_Single => open
+    );
+    Regs1(63 downto 0) <= Regs;
+    Regs1(255 downto 64) <= (others => '0');
 
     GenT65Core: if UseT65Core generate
         inst_t65: entity work.T65 port map (
@@ -116,7 +173,7 @@ begin
             Res_n           => Res_n,
             Enable          => cpu_clken,
             Clk             => clock_16x,
-            Rdy             => Rdy,
+            Rdy             => Rdy_int,
             IRQ_n           => IRQ_n,
             NMI_n           => NMI_n,
             R_W_n           => R_W_n0,
@@ -125,7 +182,7 @@ begin
             A(15 downto 0)  => Addr0,
             DI              => Din,
             DO              => Dout0,
-            Regs            => open
+            Regs            => Regs
         );
     end generate;
     
@@ -142,13 +199,34 @@ begin
             nwe      => R_W_n0,
             sync     => Sync0,
             sync_irq => open,
-            Regs     => open            
+            Regs     => Regs            
         );
         Dout0 <= std_logic_vector(cpu_dout_us);
         Addr0 <= std_logic_vector(cpu_addr_us);
     end generate;
 
 
+    
+
+    Phi1 <= Phi1_int;
+    Phi2 <= Phi2_int;
+    busmon_clk <= Phi2_int;
+    Din <= Data;
+
+    
+    Addr <= memory_addr when (memory_rd = '1' or memory_wr = '1') else Addr1;
+    R_W_n <= '1' when memory_rd = '1' else '0' when memory_wr = '1' else R_W_n1;
+    Sync <= Sync1;
+    
+    Data       <= memory_dout when cpu_dataen = '1' and memory_wr = '1' else
+                         Dout1 when cpu_dataen = '1' and R_W_n1 = '0' and memory_rd = '0' else
+               (others => 'Z');
+
+    memory_done <= memory_rd or memory_wr;
+
+
+
+    
     inst_dcm2 : entity work.DCM2 port map(
         CLKIN_IN          => Phi0,
         CLKFX_OUT         => clock_16x,
@@ -208,6 +286,7 @@ begin
             if (clk_div = "0000") then
                 Phi1_int <= '1';
                 Phi2_int <= '0';
+                memory_din <= Data;
             elsif (clk_div = "1000") then
                 Phi1_int <= '0';
                 Phi2_int <= '1';
@@ -219,8 +298,8 @@ begin
                 Sync1  <= Sync0;
             end if;        
             -- Skew data by one cycle
-            if (clk_div = "1011") then
-                cpu_dataen <= not R_W_n0;
+            if (clk_div = "1000") then
+                cpu_dataen <= '1';
                 Dout1  <= Dout0;
             elsif (clk_div = "0001") then
                 cpu_dataen <= '0';
@@ -229,26 +308,5 @@ begin
         end if;
     end process;
     
-    Phi1 <= Phi1_int;
-    Phi2 <= Phi2_int;
-    Din <= Data;
-    Addr <= Addr1;
-    R_W_n <= R_W_n1;
-    Sync <= Sync1;
-    Data <= Dout1 when cpu_dataen = '1' else "ZZZZZZZZ";
-    
-    led3 <= '1';
-    led6 <= '1';
-    led8 <= '1';
-    avr_TxD <= '1';
-    
-    test(0) <= clock_16x;
-    test(1) <= Phi1_int;
-    test(2) <= Phi2_int;
-    test(3) <= dcm_locked;
-    test(4) <= dcm_reset;
-    test(5) <= R_W_n1;
-    test(6) <= '1';
-
 end behavioral;
     

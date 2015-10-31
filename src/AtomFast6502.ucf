@@ -1,8 +1,11 @@
 
 NET "clock49"  LOC="P89" | IOSTANDARD = LVCMOS33 | PERIOD = 20.35ns  ; # 49.152 MHz Oscillator
 
+NET "clock49" CLOCK_DEDICATED_ROUTE = FALSE;
+PIN "mon/inst_dcm0/DCM_INST.CLKIN" CLOCK_DEDICATED_ROUTE = FALSE;
+   
 #NET "VSS"    LOC="P16" | IOSTANDARD = LVCMOS33 ; # 6502 pin 1
-NET "Rdy"      LOC="P95" | IOSTANDARD = LVCMOS33 ; # 6502 pin 2
+#NET "Rdy"      LOC="P95" | IOSTANDARD = LVCMOS33 ; # 6502 pin 2
 NET "Phi1"     LOC="P18" | IOSTANDARD = LVCMOS33 ; # 6502 pin 3
 NET "IRQ_n"    LOC="P17" | IOSTANDARD = LVCMOS33 | PULLUP ; # 6502 pin 4
 #NET "NC"      LOC="P94" | IOSTANDARD = LVCMOS33 ; # 6502 pin 5
@@ -50,13 +53,13 @@ NET "sw1"        LOC="P39" | IOSTANDARD = LVCMOS33 ; # Bottom Switch
 NET "nsw2"       LOC="P69" | IOSTANDARD = LVCMOS33 | PULLUP ; # Top Switch
 
 # I/O's for test connector
-NET test<0>                     LOC=P48 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-NET test<1>                     LOC=P49 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-NET test<2>                     LOC=P27 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-NET test<3>                     LOC=P44 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-NET test<4>                     LOC=P50 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-NET test<5>                     LOC=P42 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-NET test<6>                     LOC=P99 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+#NET tvs1                      LOC=P48 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+#NET tvs0                      LOC=P49 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+NET tmosi                     LOC=P27 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+NET tdin                      LOC=P44 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+NET tcclk                     LOC=P50 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+#NET tm1                       LOC=P42 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+#NET thsw                      LOC=P99 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
 
 NET "avr_TxD" LOC="P26" | IOSTANDARD = LVCMOS33 ;
 NET "avr_RxD" LOC="P15" | IOSTANDARD = LVCMOS33 ;

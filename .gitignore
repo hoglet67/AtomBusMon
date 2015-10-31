@@ -6,6 +6,7 @@ AtomBusMon_summary.html
 src/AtomBusMon_bd.bmm
 src/AtomCpuMon_bd.bmm
 src/AtomCpuMon_bd.bmm
+src/AtomFast6502_bd.bmm
 src/Z80CpuMon_bd.bmm
 src/MC6809ECpuMon_bd.bmm
 *~
