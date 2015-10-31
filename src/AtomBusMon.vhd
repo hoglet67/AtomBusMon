@@ -63,46 +63,64 @@ end AtomBusMon;
 
 architecture behavioral of AtomBusMon is
 
+signal clock_avr : std_logic;
+
+signal Rdy_int : std_logic;
+
 begin
 
+    inst_dcm0 : entity work.DCM0 port map(
+        CLKIN_IN          => clock49,
+        CLK0_OUT          => clock_avr,
+        CLK0_OUT1         => open,
+        CLK2X_OUT         => open
+    );    
+
     mon : entity work.BusMonCore port map (  
-        clock49 => clock49,
-        Addr    => Addr,
-        Data    => (others => '0'),
-        Phi2    => Phi2,
-        Rd_n    => not RNW,
-        Wr_n    => RNW,
-        Sync    => Sync,
-        Rdy     => Rdy,
-        nRSTin  => nRST,
-        nRSTout => nRST,
-        CountCycle => Rdy,
-        Regs    => (others => '0'),
-        RdMemOut=> open,
-        WrMemOut=> open,
-        RdIOOut => open,
-        WrIOOut => open,
-        AddrOut => open,
-        DataOut => open,
-        DataIn  => (others => '0'),        
-        trig    => trig,
-        lcd_rs  => open,
-        lcd_rw  => open,
-        lcd_e   => open,
-        lcd_db  => open,
-        avr_RxD => avr_RxD,
-        avr_TxD => avr_TxD,
-        sw1     => sw1,
-        nsw2    => nsw2,
-        led3    => led3,
-        led6    => led6,
-        led8    => led8,
-        tmosi   => tmosi,
-        tdin    => tdin,
-        tcclk   => tcclk,
-        SS_Step => open,
-        SS_Single => open
+        clock_avr    => clock_avr,
+        busmon_clk   => Phi2,
+        busmon_clken => '1',
+        cpu_clk      => not Phi2,
+        cpu_clken    => '1',
+        Addr         => Addr,
+        Data         => (others => '0'),
+        Rd_n         => not RNW,
+        Wr_n         => RNW,
+        RdIO_n       => '1',
+        WrIO_n       => '1',
+        Sync         => Sync,
+        Rdy          => Rdy_int,
+        nRSTin       => nRST,
+        nRSTout      => nRST,
+        CountCycle   => Rdy_int,
+        Regs         => (others => '0'),
+        RdMemOut     => open,
+        WrMemOut     => open,
+        RdIOOut      => open,
+        WrIOOut      => open,
+        AddrOut      => open,
+        DataOut      => open,
+        DataIn       => (others => '0'),
+        Done         => '1',
+        trig         => trig,
+        lcd_rs       => open,
+        lcd_rw       => open,
+        lcd_e        => open,
+        lcd_db       => open,
+        avr_RxD      => avr_RxD,
+        avr_TxD      => avr_TxD,
+        sw1          => sw1,
+        nsw2         => nsw2,
+        led3         => led3,
+        led6         => led6,
+        led8         => led8,
+        tmosi        => tmosi,
+        tdin         => tdin,
+        tcclk        => tcclk,
+        SS_Step      => open,
+        SS_Single    => open
     );
+    Rdy <= Rdy_int;
 
 end behavioral;
 

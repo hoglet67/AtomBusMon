@@ -82,6 +82,8 @@ type state_type is (idle, rd_init, rd_setup, rd, rd_hold, wr_init, wr_setup, wr,
 
 signal state : state_type;
 
+signal clock_avr     : std_logic;
+
 signal RESET_n_int : std_logic;
 signal cpu_clk : std_logic;
 signal busmon_clk : std_logic;
@@ -141,50 +143,60 @@ signal mon_data   : std_logic_vector(7 downto 0);
 
 begin
 
-      mon : entity work.BusMonCore
+    inst_dcm0 : entity work.DCM0 port map(
+        CLKIN_IN          => clock49,
+        CLK0_OUT          => clock_avr,
+        CLK0_OUT1         => open,
+        CLK2X_OUT         => open
+    );
+
+    mon : entity work.BusMonCore
       generic map (
         num_comparators => 4
       )
       port map (  
-        clock49    => clock49,
-        Addr       => Addr_int,
-        Data       => mon_data,
-        Phi2       => busmon_clk,
-        Rd_n       => Read_n,
-        Wr_n       => Write_n,
-        RdIO_n     => ReadIO_n,
-        WrIO_n     => WriteIO_n,
-        Sync       => Sync,
-        Rdy        => Rdy,
-        nRSTin     => RESET_n_int,
-        nRSTout    => nRST,
-        CountCycle => CountCycle,
-        trig       => trig,
-        lcd_rs     => open,
-        lcd_rw     => open,
-        lcd_e      => open,
-        lcd_db     => open,
-        avr_RxD    => avr_RxD,
-        avr_TxD    => avr_TxD,
-        sw1        => '0',
-        nsw2       => nsw2,
-        led3       => led3,
-        led6       => led6,
-        led8       => led8,
-        tmosi      => tmosi,
-        tdin       => tdin,
-        tcclk      => tcclk,
-        Regs       => Regs,
-        RdMemOut   => memory_rd,
-        WrMemOut   => memory_wr,
-        RdIOOut    => io_rd,
-        WrIOOut    => io_wr,
-        AddrOut    => memory_addr,
-        DataOut    => memory_dout,
-        DataIn     => memory_din,
-        Done       => memory_done,
-        SS_Single  => SS_Single,
-        SS_Step    => SS_Step
+        clock_avr    => clock_avr,
+        busmon_clk   => busmon_clk,
+        busmon_clken => '1',
+        cpu_clk      => cpu_clk,
+        cpu_clken    => '1',
+        Addr         => Addr_int,
+        Data         => mon_data,
+        Rd_n         => Read_n,
+        Wr_n         => Write_n,
+        RdIO_n       => ReadIO_n,
+        WrIO_n       => WriteIO_n,
+        Sync         => Sync,
+        Rdy          => Rdy,
+        nRSTin       => RESET_n_int,
+        nRSTout      => nRST,
+        CountCycle   => CountCycle,
+        trig         => trig,
+        lcd_rs       => open,
+        lcd_rw       => open,
+        lcd_e        => open,
+        lcd_db       => open,
+        avr_RxD      => avr_RxD,
+        avr_TxD      => avr_TxD,
+        sw1          => '0',
+        nsw2         => nsw2,
+        led3         => led3,
+        led6         => led6,
+        led8         => led8,
+        tmosi        => tmosi,
+        tdin         => tdin,
+        tcclk        => tcclk,
+        Regs         => Regs,
+        RdMemOut     => memory_rd,
+        WrMemOut     => memory_wr,
+        RdIOOut      => io_rd,
+        WrIOOut      => io_wr,
+        AddrOut      => memory_addr,
+        DataOut      => memory_dout,
+        DataIn       => memory_din,
+        Done         => memory_done,
+        SS_Single    => SS_Single,
+        SS_Step      => SS_Step
     );
 
     GenT80Core: if UseT80Core generate

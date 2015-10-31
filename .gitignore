@@ -22,6 +22,7 @@ ipcore_dir/WatchEvents.vho
 ipcore_dir/WatchEvents/
 ipcore_dir/WatchEvents_flist.txt
 ipcore_dir/WatchEvents_xmdf.tcl
+ipcore_dir/gen_WatchEvents.tcl
 ipcore_dir/_xmsgs/
 ipcore_dir/coregen.cgp
 ipcore_dir/coregen.log

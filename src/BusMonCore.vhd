@@ -29,12 +29,16 @@ entity BusMonCore is
         fifo_width      : integer := 72
     );
     port (
-        clock49         : in    std_logic;
+        clock_avr        : in    std_logic;
+
+        busmon_clk       : in    std_logic;
+        busmon_clken     : in    std_logic;
+        cpu_clk          : in    std_logic;
+        cpu_clken        : in    std_logic;
 
         -- CPU Signals
         Addr             : in    std_logic_vector(15 downto 0);
         Data             : in    std_logic_vector(7 downto 0);
-        Phi2             : in    std_logic;
         Rd_n             : in    std_logic;
         Wr_n             : in    std_logic;
         RdIO_n           : in    std_logic;
@@ -96,8 +100,8 @@ end BusMonCore;
 
 architecture behavioral of BusMonCore is
 
-    signal clock_avr       : std_logic;
     signal nrst_avr        : std_logic;
+    
     signal lcd_rw_int      : std_logic;
     signal lcd_db_in       : std_logic_vector(7 downto 4);
     signal lcd_db_out      : std_logic_vector(7 downto 4);
@@ -138,7 +142,9 @@ architecture behavioral of BusMonCore is
     signal fifo_dout       : std_logic_vector(fifo_width - 1 downto 0);
     signal fifo_empty      : std_logic;
     signal fifo_rd         : std_logic;
+    signal fifo_rd_en      : std_logic;
     signal fifo_wr         : std_logic;
+    signal fifo_wr_en      : std_logic;
     signal fifo_rst        : std_logic;
 
     signal memory_rd       : std_logic;
@@ -152,15 +158,8 @@ architecture behavioral of BusMonCore is
     
 begin
 
-    inst_dcm0 : entity work.DCM0 port map(
-        CLKIN_IN          => clock49,
-        CLK0_OUT          => clock_avr,
-        CLK0_OUT1         => open,
-        CLK2X_OUT         => open
-    );    
-
     inst_oho_dy1 : entity work.Oho_Dy1 port map (
-        dy_clock       => clock49,
+        dy_clock       => clock_avr,
         dy_rst_n       => '1',
         dy_data        => dy_data,
         dy_update      => '1',
@@ -247,15 +246,17 @@ begin
     );
 
     WatchEvents_inst : entity work.WatchEvents port map(
-        clk    => Phi2,
+        clk    => busmon_clk,
         srst   => fifo_rst,
         din    => fifo_din,
-        wr_en  => fifo_wr,
-        rd_en  => fifo_rd,
+        wr_en  => fifo_wr_en,
+        rd_en  => fifo_rd_en,
         dout   => fifo_dout,
         full   => open,
         empty  => fifo_empty
     );
+    fifo_wr_en <= fifo_wr and busmon_clken;
+    fifo_rd_en <= fifo_rd and busmon_clken;
   
     -- The fifo is writen the cycle after the break point
     -- Addr1 is the address bus delayed by 1 cycle
@@ -410,128 +411,130 @@ begin
     -- 1x1xx Unused
     -- 11xxx Unused
 
-    risingProcess: process (Phi2)
+    cpuProcess: process (busmon_clk)
     begin
-        if rising_edge(Phi2) then
-        
-            -- Cycle counter, wraps every 16s at 1MHz
-            if (nRSTin = '0') then
-                cycleCount <= (others => '0');
-            elsif (CountCycle = '1') then
-                cycleCount <= cycleCount + 1;
-            end if;
-        
-            -- Command processing
-            cmd_edge1 <= cmd_edge;
-            cmd_edge2 <= cmd_edge1;
-            fifo_rd   <= '0';
-            fifo_wr   <= '0';
-            fifo_rst  <= '0';
-            memory_rd <= '0';
-            memory_wr <= '0';
-            io_rd     <= '0';
-            io_wr     <= '0';
-            SS_Step   <= '0';
-            if (cmd_edge2 = '0' and cmd_edge1 = '1') then
-                if (cmd(4 downto 1) = "0000") then
-                    single <= cmd(0);
+        if rising_edge(busmon_clk) then
+            if busmon_clken = '1' then
+                -- Cycle counter, wraps every 16s at 1MHz
+                if (nRSTin = '0') then
+                    cycleCount <= (others => '0');
+                elsif (CountCycle = '1') then
+                    cycleCount <= cycleCount + 1;
+                end if;
+            
+                -- Command processing
+                cmd_edge1 <= cmd_edge;
+                cmd_edge2 <= cmd_edge1;
+                fifo_rd   <= '0';
+                fifo_wr   <= '0';
+                fifo_rst  <= '0';
+                memory_rd <= '0';
+                memory_wr <= '0';
+                io_rd     <= '0';
+                io_wr     <= '0';
+                SS_Step   <= '0';
+                if (cmd_edge2 = '0' and cmd_edge1 = '1') then
+                    if (cmd(4 downto 1) = "0000") then
+                        single <= cmd(0);
+                    end if;
+                    
+                    if (cmd(4 downto 1) = "0001") then
+                        brkpt_enable <= cmd(0);
+                    end if;
+                    
+                    if (cmd(4 downto 1) = "0010") then
+                        brkpt_reg <= cmd(0) & brkpt_reg(brkpt_reg'length - 1 downto 1);
+                    end if;
+
+                    if (cmd(4 downto 1) = "0110") then
+                        addr_dout_reg <= cmd(0) & addr_dout_reg(addr_dout_reg'length - 1 downto 1);
+                    end if;
+                    
+                    if (cmd(4 downto 1) = "0011") then
+                        reset <= cmd(0);
+                    end if;
+
+                    if (cmd(4 downto 0) = "01001") then
+                        fifo_rd <= '1';
+                    end if;                
+
+                    if (cmd(4 downto 0) = "01010") then
+                        fifo_rst <= '1';
+                    end if;
+
+                    if (cmd(4 downto 1) = "1000") then
+                        memory_rd <= '1';
+                        auto_inc  <= cmd(0); 
+                    end if;
+
+                    if (cmd(4 downto 1) = "1001") then
+                        memory_wr <= '1';
+                        auto_inc  <= cmd(0); 
+                    end if;
+
+                    if (cmd(4 downto 1) = "1010") then
+                        io_rd <= '1';
+                        auto_inc  <= cmd(0); 
+                    end if;
+
+                    if (cmd(4 downto 1) = "1011") then
+                        io_wr <= '1';
+                        auto_inc  <= cmd(0); 
+                    end if;
+                    
                 end if;
                 
-                if (cmd(4 downto 1) = "0001") then
-                    brkpt_enable <= cmd(0);
+                -- Auto increment the memory address reg the cycle after a rd/wr
+                if (auto_inc = '1' and Done = '1') then
+                    addr_dout_reg(23 downto 8) <= addr_dout_reg(23 downto 8) + 1;
+                end if;
+
+                -- Single Stepping
+                if (brkpt_active = '1') then
+                    single <= '1';
                 end if;
                 
-                if (cmd(4 downto 1) = "0010") then
-                    brkpt_reg <= cmd(0) & brkpt_reg(brkpt_reg'length - 1 downto 1);
-                end if;
-
-                if (cmd(4 downto 1) = "0110") then
-                    addr_dout_reg <= cmd(0) & addr_dout_reg(addr_dout_reg'length - 1 downto 1);
-                end if;
-                
-                if (cmd(4 downto 1) = "0011") then
-                    reset <= cmd(0);
-                end if;
-
-                if (cmd(4 downto 0) = "01001") then
-                    fifo_rd <= '1';
-                end if;                
-
-                if (cmd(4 downto 0) = "01010") then
-                    fifo_rst <= '1';
-                end if;
-
-                if (cmd(4 downto 1) = "1000") then
-                    memory_rd <= '1';
-                    auto_inc  <= cmd(0); 
-                end if;
-
-                if (cmd(4 downto 1) = "1001") then
-                    memory_wr <= '1';
-                    auto_inc  <= cmd(0); 
-                end if;
-
-                if (cmd(4 downto 1) = "1010") then
-                    io_rd <= '1';
-                    auto_inc  <= cmd(0); 
-                end if;
-
-                if (cmd(4 downto 1) = "1011") then
-                    io_wr <= '1';
-                    auto_inc  <= cmd(0); 
+                if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "01000")) then
+                    Rdy_int <= (not brkpt_active);
+                    SS_Step <= (not brkpt_active);            
+                else
+                    Rdy_int <= (not Sync);
                 end if;
                 
+                -- CPU Reset needs to be open collector
+                if (reset = '1') then
+                     nRSTout <= '0';
+                else
+                     nRSTout <= 'Z';
+                end if;
+                
+                -- Latch instruction address for the whole cycle
+                if (Sync = '1') then
+                    addr_inst <= Addr;
+                    cycleCount_inst <= cycleCount;
+                end if;
+                
+                -- Breakpoints and Watches written to the FIFO
+                brkpt_active1 <= brkpt_active;
+                bw_status1    <= bw_status;
+                if watch_active = '1' or (brkpt_active = '1' and brkpt_active1 = '0') then
+                    fifo_wr <= '1';
+                    Addr1 <= Addr;
+                end if;
             end if;
-            
-            -- Auto increment the memory address reg the cycle after a rd/wr
-            if (auto_inc = '1' and Done = '1') then
-                addr_dout_reg(23 downto 8) <= addr_dout_reg(23 downto 8) + 1;
-            end if;
-
-            -- Single Stepping
-            if (brkpt_active = '1') then
-                single <= '1';
-            end if;
-            
-            if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "01000")) then
-                Rdy_int <= (not brkpt_active);
-                SS_Step <= (not brkpt_active);            
-            else
-                Rdy_int <= (not Sync);
-            end if;
-            
-            -- CPU Reset needs to be open collector
-            if (reset = '1') then
-                 nRSTout <= '0';
-            else
-                 nRSTout <= 'Z';
-            end if;
-            
-            -- Latch instruction address for the whole cycle
-            if (Sync = '1') then
-                addr_inst <= Addr;
-                cycleCount_inst <= cycleCount;
-            end if;
-            
-            -- Breakpoints and Watches written to the FIFO
-            brkpt_active1 <= brkpt_active;
-            bw_status1    <= bw_status;
-            if watch_active = '1' or (brkpt_active = '1' and brkpt_active1 = '0') then
-                fifo_wr <= '1';
-                Addr1 <= Addr;
-            end if;
-            
         end if;
     end process;
 
-    fallingProcess: process (Phi2)
+    dataProcess: process (cpu_clk)
     begin
-        if falling_edge(Phi2) then
-            -- Latch the data bus for use in watches
-            Data1 <= Data;
-            -- Latch memory read in response to a read command
-            if (Done = '1') then
-                din_reg <= DataIn;
+        if rising_edge(cpu_clk) then
+            if cpu_clken = '1' then
+                -- Latch the data bus for use in watches
+                Data1 <= Data;
+                -- Latch memory read in response to a read command
+                if (Done = '1') then
+                    din_reg <= DataIn;
+                end if;
             end if;
         end if;
     end process;

@@ -90,6 +90,8 @@ end MC6809ECpuMon;
 
 architecture behavioral of MC6809ECpuMon is
 
+signal clock_avr     : std_logic;
+
 signal cpu_clk       : std_logic;
 signal busmon_clk    : std_logic;
 signal R_W_n_int     : std_logic;
@@ -148,55 +150,66 @@ signal E_e           : std_logic; -- E delayed by 80..100ns
 signal data_wr       : std_logic;
 signal nRSTout       : std_logic;
 
+
 begin
 
+    inst_dcm0 : entity work.DCM0 port map(
+        CLKIN_IN          => clock49,
+        CLK0_OUT          => clock_avr,
+        CLK0_OUT1         => open,
+        CLK2X_OUT         => open
+    );
+    
     mon : entity work.BusMonCore
       generic map (
         num_comparators => 8
       )
       port map (  
-        clock49 => clock49,
-        Addr    => Addr_int,
-        Data    => Data,
-        Phi2    => busmon_clk,
-        Rd_n    => not R_W_n_int,
-        Wr_n    => R_W_n_int,
-        RdIO_n  => '1',
-        WrIO_n  => '1',
-        Sync    => Sync_int,
-        Rdy     => Rdy_int,
-        nRSTin  => nRST_sync,
-        nRSTout => nRSTout,
-        CountCycle => CountCycle,
-        trig    => trig,
-        lcd_rs  => open,
-        lcd_rw  => open,
-        lcd_e   => open,
-        lcd_db  => open,
-        avr_RxD => avr_RxD,
-        avr_TxD => avr_TxD,
-        sw1     => sw1,
-        nsw2    => nsw2,
-        led3    => led3,
-        led6    => led6,
-        led8    => led8,
-        tmosi   => tmosi,
-        tdin    => tdin,
-        tcclk   => tcclk,
-        Regs    => Regs1,
-        RdMemOut=> memory_rd,
-        WrMemOut=> memory_wr,
-        RdIOOut => open,
-        WrIOOut => open,
-        AddrOut => memory_addr,
-        DataOut => memory_dout,
-        DataIn  => memory_din,
-        Done    => memory_done,
-        SS_Step => SS_Step,
-        SS_Single => SS_Single
+        clock_avr    => clock_avr,
+        busmon_clk   => busmon_clk,
+        busmon_clken => '1',
+        cpu_clk      => cpu_clk,
+        cpu_clken    => '1',
+        Addr         => Addr_int,
+        Data         => Data,
+        Rd_n         => not R_W_n_int,
+        Wr_n         => R_W_n_int,
+        RdIO_n       => '1',
+        WrIO_n       => '1',
+        Sync         => Sync_int,
+        Rdy          => Rdy_int,
+        nRSTin       => nRST_sync,
+        nRSTout      => nRSTout,
+        CountCycle   => CountCycle,
+        trig         => trig,
+        lcd_rs       => open,
+        lcd_rw       => open,
+        lcd_e        => open,
+        lcd_db       => open,
+        avr_RxD      => avr_RxD,
+        avr_TxD      => avr_TxD,
+        sw1          => sw1,
+        nsw2         => nsw2,
+        led3         => led3,
+        led6         => led6,
+        led8         => led8,
+        tmosi        => tmosi,
+        tdin         => tdin,
+        tcclk        => tcclk,
+        Regs         => Regs1,
+        RdMemOut     => memory_rd,
+        WrMemOut     => memory_wr,
+        RdIOOut      => open,
+        WrIOOut      => open,
+        AddrOut      => memory_addr,
+        DataOut      => memory_dout,
+        DataIn       => memory_din,
+        Done         => memory_done,
+        SS_Step      => SS_Step,
+        SS_Single    => SS_Single
     );
     
-    -- The CPU09 is slightly pipelined and the register update of the last
+    -- The CPU is slightly pipelined and the register update of the last
     -- instruction overlaps with the opcode fetch of the next instruction.
     --
     -- If the single stepping stopped on the opcode fetch cycle, then the registers

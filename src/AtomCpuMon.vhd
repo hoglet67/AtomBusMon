@@ -71,6 +71,8 @@ entity AtomCpuMon is
 end AtomCpuMon;
 
 architecture behavioral of AtomCpuMon is
+
+    signal clock_avr     : std_logic;
     
     signal Din           : std_logic_vector(7 downto 0);
     signal Dout          : std_logic_vector(7 downto 0);
@@ -110,49 +112,59 @@ architecture behavioral of AtomCpuMon is
     
 begin
 
-    mon : entity work.BusMonCore port map (  
-        clock49 => clock49,
-        Addr    => Addr_int,
-        Data    => Data,
-        Phi2    => busmon_clk,
-        Rd_n    => not R_W_n_int,
-        Wr_n    => R_W_n_int,
-        RdIO_n  => '1',
-        WrIO_n  => '1',
-        Sync    => Sync_int,
-        Rdy     => open,
-        nRSTin  => Res_n,
-        nRSTout => Res_n,
-        CountCycle => CountCycle,
-        trig    => trig,
-        lcd_rs  => open,
-        lcd_rw  => open,
-        lcd_e   => open,
-        lcd_db  => open,
-        avr_RxD => avr_RxD,
-        avr_TxD => avr_TxD,
-        sw1     => sw1,
-        nsw2    => nsw2,
-        led3    => led3,
-        led6    => led6,
-        led8    => led8,
-        tmosi   => tmosi,
-        tdin    => tdin,
-        tcclk   => tcclk,
-        Regs    => Regs1,
-        RdMemOut=> memory_rd,
-        WrMemOut=> memory_wr,
-        RdIOOut => open,
-        WrIOOut => open,
-        AddrOut => memory_addr,
-        DataOut => memory_dout,
-        DataIn  => memory_din,
-        Done    => memory_done,
-        SS_Step => SS_Step,
-        SS_Single => SS_Single
+    inst_dcm0 : entity work.DCM0 port map(
+        CLKIN_IN          => clock49,
+        CLK0_OUT          => clock_avr,
+        CLK0_OUT1         => open,
+        CLK2X_OUT         => open
+    );
+    
+    mon : entity work.BusMonCore port map (
+        clock_avr    => clock_avr,
+        busmon_clk   => busmon_clk,
+        busmon_clken => '1',
+        cpu_clk      => cpu_clk,
+        cpu_clken    => '1',
+        Addr         => Addr_int,
+        Data         => Data,
+        Rd_n         => not R_W_n_int,
+        Wr_n         => R_W_n_int,
+        RdIO_n       => '1',
+        WrIO_n       => '1',
+        Sync         => Sync_int,
+        Rdy          => open,
+        nRSTin       => Res_n,
+        nRSTout      => Res_n,
+        CountCycle   => CountCycle,
+        trig         => trig,
+        lcd_rs       => open,
+        lcd_rw       => open,
+        lcd_e        => open,
+        lcd_db       => open,
+        avr_RxD      => avr_RxD,
+        avr_TxD      => avr_TxD,
+        sw1          => sw1,
+        nsw2         => nsw2,
+        led3         => led3,
+        led6         => led6,
+        led8         => led8,
+        tmosi        => tmosi,
+        tdin         => tdin,
+        tcclk        => tcclk,
+        Regs         => Regs1,
+        RdMemOut     => memory_rd,
+        WrMemOut     => memory_wr,
+        RdIOOut      => open,
+        WrIOOut      => open,
+        AddrOut      => memory_addr,
+        DataOut      => memory_dout,
+        DataIn       => memory_din,
+        Done         => memory_done,
+        SS_Step      => SS_Step,
+        SS_Single    => SS_Single
     );
 
-    -- The CPU09 is slightly pipelined and the register update of the last
+    -- The CPU is slightly pipelined and the register update of the last
     -- instruction overlaps with the opcode fetch of the next instruction.
     --
     -- If the single stepping stopped on the opcode fetch cycle, then the registers
@@ -226,8 +238,7 @@ begin
     end process;
 
     -- This block generates a hold signal that acts as the inverse of a clock enable
-    -- for the 6809. See comments above for why this is a cycle later than the way
-    -- we would do if for the 6502.
+    -- for the CPU. See comments above for why this is a cycle delayed a cycle.
     hold_gen : process(cpu_clk)
     begin
         if rising_edge(cpu_clk) then
