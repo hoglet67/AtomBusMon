@@ -21,11 +21,10 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 use work.OhoPack.all ;
 
-
 entity MOS6502CpuMonCore is
     generic (
-       UseT65Core    : boolean := true;
-       UseAlanDCore  : boolean := false
+       UseT65Core    : boolean;
+       UseAlanDCore  : boolean
        );
     port (
         clock_avr        : in    std_logic;
@@ -44,7 +43,8 @@ entity MOS6502CpuMonCore is
         Din             : in    std_logic_vector(7 downto 0);
         Dout            : out   std_logic_vector(7 downto 0);
         SO_n            : in    std_logic;
-        Res_n           : inout std_logic;
+        Res_n_in        : in    std_logic;
+        Res_n_out       : out   std_logic;
         Rdy             : in    std_logic;
 
         -- External trigger inputs
@@ -72,6 +72,7 @@ end MOS6502CpuMonCore;
 
 architecture behavioral of MOS6502CpuMonCore is
 
+    signal cpu_clken_ss  : std_logic;
     signal Data          : std_logic_vector(7 downto 0);
     signal Dout_int      : std_logic_vector(7 downto 0);
     signal R_W_n_int     : std_logic;
@@ -106,9 +107,9 @@ begin
     mon : entity work.BusMonCore port map (
         clock_avr    => clock_avr,
         busmon_clk   => busmon_clk,
-        busmon_clken => '1',
+        busmon_clken => busmon_clken,
         cpu_clk      => cpu_clk,
-        cpu_clken    => '1',
+        cpu_clken    => cpu_clken,
         Addr         => Addr_int,
         Data         => Data,
         Rd_n         => not R_W_n_int,
@@ -117,8 +118,8 @@ begin
         WrIO_n       => '1',
         Sync         => Sync_int,
         Rdy          => open,
-        nRSTin       => Res_n,
-        nRSTout      => Res_n,
+        nRSTin       => Res_n_in,
+        nRSTout      => Res_n_out,
         CountCycle   => CountCycle,
         trig         => trig,
         lcd_rs       => open,
@@ -164,8 +165,10 @@ begin
     last_pc_gen : process(cpu_clk)
     begin
         if rising_edge(cpu_clk) then
-            if (hold = '0') then
-                last_PC <= Regs(63 downto 48);
+            if (cpu_clken = '1') then
+                if (hold = '0') then
+                    last_PC <= Regs(63 downto 48);
+                end if;
             end if;
         end if;
     end process;
@@ -174,13 +177,15 @@ begin
     Regs1( 63 downto 48) <= last_PC;
     Regs1(255 downto 64) <= (others => '0');
 
+    cpu_clken_ss <= (not hold) and cpu_clken;
+
     GenT65Core: if UseT65Core generate
         inst_t65: entity work.T65 port map (
             mode            => "00",
             Abort_n         => '1',
             SO_n            => SO_n,
-            Res_n           => Res_n,
-            Enable          => not hold,
+            Res_n           => Res_n_in,
+            Enable          => cpu_clken_ss,
             Clk             => cpu_clk,
             Rdy             => '1',
             IRQ_n           => IRQ_n,
@@ -197,9 +202,9 @@ begin
     
     GenAlanDCore: if UseAlanDCore generate
         inst_r65c02: entity work.r65c02 port map (
-            reset    => RES_n,
+            reset    => Res_n_in,
             clk      => cpu_clk,
-            enable   => not hold,
+            enable   => cpu_clken_ss,
             nmi_n    => NMI_n,
             irq_n    => IRQ_n,
             di       => unsigned(Din),
@@ -220,12 +225,14 @@ begin
     hold_gen : process(cpu_clk)
     begin
         if rising_edge(cpu_clk) then
-            if (Sync_int = '1') then
-                -- stop after the opcode has been fetched
-                hold <= SS_Single;
-            elsif (SS_Step = '1') then
-                -- start again when the single step command is issues
-                hold <= '0';
+            if (cpu_clken = '1') then
+                if (Sync_int = '1') then
+                    -- stop after the opcode has been fetched
+                    hold <= SS_Single;
+                elsif (SS_Step = '1') then
+                    -- start again when the single step command is issues
+                    hold <= '0';
+                end if;
             end if;
         end if;
     end process;
@@ -239,9 +246,11 @@ begin
     mem_gen : process(cpu_clk)
     begin
         if rising_edge(cpu_clk) then
-            memory_rd1   <= memory_rd;
-            memory_wr1   <= memory_wr;
-            memory_addr1 <= memory_addr;
+            if (cpu_clken = '1') then
+                memory_rd1   <= memory_rd;
+                memory_wr1   <= memory_wr;
+                memory_addr1 <= memory_addr;
+            end if;
         end if;
     end process;
     

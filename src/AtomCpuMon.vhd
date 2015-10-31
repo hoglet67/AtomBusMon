@@ -99,34 +99,40 @@ begin
         CLK2X_OUT         => open
     );
 
-	core : entity work.MOS6502CpuMonCore port map( 
-		clock_avr    => clock_avr,
-		busmon_clk   => busmon_clk,
-		busmon_clken => '1',
-		cpu_clk      => cpu_clk,
-		cpu_clken    => '1',
-		IRQ_n        => IRQ_n_sync,
-		NMI_n        => NMI_n_sync,
-		Sync         => Sync,
-		Addr         => Addr_int,
-		R_W_n        => R_W_n_int,
-		Din          => Din,
-		Dout         => Dout,
-		SO_n         => SO_n,
-		Res_n        => Res_n,
+    core : entity work.MOS6502CpuMonCore
+    generic map (
+       UseT65Core    => UseT65Core,
+       UseAlanDCore  => UseAlanDCore
+    )
+    port map ( 
+        clock_avr    => clock_avr,
+        busmon_clk   => busmon_clk,
+        busmon_clken => '1',
+        cpu_clk      => cpu_clk,
+        cpu_clken    => '1',
+        IRQ_n        => IRQ_n_sync,
+        NMI_n        => NMI_n_sync,
+        Sync         => Sync,
+        Addr         => Addr_int,
+        R_W_n        => R_W_n_int,
+        Din          => Din,
+        Dout         => Dout,
+        SO_n         => SO_n,
+        Res_n_in     => Res_n,
+        Res_n_out    => Res_n,
         Rdy          => Rdy,
-		trig         => trig,
-		avr_RxD      => avr_RxD,
-		avr_TxD      => avr_TxD,
-		sw1          => sw1,
-		nsw2         => nsw2,
-		led3         => led3,
-		led6         => led6,
-		led8         => led8,
-		tmosi        => tmosi,
-		tdin         => tdin,
-		tcclk        => tcclk
-	);
+        trig         => trig,
+        avr_RxD      => avr_RxD,
+        avr_TxD      => avr_TxD,
+        sw1          => sw1,
+        nsw2         => nsw2,
+        led3         => led3,
+        led6         => led6,
+        led8         => led8,
+        tmosi        => tmosi,
+        tdin         => tdin,
+        tcclk        => tcclk
+    );
     
     sync_gen : process(cpu_clk)
     begin
