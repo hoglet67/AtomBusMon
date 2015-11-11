@@ -658,7 +658,7 @@ processAluInput: process(clk, opcInfo, A, X, Y, T, S)
 			temp := temp and T;
 		end if;
 		if opcInfo(opcInBrk) = '1' then
-			temp := temp and "11101111";
+			temp := temp and "11100111"; -- also DMB clear D (bit 3)
 		end if;
 		if opcInfo(opcInClear) = '1' then
 			temp := (others => '0');
