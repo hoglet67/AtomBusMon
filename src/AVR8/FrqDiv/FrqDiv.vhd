@@ -28,7 +28,7 @@ begin
 
 -- Must be sequentially encoded
 
-DivideBy10:if not Div2 generate 
+DivideBy10_1:if not Div2 generate 
 
 Gen:process(clk_in)
 begin
@@ -47,7 +47,7 @@ end process;
 end generate;
 
 
-DivideBy10:if Div2 generate 
+DivideBy10_2:if Div2 generate 
 
 Gen:process(clk_in)
  begin

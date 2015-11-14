@@ -155,6 +155,12 @@ architecture behavioral of BusMonCore is
     signal din_reg         : std_logic_vector(7 downto 0);
 
     signal Rdy_int         : std_logic;
+
+    signal unused_a3       : std_logic;
+    signal unused_b6       : std_logic;
+    signal unused_b7       : std_logic;
+    signal unused_d6       : std_logic;
+    signal unused_d7       : std_logic;
     
 begin
 
@@ -190,7 +196,7 @@ begin
         portaout(0)          => lcd_rs,
         portaout(1)          => lcd_rw_int,
         portaout(2)          => lcd_e,
-        portaout(3)          => open,
+        portaout(3)          => unused_a3,
         portaout(4)          => lcd_db_out(4),
         portaout(5)          => lcd_db_out(5),
         portaout(6)          => lcd_db_out(6),
@@ -211,8 +217,8 @@ begin
         portbout(3)          => cmd(3),
         portbout(4)          => cmd(4),
         portbout(5)          => cmd_edge,
-        portbout(6)          => open,
-        portbout(7)          => open,
+        portbout(6)          => unused_b6,
+        portbout(7)          => unused_b7,
         
         -- Status Port
         portdin(0)           => '0',
@@ -230,8 +236,8 @@ begin
         portdout(3)           => muxsel(3),
         portdout(4)           => muxsel(4),
         portdout(5)           => muxsel(5),
-        portdout(6)           => open,
-        portdout(7)           => open,
+        portdout(6)           => unused_d6,
+        portdout(7)           => unused_d7,
 
         -- Mux Port
         portein              => mux,
