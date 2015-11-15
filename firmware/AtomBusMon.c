@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.70"
+#define VERSION "0.71"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -427,8 +427,8 @@ void readCmd(char *cmd) {
       Serial_TxByte0(10);
       Serial_TxByte0(13);
       return;
-    } else {
-      // Handle any other character
+    } else if (c >= 32) {
+      // Handle any other non-control character
       Serial_TxByte0(c);
       cmd[i] = c;
       i++;
