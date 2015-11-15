@@ -64,8 +64,9 @@ end AtomBusMon;
 architecture behavioral of AtomBusMon is
 
 signal clock_avr : std_logic;
-
-signal Rdy_int : std_logic;
+signal Rdy_int   : std_logic;
+signal nRSTin    : std_logic;
+signal nRSTout   : std_logic;
 
 begin
 
@@ -90,8 +91,8 @@ begin
         WrIO_n       => '1',
         Sync         => Sync,
         Rdy          => Rdy_int,
-        nRSTin       => nRST,
-        nRSTout      => nRST,
+        nRSTin       => nRSTin,
+        nRSTout      => nRSTout,
         CountCycle   => Rdy_int,
         Regs         => (others => '0'),
         RdMemOut     => open,
@@ -121,6 +122,10 @@ begin
         SS_Single    => open
     );
     Rdy <= Rdy_int;
+
+    -- Tristate buffer driving reset back out
+    nRSTin <= nRST;
+    nRST <= '0' when nRSTout <= '0' else 'Z';
 
 end behavioral;
 

@@ -89,7 +89,10 @@ architecture behavioral of AtomCpuMon is
     signal Phi0_d        : std_logic;
     signal cpu_clk       : std_logic;
     signal busmon_clk    : std_logic;
-        
+
+    signal Res_n_in      : std_logic;
+    signal Res_n_out     : std_logic;
+    
 begin
 
     inst_dcm0 : entity work.DCM0 port map(
@@ -118,8 +121,8 @@ begin
         Din          => Din,
         Dout         => Dout,
         SO_n         => SO_n,
-        Res_n_in     => Res_n,
-        Res_n_out    => Res_n,
+        Res_n_in     => Res_n_in,
+        Res_n_out    => Res_n_out,
         Rdy          => Rdy,
         trig         => trig,
         avr_RxD      => avr_RxD,
@@ -133,6 +136,10 @@ begin
         tdin         => tdin,
         tcclk        => tcclk
     );
+
+    -- Tristate buffer driving reset back out
+    Res_n_in <= Res_n;
+    Res_n <= '0' when Res_n_out <= '0' else 'Z';
     
     sync_gen : process(cpu_clk)
     begin

@@ -306,7 +306,7 @@ begin
            Regs(8 * to_integer(unsigned(muxsel(4 downto 0))) + 7 downto 8 * to_integer(unsigned(muxsel(4 downto 0))));
 
     -- Combinatorial set of comparators to decode breakpoint/watch addresses
-    brkpt_active_process: process (brkpt_reg, brkpt_enable, Addr, Sync, Rd_n, Wr_n, RdIO_n, WrIO_n)
+    brkpt_active_process: process (brkpt_reg, brkpt_enable, Addr, Sync, Rd_n, Wr_n, RdIO_n, WrIO_n, trig)
         variable i            : integer;
         variable reg_addr     : std_logic_vector(15 downto 0);
         variable reg_mask     : std_logic_vector(15 downto 0);
@@ -507,12 +507,7 @@ begin
                     Rdy_int <= (not Sync);
                 end if;
                 
-                -- CPU Reset needs to be open collector
-                if (reset = '1') then
-                     nRSTout <= '0';
-                else
-                     nRSTout <= 'Z';
-                end if;
+                nRSTout <= not reset;
                 
                 -- Latch instruction address for the whole cycle
                 if (Sync = '1') then
