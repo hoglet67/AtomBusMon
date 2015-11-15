@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.71"
+#define VERSION "0.72"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -1208,17 +1208,18 @@ void doCmdContinue(char *params) {
       cont = logDetails();
       hwCmd(CMD_WATCH_READ, 0);
     }
-    if (status & INTERRUPTED_MASK || Serial_ByteRecieved0()) {
-      log0("Interrupted\n");
+    if (status & INTERRUPTED_MASK) {
       cont = 0;
     }
+	if (Serial_ByteRecieved0()) {
+	  // Interrupt on a return, ignore other characters
+	  if (Serial_RxByte0() == 13) {
+		cont = 0;
+	  }
+	}
     Delay_us(10);
   } while (cont);
-
-  // Junk the interrupt character
-  if (Serial_ByteRecieved0()) {
-    Serial_RxByte0();
-  }
+  log0("Interrupted\n");
 
   // Enable single stepping
   setSingle(1);
