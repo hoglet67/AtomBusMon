@@ -29,15 +29,18 @@ use WORK.AVR_uC_CompPack.all;
 
 use WORK.SynthCtrlPack.all; -- Synthesis control
 
-use WORK.XMemCompPack.all;  -- Xilinx RAM components  
-
 use WORK.spi_mod_comp_pack.all;	--SPI
 use WORK.spi_slv_sel_comp_pack.all;
 
 use WORK.MemAccessCtrlPack.all;
 use WORK.MemAccessCompPack.all;
 
-entity AVR8 is port(
+entity AVR8 is
+generic (
+     CDATAMEMSIZE : integer;
+     CPROGMEMSIZE : integer
+);
+port (
 	 nrst   : in    std_logic;						--Uncomment this to connect reset to an external pushbutton. Must be defined in ucf.
 	 clk16M : in    std_logic;
 	 portaout  : out std_logic_vector(7 downto 0);
@@ -78,31 +81,6 @@ constant CImplSPI            				: boolean := FALSE;   -- adding SPI master
 constant CImplTmrCnt     					: boolean := FALSE;	--AVR8 Timer
 constant CImplExtIRQ				: boolean := FALSE;	--AVR8 Interrupt Unit
 
-component XDM2Kx8	port(
-	                cp2       : in  std_logic;
-						 ce        : in  std_logic;
-	                address   : in  std_logic_vector(CDATAMEMSIZE downto 0); 
-					    din       : in  std_logic_vector(7 downto 0);		                
-					    dout      : out std_logic_vector(7 downto 0);
-					    we        : in  std_logic
-					   );
-end component;
-
-component XPM9Kx16 port(
-	                  cp2     : in  std_logic;
-					  ce      : in  std_logic;
-	                  address : in  std_logic_vector(CPROGMEMSIZE downto 0); 
-					  din     : in  std_logic_vector(15 downto 0);		                
-					  dout    : out std_logic_vector(15 downto 0);
-					  we     : in  std_logic
-					  );
-end component;
-
-
--- ############################## Define Components for User Cores ##################################################
-
-
--- ###############################################################################################################
 
 -- ############################## Signals connected directly to the core ##########################################
 
@@ -773,26 +751,34 @@ end generate;
 ram_cp2_n <= not clk16M;
 
 ---- Data memory(8-bit)					   
-DRAM_Inst:component XDM2Kx8 
+DM_Inst : entity work.XDM
+generic map (
+    WIDTH => 8,
+    SIZE  => CDATAMEMSIZE
+)
 port map(
-	                    cp2       => ram_cp2_n,
-						ce        => vcc,
-	                    address   => mem_ramadr(CDATAMEMSIZE downto 0), 
-					    din       => mem_ram_dbus_in, 
-					    dout      => mem_ram_dbus_out, 
-					    we        => ram_ramwe
-					   );
+    cp2     => ram_cp2_n,
+	ce      => vcc,
+	address => mem_ramadr(f_log2(CDATAMEMSIZE) - 1 downto 0), 
+	din     => mem_ram_dbus_in, 
+	dout    => mem_ram_dbus_out, 
+	we      => ram_ramwe
+);
 
 -- Program memory					   
-PM_Inst:component XPM9Kx16 
+PM_Inst : entity work.XPM
+generic map (
+    WIDTH => 16,
+    SIZE  => CPROGMEMSIZE
+)
 port map(
-	                  cp2     => ram_cp2_n, 
-					  ce      => vcc,
-	                  address => pm_adr(CPROGMEMSIZE downto 0),
-					  din     => pm_din,
-					  dout    => pm_dout,
-					  we     => pm_l_we
-					  );  
+    cp2     => ram_cp2_n,
+    ce      => vcc,
+    address => pm_adr(f_log2(CPROGMEMSIZE) - 1 downto 0),
+    din     => pm_din,
+    dout    => pm_dout,
+    we      => pm_l_we
+);  
 					   					   
 -- **********************  JTAG and memory **********************************************
 

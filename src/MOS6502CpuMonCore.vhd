@@ -23,9 +23,11 @@ use work.OhoPack.all ;
 
 entity MOS6502CpuMonCore is
     generic (
-       UseT65Core    : boolean;
-       UseAlanDCore  : boolean
-       );
+       UseT65Core        : boolean;
+       UseAlanDCore      : boolean;
+       avr_data_mem_size : integer := 1024 * 2; -- 2K is the mimimum
+       avr_prog_mem_size : integer := 1024 * 8  -- 6502 fits in 8K, others need 9K
+    );
     port (
         clock_avr        : in    std_logic;
 
@@ -104,7 +106,12 @@ architecture behavioral of MOS6502CpuMonCore is
     
 begin
     
-    mon : entity work.BusMonCore port map (
+    mon : entity work.BusMonCore
+    generic map (
+        avr_data_mem_size => avr_data_mem_size,
+        avr_prog_mem_size => avr_prog_mem_size
+    )
+    port map (
         clock_avr    => clock_avr,
         busmon_clk   => busmon_clk,
         busmon_clken => busmon_clken,

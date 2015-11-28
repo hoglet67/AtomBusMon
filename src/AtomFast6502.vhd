@@ -136,8 +136,9 @@ begin
     
     core : entity work.MOS6502CpuMonCore
     generic map (
-       UseT65Core    => UseT65Core,
-       UseAlanDCore  => UseAlanDCore
+        UseT65Core        => UseT65Core,
+        UseAlanDCore      => UseAlanDCore,
+        avr_prog_mem_size => 1024 * 8
     )
     port map ( 
         clock_avr    => clock_avr,

@@ -24,9 +24,11 @@ use work.OhoPack.all ;
 
 entity BusMonCore is
     generic (
-        num_comparators : integer := 8;
-        reg_width       : integer := 46;
-        fifo_width      : integer := 72
+        num_comparators   : integer := 8;
+        reg_width         : integer := 46;
+        fifo_width        : integer := 72;
+        avr_data_mem_size : integer := 1024 * 2; -- 2K is the mimimum
+        avr_prog_mem_size : integer := 1024 * 8  -- Default is 8K, 6809 amd Z80 need 9K
     );
     port (
         clock_avr        : in    std_logic;
@@ -178,9 +180,13 @@ begin
         dy_ser         => tcclk,
         dy_rclk        => tmosi
     );
-
     
-    Inst_AVR8: entity work.AVR8 port map(
+    Inst_AVR8: entity work.AVR8
+    generic map(
+        CDATAMEMSIZE         => avr_data_mem_size,
+        CPROGMEMSIZE         => avr_prog_mem_size
+    )
+    port map(
         clk16M               => clock_avr,
         nrst                 => nrst_avr,
 

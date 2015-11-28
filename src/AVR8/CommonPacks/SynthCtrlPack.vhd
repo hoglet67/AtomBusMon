@@ -5,17 +5,19 @@
 -- Designed by Ruslan Lepetenok
 -- *****************************************************************************************
 
-library	IEEE;
+library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 
-package SynthCtrlPack is							
+package SynthCtrlPack is
 
--- Please note: Do not change these settings, this is not quite ready yet. Jack Gassett
--- Control the size of Program and Data memory.
-constant CDATAMEMSIZE	: integer := 10;			--2^(x+1)=Data SRAM Memory Size   	(10=2048) (Default 11=4096) (12=8192)
-constant CPROGMEMSIZE	: integer := 13;		--(2^(x+1))*2)=Program Memory Size	(10=4096) (11=8192) (Default 12=16384)
--- Calculate at Wolfram Alpha (http://www.wolframalpha.com/input/?i=%282^%28x%2B1%29%29*2%29%2Cx%3D12)
+-- Function f_log2 returns the number of bits required to express
+-- an unsigned integer in binary. It is used, for example, to
+-- returns the width of a memory address bus, given the memory
+-- depth in words
+
+-- Function definition
+function f_log2 (x : positive) return natural;
 
 -- Reset generator
 constant CSecondClockUsed     : boolean := FALSE;
@@ -23,12 +25,27 @@ constant CSecondClockUsed     : boolean := FALSE;
 constant CImplClockSw         : boolean := FALSE;
 
 -- Only for ASICs
-constant CSynchLatchUsed      : boolean := FALSE;	
+constant CSynchLatchUsed      : boolean := FALSE;
 
 -- Register file
 constant CResetRegFile        : boolean := TRUE;
 
 -- External multiplexer size
 constant CExtMuxInSize        : positive := 16;
+
+end SynthCtrlPack;
+
+package body SynthCtrlPack is
+
+-- Function body
+function f_log2 (x : positive) return natural is
+    variable i : natural;
+begin
+    i := 0;
+    while (2**i < x) and i < 31 loop
+        i := i + 1;
+    end loop;
+    return i;
+end function;
 
 end SynthCtrlPack;

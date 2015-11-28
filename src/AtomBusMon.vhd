@@ -77,7 +77,11 @@ begin
         CLK2X_OUT         => open
     );    
 
-    mon : entity work.BusMonCore port map (  
+    mon : entity work.BusMonCore
+    generic map (
+        avr_prog_mem_size => 1024 * 8
+    )
+    port map (  
         clock_avr    => clock_avr,
         busmon_clk   => Phi2,
         busmon_clken => '1',

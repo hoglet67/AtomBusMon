@@ -162,7 +162,8 @@ begin
     
     mon : entity work.BusMonCore
       generic map (
-        num_comparators => 8
+        num_comparators => 8,
+        avr_prog_mem_size => 1024 * 9
       )
       port map (  
         clock_avr    => clock_avr,
