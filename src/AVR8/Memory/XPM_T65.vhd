@@ -2,10 +2,12 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
+-- This contains 0.72 of the ICE T65 (a.k.a AtomCpuMon) firmware
+
 -- For f_log2 definition
 use WORK.SynthCtrlPack.all;
 
-entity XPM_Generic is
+entity XPM is
     generic (
         WIDTH : integer;
         SIZE  : integer
@@ -20,7 +22,7 @@ entity XPM_Generic is
     );
 end;
 
-architecture RTL of XPM_Generic is
+architecture RTL of XPM is
     
     type ram_type is array (0 to SIZE - 1) of std_logic_vector (WIDTH - 1 downto 0);
 
