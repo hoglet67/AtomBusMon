@@ -175,17 +175,16 @@ package	body AVRuCPackage is
 function LOG2(Number : positive) return natural is
 variable Temp : positive;
 begin
-Temp := 1;
-if Number=1 then 
- return 0;
-  else 
-   for i in 1 to integer'high loop
-    Temp := 2*Temp; 
-     if Temp>=Number then 
-      return i;
-     end if;
-end loop;
-end if;	
+  Temp := 1;
+  if Number>1 then 
+    for i in 1 to integer'high loop
+      Temp := 2*Temp; 
+      if Temp>=Number then 
+        return i;
+      end if;
+    end loop;
+  end if;	
+  return 0;
 end LOG2;	
 -- End of functions	
 
