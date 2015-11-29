@@ -145,9 +145,7 @@ begin
 
     inst_dcm0 : entity work.DCM0 port map(
         CLKIN_IN          => clock49,
-        CLK0_OUT          => clock_avr,
-        CLK0_OUT1         => open,
-        CLK2X_OUT         => open
+        CLKFX_OUT         => clock_avr
     );
 
     mon : entity work.BusMonCore

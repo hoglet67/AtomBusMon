@@ -1,7 +1,11 @@
+NET "clock49" TNM_NET = clk_period_grp_49;
+TIMESPEC TS_clk_period_49 = PERIOD "clk_period_grp_49" 20.345ns HIGH;
 
-NET "clock49"  LOC="P89" | IOSTANDARD = LVCMOS33 | PERIOD = 20.35ns  ; # 49.152 MHz Oscillator
+NET "Phi0" TNM_NET = clk_period_grp_phi0;
+TIMESPEC TS_clk_period_phi0 = PERIOD "clk_period_grp_phi0" 500ns LOW;
 
-#NET "VSS"    LOC="P16" | IOSTANDARD = LVCMOS33 ; # 6502 pin 1
+NET "clock49"  LOC="P89" | IOSTANDARD = LVCMOS33 ; # 49.152 MHz Oscillator
+#NET "VSS"      LOC="P16" | IOSTANDARD = LVCMOS33 ; # 6502 pin 1
 #NET "Rdy"      LOC="P95" | IOSTANDARD = LVCMOS33 ; # 6502 pin 2
 NET "Phi1"     LOC="P18" | IOSTANDARD = LVCMOS33 ; # 6502 pin 3
 NET "IRQ_n"    LOC="P17" | IOSTANDARD = LVCMOS33 | PULLUP ; # 6502 pin 4
@@ -38,7 +42,7 @@ NET "Data<0>"  LOC="P3"  | IOSTANDARD = LVCMOS33 ; # 6502 pin 33
 NET "R_W_n"    LOC="P2"  | IOSTANDARD = LVCMOS33 ; # 6502 pin 34
 #NET "NC"      LOC="P4"  | IOSTANDARD = LVCMOS33 ; # 6502 pin 35
 #NET "NC"      LOC="P5"  | IOSTANDARD = LVCMOS33 ; # 6502 pin 36
-NET "Phi0"     LOC="P90" | IOSTANDARD = LVCMOS33 | PERIOD = 500.0 ; # 6502 pin 37
+NET "Phi0"     LOC="P90" | IOSTANDARD = LVCMOS33 ; # 6502 pin 37
 NET "SO_n"     LOC="P9"  | IOSTANDARD = LVCMOS33 ; # 6502 pin 38
 NET "Phi2"     LOC="P10" | IOSTANDARD = LVCMOS33 ; # 6502 pin 39
 NET "Res_n"    LOC="P11" | IOSTANDARD = LVCMOS33 ; # 6502 pin 40

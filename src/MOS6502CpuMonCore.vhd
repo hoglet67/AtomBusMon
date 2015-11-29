@@ -78,9 +78,11 @@ architecture behavioral of MOS6502CpuMonCore is
     signal Data          : std_logic_vector(7 downto 0);
     signal Dout_int      : std_logic_vector(7 downto 0);
     signal R_W_n_int     : std_logic;
+    signal Rd_n_int      : std_logic;
+    signal Wr_n_int      : std_logic;
     signal Sync_int      : std_logic;
     signal hold          : std_logic;
-    signal Addr_int      : std_logic_vector(15 downto 0);
+    signal Addr_int      : std_logic_vector(23 downto 0);
     signal IRQ_n_sync    : std_logic;
     signal NMI_n_sync    : std_logic;
 
@@ -117,10 +119,10 @@ begin
         busmon_clken => busmon_clken,
         cpu_clk      => cpu_clk,
         cpu_clken    => cpu_clken,
-        Addr         => Addr_int,
+        Addr         => Addr_int(15 downto 0),
         Data         => Data,
-        Rd_n         => not R_W_n_int,
-        Wr_n         => R_W_n_int,
+        Rd_n         => Rd_n_int,
+        Wr_n         => Wr_n_int,
         RdIO_n       => '1',
         WrIO_n       => '1',
         Sync         => Sync_int,
@@ -155,6 +157,8 @@ begin
         SS_Step      => SS_Step,
         SS_Single    => SS_Single
     );
+    Wr_n_int <= R_W_n_int;
+    Rd_n_int <= not R_W_n_int;
     Data <= Din when R_W_n_int = '1' else Dout_int;
 
     -- The CPU is slightly pipelined and the register update of the last
@@ -199,8 +203,7 @@ begin
             NMI_n           => NMI_n,
             R_W_n           => R_W_n_int,
             Sync            => Sync_int,
-            A(23 downto 16) => open,
-            A(15 downto 0)  => Addr_int,
+            A               => Addr_int,
             DI              => Din,
             DO              => Dout_int,
             Regs            => Regs
@@ -223,7 +226,7 @@ begin
             Regs     => Regs            
         );
         Dout_int <= std_logic_vector(cpu_dout_us);
-        Addr_int <= std_logic_vector(cpu_addr_us);
+        Addr_int(15 downto 0) <= std_logic_vector(cpu_addr_us);
     end generate;
 
 
@@ -262,7 +265,7 @@ begin
     end process;
     
     R_W_n <= '1' when memory_rd1 = '1' else '0' when memory_wr1 = '1' else R_W_n_int;
-    Addr <= memory_addr1 when (memory_rd1 = '1' or memory_wr1 = '1') else Addr_int;
+    Addr <= memory_addr1 when (memory_rd1 = '1' or memory_wr1 = '1') else Addr_int(15 downto 0);
     Sync <= Sync_int;
     
     Dout   <= memory_dout when memory_wr1 = '1' else Dout_int;

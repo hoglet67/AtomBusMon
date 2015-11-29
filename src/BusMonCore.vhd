@@ -143,6 +143,7 @@ architecture behavioral of BusMonCore is
     signal fifo_din        : std_logic_vector(fifo_width - 1 downto 0);
     signal fifo_dout       : std_logic_vector(fifo_width - 1 downto 0);
     signal fifo_empty      : std_logic;
+    signal fifo_empty_n    : std_logic;
     signal fifo_rd         : std_logic;
     signal fifo_rd_en      : std_logic;
     signal fifo_wr         : std_logic;
@@ -234,7 +235,7 @@ begin
         portdin(4)           => '0',
         portdin(5)           => '0',
         portdin(6)           => sw1,
-        portdin(7)           => not fifo_empty,
+        portdin(7)           => fifo_empty_n,
         
         portdout(0)           => muxsel(0),
         portdout(1)           => muxsel(1),
@@ -256,6 +257,7 @@ begin
         rxd                  => avr_RxD,
         txd                  => avr_TxD
     );
+    fifo_empty_n <= not fifo_empty;
 
     WatchEvents_inst : entity work.WatchEvents port map(
         clk    => busmon_clk,

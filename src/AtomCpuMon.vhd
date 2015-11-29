@@ -96,10 +96,8 @@ architecture behavioral of AtomCpuMon is
 begin
 
     inst_dcm0 : entity work.DCM0 port map(
-        CLKIN_IN          => clock49,
-        CLK0_OUT          => clock_avr,
-        CLK0_OUT1         => open,
-        CLK2X_OUT         => open
+        CLKIN_IN         => clock49,
+        CLKFX_OUT        => clock_avr
     );
 
     core : entity work.MOS6502CpuMonCore

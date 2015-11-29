@@ -210,32 +210,30 @@ function "+" (vect_a : std_logic_vector; vect_b : std_logic_vector) return std_l
 variable tmp_a : std_logic_vector(vect_a'length-1 downto 0);
 variable tmp_b : std_logic_vector(vect_b'length-1 downto 0);
 begin
- if (not (fn_det_x(vect_a) or fn_det_x(vect_b))) then
-  return(std_logic_vector(unsigned(vect_a) + unsigned(vect_b)));
 -- pragma translate_off
- else
-  tmp_a := (others =>'X'); 
-  tmp_b := (others =>'X');
-  if (tmp_a'length > tmp_b'length) then 
-   return(tmp_a); 
-  else 
-   return(tmp_b); 
+ if (fn_det_x(vect_a) or fn_det_x(vect_b)) then
+   tmp_a := (others =>'X'); 
+   tmp_b := (others =>'X');
+   if (tmp_a'length > tmp_b'length) then 
+    return(tmp_a); 
+   else 
+    return(tmp_b); 
+   end if;
   end if;
 -- pragma translate_on
-  end if;
+  return(std_logic_vector(unsigned(vect_a) + unsigned(vect_b)));
 end "+";
 
 function "+" (vect : std_logic_vector; int : integer) return std_logic_vector is
 variable temp : std_logic_vector(vect'length-1 downto 0);
 begin
- if (not fn_det_x(vect)) then
-  return(std_logic_vector(unsigned(vect) + int));
 -- pragma translate_off
- else 
+ if (fn_det_x(vect)) then
   temp := (others =>'X'); 
- return(temp);
--- pragma translate_on
+  return(temp);
  end if;
+-- pragma translate_on
+ return(std_logic_vector(unsigned(vect) + int));
 end "+";
 
 function "+" (vect : std_logic_vector; d : std_logic) return std_logic_vector is
@@ -243,58 +241,54 @@ variable tmp_a : std_logic_vector(vect'length-1 downto 0);
 variable tmp_b : std_logic_vector(0 downto 0);
 begin
  tmp_b(0) := d;
- if (not (fn_det_x(vect) or fn_det_x(d))) then 
-  return(std_logic_vector(unsigned(vect) + unsigned(tmp_b)));
 -- pragma translate_off
- else 
+ if (fn_det_x(vect) or fn_det_x(d)) then 
   tmp_b := (others =>'X'); 
   return(tmp_b); 
--- pragma translate_on
  end if;
+-- pragma translate_on
+ return(std_logic_vector(unsigned(vect) + unsigned(tmp_b)));
 end "+";
 
 function "-" (vect_a : std_logic_vector; vect_b : std_logic_vector) return std_logic_vector is
 variable tmp_a : std_logic_vector(vect_a'length-1 downto 0);
 variable tmp_b : std_logic_vector(vect_b'length-1 downto 0);
 begin
- if (not (fn_det_x(vect_a) or fn_det_x(vect_b))) then
-  return(std_logic_vector(unsigned(vect_a) - unsigned(vect_b)));
 -- pragma translate_off
- else
+ if (fn_det_x(vect_a) or fn_det_x(vect_b)) then
   tmp_a := (others =>'X'); tmp_b := (others =>'X');
   if (tmp_a'length > tmp_b'length) then 
    return(tmp_a); 
   else 
    return(tmp_b); 
   end if; 
+ end if; 
 -- pragma translate_on
- end if;
+ return(std_logic_vector(unsigned(vect_a) - unsigned(vect_b)));
 end "-";
 
 function "-" (vect : std_logic_vector; int : integer) return std_logic_vector is
 variable temp : std_logic_vector(vect'length-1 downto 0);
 begin
- if (not fn_det_x(vect)) then
-  return(std_logic_vector(unsigned(vect) - int));
 -- pragma translate_off
- else 
+ if (fn_det_x(vect)) then
   temp := (others =>'X'); 
   return(temp); 
--- pragma translate_on
  end if;
+-- pragma translate_on
+ return(std_logic_vector(unsigned(vect) - int));
 end "-";
 
 function "-" (int : integer; vect : std_logic_vector) return std_logic_vector is
 variable temp : std_logic_vector(vect'length-1 downto 0);
 begin
- if (not fn_det_x(vect)) then
-  return(std_logic_vector(int - unsigned(vect)));
 -- pragma translate_off
- else 
+ if (fn_det_x(vect)) then
   temp := (others =>'X'); 
   return(temp); 
--- pragma translate_on
  end if;
+-- pragma translate_on
+ return(std_logic_vector(int - unsigned(vect)));
 end "-";
 
 function "-" (vect : std_logic_vector; d : std_logic) return std_logic_vector is
@@ -302,13 +296,13 @@ variable tmp_a : std_logic_vector(vect'length-1 downto 0);
 variable tmp_b : std_logic_vector(0 downto 0);
 begin
  tmp_b(0) := d;
- if (not (fn_det_x(vect) or fn_det_x(d))) then 
-  return(std_logic_vector(unsigned(vect) - unsigned(tmp_b)));
 -- pragma translate_off
- else tmp_a := (others =>'X'); 
+ if (fn_det_x(vect) or fn_det_x(d)) then 
+  tmp_a := (others =>'X'); 
   return(tmp_a); 
--- pragma translate_on
  end if;
+-- pragma translate_on
+ return(std_logic_vector(unsigned(vect) - unsigned(tmp_b)));
 end "-";
 
 end std_library;	
