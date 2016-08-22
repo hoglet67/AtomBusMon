@@ -1,12 +1,3 @@
--- ****
--- T80(b) core. In an effort to merge and maintain bug fixes ....
---
---
--- Ver 300 started tidyup
--- MikeJ March 2005
--- Latest version from www.fpgaarcade.com (original www.opencores.org)
---
--- ****
 --
 -- T80 Registers, technology independent
 --
@@ -47,15 +38,15 @@
 -- you have the latest version of this file.
 --
 -- The latest version of this file can be found at:
---      http://www.opencores.org/cvsweb.shtml/t51/
+--  http://www.opencores.org/cvsweb.shtml/t51/
 --
 -- Limitations :
 --
 -- File history :
 --
---      0242 : Initial release
+--  0242 : Initial release
 --
---      0244 : Changed to single register file
+--  0244 : Changed to single register file
 --
 
 library IEEE;
@@ -63,31 +54,31 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 entity T80_Reg is
-	port(
-		Clk                     : in std_logic;
-		CEN                     : in std_logic;
-		WEH                     : in std_logic;
-		WEL                     : in std_logic;
-		AddrA           : in std_logic_vector(2 downto 0);
-		AddrB           : in std_logic_vector(2 downto 0);
-		AddrC           : in std_logic_vector(2 downto 0);
-		DIH                     : in std_logic_vector(7 downto 0);
-		DIL                     : in std_logic_vector(7 downto 0);
-		DOAH            : out std_logic_vector(7 downto 0);
-		DOAL            : out std_logic_vector(7 downto 0);
-		DOBH            : out std_logic_vector(7 downto 0);
-		DOBL            : out std_logic_vector(7 downto 0);
-		DOCH            : out std_logic_vector(7 downto 0);
-		DOCL            : out std_logic_vector(7 downto 0);
-        RegFileData     : out std_logic_vector(127 downto 0)
-        );
+    port(
+        Clk         : in std_logic;
+        CEN         : in std_logic;
+        WEH         : in std_logic;
+        WEL         : in std_logic;
+        AddrA       : in std_logic_vector(2 downto 0);
+        AddrB       : in std_logic_vector(2 downto 0);
+        AddrC       : in std_logic_vector(2 downto 0);
+        DIH         : in std_logic_vector(7 downto 0);
+        DIL         : in std_logic_vector(7 downto 0);
+        DOAH        : out std_logic_vector(7 downto 0);
+        DOAL        : out std_logic_vector(7 downto 0);
+        DOBH        : out std_logic_vector(7 downto 0);
+        DOBL        : out std_logic_vector(7 downto 0);
+        DOCH        : out std_logic_vector(7 downto 0);
+        DOCL        : out std_logic_vector(7 downto 0);
+        RegFileData : out std_logic_vector(127 downto 0)
+    );
 end T80_Reg;
 
 architecture rtl of T80_Reg is
 
-	type Register_Image is array (natural range <>) of std_logic_vector(7 downto 0);
-	signal      RegsH   : Register_Image(0 to 7);
-	signal      RegsL   : Register_Image(0 to 7);
+    type Register_Image is array (natural range <>) of std_logic_vector(7 downto 0);
+    signal  RegsH   : Register_Image(0 to 7);
+    signal  RegsL   : Register_Image(0 to 7);
 
 begin
 
@@ -107,26 +98,26 @@ begin
     RegFileData(111 downto 104) <= RegsH(6);
     RegFileData(119 downto 112) <= RegsL(7);
     RegFileData(127 downto 120) <= RegsH(7);
-    
-	process (Clk)
-	begin
-		if Clk'event and Clk = '1' then
-			if CEN = '1' then
-				if WEH = '1' then
-					RegsH(to_integer(unsigned(AddrA))) <= DIH;
-				end if;
-				if WEL = '1' then
-					RegsL(to_integer(unsigned(AddrA))) <= DIL;
-				end if;
-			end if;
-		end if;
-	end process;
 
-	DOAH <= RegsH(to_integer(unsigned(AddrA)));
-	DOAL <= RegsL(to_integer(unsigned(AddrA)));
-	DOBH <= RegsH(to_integer(unsigned(AddrB)));
-	DOBL <= RegsL(to_integer(unsigned(AddrB)));
-	DOCH <= RegsH(to_integer(unsigned(AddrC)));
-	DOCL <= RegsL(to_integer(unsigned(AddrC)));
+    process (Clk)
+    begin
+        if Clk'event and Clk = '1' then
+            if CEN = '1' then
+                if WEH = '1' then
+                    RegsH(to_integer(unsigned(AddrA))) <= DIH;
+                end if;
+                if WEL = '1' then
+                    RegsL(to_integer(unsigned(AddrA))) <= DIL;
+                end if;
+            end if;
+        end if;
+    end process;
+
+    DOAH <= RegsH(to_integer(unsigned(AddrA)));
+    DOAL <= RegsL(to_integer(unsigned(AddrA)));
+    DOBH <= RegsH(to_integer(unsigned(AddrB)));
+    DOBL <= RegsL(to_integer(unsigned(AddrB)));
+    DOCH <= RegsH(to_integer(unsigned(AddrC)));
+    DOCL <= RegsL(to_integer(unsigned(AddrC)));
 
 end;
