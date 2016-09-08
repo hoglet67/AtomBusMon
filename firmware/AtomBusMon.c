@@ -216,7 +216,7 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
 #define OFFSET_IAL        0
 #define OFFSET_IAH        1
 
-// Data register: Memory and IO read/write commands return data via this register  
+// Data register: Memory and IO read/write commands return data via this register
 #define OFFSET_DATA       2
 
 // Cycle count register: a 24 bit register that runs while the CPU is running
@@ -410,19 +410,19 @@ void readCmd(char *cmd) {
     if (c == 8) {
       // Handle backspace/delete
       if (i > 0) {
-	i--;
-	Serial_TxByte0(c);
-	Serial_TxByte0(32);
-	Serial_TxByte0(c);
+        i--;
+        Serial_TxByte0(c);
+        Serial_TxByte0(32);
+        Serial_TxByte0(c);
       }
     } else if (c == 13) {
       // Handle return
       if (i == 0) {
-	while (cmd[i]) {
-	  Serial_TxByte0(cmd[i++]);
-	}
+        while (cmd[i]) {
+          Serial_TxByte0(cmd[i++]);
+        }
       } else {
-	cmd[i] = 0;
+        cmd[i] = 0;
       }
       Serial_TxByte0(10);
       Serial_TxByte0(13);
@@ -588,7 +588,7 @@ void genericDump(char *params, unsigned int (*readFunc)()) {
     for (j = 0; j < 16; j++) {
       unsigned int c = row[j];
       if (c < 32 || c > 126) {
-	c = '.';
+        c = '.';
       }
       log0("%c", c);
     }
@@ -635,7 +635,7 @@ void genericRead(char *params, unsigned int (*readFunc)()) {
  ********************************************************/
 
 void logCycleCount(int offsetLow, int offsetHigh) {
-  unsigned long count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow); 
+  unsigned long count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow);
   unsigned long countSecs = count / 1000000;
   unsigned long countMicros = count % 1000000;
   log0("%02ld.%06ld: ", countSecs, countMicros);
@@ -647,7 +647,7 @@ void logMode(unsigned int mode) {
   for (i = 0; i < NUM_MODES; i++) {
     if (mode & 1) {
       if (!first) {
-	log0(", ");
+        log0(", ");
       }
       log0("%s", modeStrings[i]);
       first = 0;
@@ -689,7 +689,7 @@ int logDetails() {
     log0(" %04X = %02X\n", b_addr, b_data);
   } else {
     log0("\n");
-  } 
+  }
 #ifdef CPUEMBEDDED
   if (mode & B_RDWR_MASK) {
     // It's only safe to do this for brkpts, as it makes memory accesses
@@ -785,14 +785,14 @@ void genericBreakpoint(char *params, unsigned int mode) {
   for (i = 0; i < numbkpts; i++) {
     if (breakpoints[i] == addr) {
       if (modes[i] & mode) {
-	logMode(mode);
-	log0(" already set at %04X\n", addr);
+        logMode(mode);
+        log0(" already set at %04X\n", addr);
       } else {
-	// Preserve the existing trigger, unless it is overridden
-	if (trigger == -1) {
-	  trigger = triggers[i];
-	}
-	setBreakpoint(i, addr, mask, modes[i] | mode, trigger);
+        // Preserve the existing trigger, unless it is overridden
+        if (trigger == -1) {
+          trigger = triggers[i];
+        }
+        setBreakpoint(i, addr, mask, modes[i] | mode, trigger);
       }
       return;
     }
@@ -923,7 +923,7 @@ void doCmdStep(char *params) {
   }
 
   log0("Stepping %ld instructions\n", instructions);
-  
+
   j = trace;
   for (i = 1; i <= instructions; i++) {
     // Step the CPU
@@ -944,7 +944,7 @@ void doCmdReset(char *params) {
   // I haven't looked into why this is, as it doesn't seem very important.
   // It's mostly cosmetic, but nice on the Atom to consisently show FF3F.
   int i;
-  for (i = 0; i < 2; i++) { 
+  for (i = 0; i < 2; i++) {
 #endif
    hwCmd(CMD_RESET, 1);
    Delay_us(50);
@@ -1001,7 +1001,7 @@ void doCmdCrc(char *params) {
       crc = crc | (data & 1);
       data >>= 1;
       if (crc & 0x10000)
-	crc = (crc ^ CRC_POLY) & 0xFFFF;
+        crc = (crc ^ CRC_POLY) & 0xFFFF;
     }
   }
   log0("crc: %04X\n", crc);
@@ -1060,7 +1060,7 @@ void doCmdTrace(char *params) {
   sscanf(params, "%ld", &i);
   setTrace(i);
 }
-  
+
 void doCmdList(char *params) {
   int i;
   if (numbkpts) {
@@ -1152,7 +1152,7 @@ void doCmdTrigger(char *params) {
   if (trigger >= 0 && trigger < NUM_TRIGGERS) {
     triggers[n] = trigger;
   } else {
-    log0("Illegal trigger code (see help for trigger codes)\n"); 
+    log0("Illegal trigger code (see help for trigger codes)\n");
   }
 }
 
@@ -1164,7 +1164,7 @@ void doCmdContinue(char *params) {
 #endif
   int reset = 0;
   sscanf(params, "%d", &reset);
-  
+
   // Disable breakpoints to allow loading
   hwCmd(CMD_BRKPT_ENABLE, 0);
 
@@ -1179,7 +1179,7 @@ void doCmdContinue(char *params) {
   // Step the 6502, otherwise the breakpoint happends again immediately
   hwCmd(CMD_STEP, 0);
 
-  // Enable breakpoints 
+  // Enable breakpoints
   hwCmd(CMD_BRKPT_ENABLE, 1);
 
   // Disable single stepping
@@ -1211,12 +1211,12 @@ void doCmdContinue(char *params) {
     if (status & INTERRUPTED_MASK) {
       cont = 0;
     }
-	if (Serial_ByteRecieved0()) {
-	  // Interrupt on a return, ignore other characters
-	  if (Serial_RxByte0() == 13) {
-		cont = 0;
-	  }
-	}
+    if (Serial_ByteRecieved0()) {
+       // Interrupt on a return, ignore other characters
+       if (Serial_RxByte0() == 13) {
+          cont = 0;
+       }
+    }
     Delay_us(10);
   } while (cont);
   log0("Interrupted\n");
@@ -1259,7 +1259,7 @@ void dispatchCmd(char *cmd) {
   }
   for (i = 0; i < NUM_CMDS; i++) {
     cmdString = cmdStrings[i];
-    cmdStringLen = strlen(cmdString);    
+    cmdStringLen = strlen(cmdString);
     minLen = cmdLen < cmdStringLen ? cmdLen : cmdStringLen;
     if (strncmp(cmdString, cmd, minLen) == 0) {
       (*cmdFuncs[i])(cmd + cmdLen);
@@ -1270,7 +1270,7 @@ void dispatchCmd(char *cmd) {
 }
 
 int main(void) {
-  static char command[32]; 
+  static char command[32];
   initialize();
   doCmdContinue(NULL);
   while (1) {
