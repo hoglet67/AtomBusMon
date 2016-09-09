@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.72"
+#define VERSION "0.73"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -28,9 +28,9 @@
 
 #ifdef CPUEMBEDDED
   #if (CPU == Z80)
-    #define NUM_CMDS 29
+    #define NUM_CMDS 30
   #else
-    #define NUM_CMDS 22
+    #define NUM_CMDS 23
   #endif
 #else
   #define NUM_CMDS 14
@@ -43,6 +43,7 @@
 char *cmdStrings[NUM_CMDS] = {
   "help",
   "continue",
+  "step",
 #ifdef CPUEMBEDDED
   "regs",
   "dis",
@@ -57,9 +58,9 @@ char *cmdStrings[NUM_CMDS] = {
   "wri",
 #endif
   "test",
+  "srec",
 #endif
   "reset",
-  "step",
   "trace",
   "blist",
   "breakx",
@@ -82,6 +83,7 @@ char *cmdStrings[NUM_CMDS] = {
 void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdHelp,
   doCmdContinue,
+  doCmdStep,
 #ifdef CPUEMBEDDED
   doCmdRegs,
   doCmdDis,
@@ -96,9 +98,9 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
   doCmdWriteIO,
 #endif
   doCmdTest,
+  doCmdSRec,
 #endif
   doCmdReset,
-  doCmdStep,
   doCmdTrace,
   doCmdList,
   doCmdBreakI,
@@ -1051,6 +1053,108 @@ void doCmdTest(char *params) {
   } else {
     test(start, end, data);
   }
+}
+
+int crc;
+
+int getHex() {
+   int i;
+   char hex[2];
+   hex[0] = Serial_RxByte0();
+   hex[1] = Serial_RxByte0();
+   sscanf(hex, "%2x", &i);
+   crc += i;
+   crc &= 0xff;
+   return i;
+}
+
+// Simple SRecord command
+//
+// Deals with the following format:
+//    S123A0004C10A0A94E8D0802A9A08D09024C33A0A9468D0402A9A08D0502A90F8D04B8A9A9
+//    <S1><Count><Addr><Data>...<Data><CRC>
+//
+//
+
+void doCmdSRec(char *params) {
+   int c;
+   int count;
+   int data;
+   int good_rec = 0;
+   int bad_rec = 0;
+   unsigned int addr;
+   unsigned int total = 0;
+   unsigned int timeout;
+
+   unsigned int addrlo = 0xFFFF;
+   unsigned int addrhi = 0x0000;
+
+
+   log0("Send file now...\n");
+
+   // Special case reading the first record, with no timeout
+   c = Serial_RxByte0();
+
+   while (1) {
+
+      while (c != 'S') {
+
+         // Wait for a character to be received, while testing for a timeout
+         timeout = 65535;
+         while (timeout > 0 && !Serial_ByteRecieved0()) {
+            timeout--;
+         }
+
+         // If we have timed out, then exit
+         if (timeout == 0) {
+            log0("recieved %d good records, %d bad records\n", good_rec, bad_rec);
+            log0("transferred %d bytes to 0x%04x - 0x%04x\n", total, addrlo, addrhi);
+            return;
+         }
+
+         // Read the character
+         c = Serial_RxByte0();
+      }
+      
+      // Read the S record type
+      c = Serial_RxByte0();
+
+      // Skip to the next line
+      if (c != '1') {
+         log0("skipping S%d\n", c);
+         continue;
+      }
+
+      // Process S1 record
+      crc = 1;
+      count = getHex() - 3;
+      addr = (getHex() << 8) + getHex();
+      while (count-- > 0) { 
+         data = getHex();
+         if (addr < addrlo) {
+            addrlo = addr;
+         }
+         if (addr > addrhi) {
+            addrhi = addr;
+         }
+         loadData(data);
+         loadAddr(addr++);
+         writeMemByteInc();
+         total++;
+      }
+      // Read the crc byte
+      getHex();
+
+      // Read the terminator byte
+      c = Serial_RxByte0();
+
+      if (crc) {
+         bad_rec++;
+      } else {
+         good_rec++;
+      }
+   }
+
 }
 
 #endif // CPUEMBEDDED
