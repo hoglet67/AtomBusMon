@@ -221,7 +221,7 @@
     <file xil_pn:name="src/AtomBusMon.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="ipcore_dir/WatchEvents.xco" xil_pn:type="FILE_COREGEN">
+    <file xil_pn:name="ipcore/250/WatchEvents.xco" xil_pn:type="FILE_COREGEN">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="122"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="50"/>
     </file>
@@ -233,7 +233,7 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="65"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="40"/>
     </file>
-    <file xil_pn:name="ipcore_dir/WatchEvents.xise" xil_pn:type="FILE_COREGENISE">
+    <file xil_pn:name="ipcore/250/WatchEvents.xise" xil_pn:type="FILE_COREGENISE">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
   </files>

@@ -11,7 +11,7 @@ PROJECTS=`/bin/ls [A-Za-z0-9]*.xise`
 
 for i in $PROJECTS
 do
-cat $i | sed "s/xc3s250e/xc3s500e/" | sed "s#working/250#working/500#" | sed "s#src/250#src/500#" > `basename $i .xise`_500.xise
+cat $i | sed "s/xc3s250e/xc3s500e/" | sed "s#working/250#working/500#" | sed "s#src/250#src/500#" | sed "s#ipcore/250#ipcore/500#" > `basename $i .xise`_500.xise
 done
 
 # Reset the logfile
