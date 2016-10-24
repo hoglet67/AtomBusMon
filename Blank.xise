@@ -347,7 +347,7 @@
     <property xil_pn:name="Wait for PLL Lock (Output Events) virtex6" xil_pn:value="No Wait" xil_pn:valueState="default"/>
     <property xil_pn:name="Watchdog Timer Mode 7-series" xil_pn:value="Off" xil_pn:valueState="default"/>
     <property xil_pn:name="Watchdog Timer Value 7-series" xil_pn:value="0x00000000" xil_pn:valueState="default"/>
-    <property xil_pn:name="Working Directory" xil_pn:value="working" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Working Directory" xil_pn:value="working/250" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Write Timing Constraints" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="XOR Collapsing" xil_pn:value="true" xil_pn:valueState="default"/>
     <!--                                                                                  -->

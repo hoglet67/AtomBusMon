@@ -1,18 +1,20 @@
 # Paths that will need changing
 
+# default to the xc3s250e part
+WORKING_DIR=working/250
+SRC_DIR=src/250
+
 ATOMFPGA=$(HOME)/atom/AtomBusMon
 PAPILIO_LOADER=/opt/GadgetFactory/papilio-loader/programmer
 XILINX=/opt/Xilinx/14.7
 
 # Shouldn't need to make changes below this point
 
-BIT_FILE=$(ATOMFPGA)/working/AtomBusMon.bit
-BMM_FILE=$(ATOMFPGA)/src/AtomBusMon_bd.bmm
+BIT_FILE=$(ATOMFPGA)/$(WORKING_DIR)/AtomBusMon.bit
+BMM_FILE=$(ATOMFPGA)/$(SRC_DIR)/AtomBusMon_bd.bmm
 
 
 # Papilio dev environment
-PROG=${PAPILIO_LOADER}/linux32/papilio-prog
-BSCAN=${PAPILIO_LOADER}/bscan_spi_xc3s500e.bit
 SREC_CAT=srec_cat
 GAWK=gawk
 DATA2MEM=${XILINX}/ISE_DS/ISE/bin/lin/data2mem
