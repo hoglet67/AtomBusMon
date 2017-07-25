@@ -48,7 +48,7 @@ NET "led3"       LOC="P43" | IOSTANDARD = LVCMOS33 ; # Red LED (near SW1)
 NET "led6"       LOC="P25" | IOSTANDARD = LVCMOS33 ; # Red LED (just left of FPGA)
 NET "led8"       LOC="P47" | IOSTANDARD = LVCMOS33 ; # Green LED (near SW1)
 NET "sw1"        LOC="P39" | IOSTANDARD = LVCMOS33 ; # Bottom Switch
-NET "nsw2"       LOC="P69" | IOSTANDARD = LVCMOS33 | PULLUP ; # Top Switch
+NET "sw2"        LOC="P69" | IOSTANDARD = LVCMOS33 | PULLUP ; # Top Switch
 
 # I/O's for test connector
 #NET tvs1                      LOC=P48 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;

@@ -23,7 +23,10 @@ use work.OhoPack.all ;
 
 entity Z80CpuMon is
     generic (
-       UseT80Core    : boolean := true
+       UseT80Core     : boolean := true;
+       LEDsActiveHigh : boolean := false;    -- default value correct for GODIL
+       SW1ActiveHigh  : boolean := true;     -- default value correct for GODIL
+       SW2ActiveHigh  : boolean := false     -- default value correct for GODIL
        );
     port (
         clock49         : in    std_logic;
@@ -55,7 +58,7 @@ entity Z80CpuMon is
         
         -- GODIL Switches
         sw1             : in    std_logic;
-        nsw2            : in    std_logic;
+        sw2             : in    std_logic;
 
         -- GODIL LEDs
         led3            : out   std_logic;
@@ -141,7 +144,20 @@ signal ex_data    : std_logic_vector(7 downto 0);
 signal rd_data    : std_logic_vector(7 downto 0);
 signal mon_data   : std_logic_vector(7 downto 0);
 
+signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
+signal led6_n         : std_logic;  -- led to indicate ext trig 1 is active
+signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
+signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
+signal sw_reset_n     : std_logic;  -- switch to reset the CPU
+
 begin
+
+    -- Generics allows polarity of switches/LEDs to be tweaked from the project file
+    sw_reset_n     <= not sw1 when SW1ActiveHigh else sw1;
+    sw_interrupt_n <= not sw2 when SW2ActiveHigh else sw2;
+    led3           <= not led3_n when LEDsActiveHigh else led3_n;
+    led6           <= not led6_n when LEDsActiveHigh else led6_n;
+    led8           <= not led8_n when LEDsActiveHigh else led8_n;
 
     inst_dcm0 : entity work.DCM0 port map(
         CLKIN_IN          => clock49,
@@ -178,10 +194,10 @@ begin
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
         sw1          => '0',
-        nsw2         => nsw2,
-        led3         => led3,
-        led6         => led6,
-        led8         => led8,
+        nsw2         => sw_interrupt_n,
+        led3         => led3_n,
+        led6         => led6_n,
+        led8         => led8_n,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk,
@@ -384,7 +400,7 @@ begin
         end if;
     end process;
 
-    RESET_n_int <= RESET_n and (not sw1) and nRST;
+    RESET_n_int <= RESET_n and sw_reset_n and nRST;
     
     test1 <= TState(0);
     test2 <= TState(1);
