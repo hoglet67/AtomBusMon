@@ -2,15 +2,15 @@
 -- Copyright (c) 2015 David Banks
 --
 --------------------------------------------------------------------------------
---   ____  ____ 
---  /   /\/   / 
--- /___/  \  /    
--- \   \   \/    
---  \   \         
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /
+-- \   \   \/
+--  \   \
 --  /   /         Filename  : AtomBusMon.vhd
 -- /___/   /\     Timestamp : 30/05/2015
--- \   \  /  \ 
---  \___\/\___\ 
+-- \   \  /  \
+--  \___\/\___\
 --
 --Design Name: AtomBusMon
 --Device: XC3S250E
@@ -39,12 +39,15 @@ use work.OhoPack.all ;
 
 entity AtomFast6502 is
     generic (
-       UseT65Core    : boolean := true;
-       UseAlanDCore  : boolean := false
+       UseT65Core     : boolean := true;
+       UseAlanDCore   : boolean := false;
+       LEDsActiveHigh : boolean := false;    -- default value correct for GODIL
+       SW1ActiveHigh  : boolean := true;     -- default value correct for GODIL
+       SW2ActiveHigh  : boolean := false     -- default value correct for GODIL
        );
     port (
         clock49         : in    std_logic;
-          
+
         -- 6502 Signals
         --Rdy             : in    std_logic;
         Phi0            : in    std_logic;
@@ -52,7 +55,7 @@ entity AtomFast6502 is
         Phi2            : out   std_logic;
         IRQ_n           : in    std_logic;
         NMI_n           : in    std_logic;
-        Sync            : out   std_logic;                
+        Sync            : out   std_logic;
         Addr            : out   std_logic_vector(15 downto 0);
         R_W_n           : out   std_logic;
         Data            : inout std_logic_vector(7 downto 0);
@@ -61,14 +64,14 @@ entity AtomFast6502 is
 
         -- External trigger inputs
         trig             : in    std_logic_vector(1 downto 0);
-        
+
         -- Serial Console
         avr_RxD         : in     std_logic;
         avr_TxD         : out    std_logic;
-        
+
         -- GODIL Switches
         sw1              : in    std_logic;
-        nsw2             : in    std_logic;
+        sw2              : in    std_logic;
 
         -- GODIL LEDs
         led3             : out   std_logic;
@@ -84,10 +87,10 @@ entity AtomFast6502 is
 end AtomFast6502;
 
 architecture behavioral of AtomFast6502 is
-        
+
     -- Clocking
     signal clock_avr     : std_logic;
-    signal clock_16x     : std_logic;    
+    signal clock_16x     : std_logic;
     signal clk_div       : std_logic_vector(3 downto 0);
     signal cpu_clken     : std_logic;
     signal cpu_dataen    : std_logic;
@@ -117,8 +120,21 @@ architecture behavioral of AtomFast6502 is
 
     signal Res_n_in      : std_logic;
     signal Res_n_out     : std_logic;
-    
+
+    signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
+    signal led6_n         : std_logic;  -- led to indicate ext trig 1 is active
+    signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
+    signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
+    signal sw_reset_n     : std_logic;  -- switch to reset the CPU
+
 begin
+
+    -- Generics allows polarity of switches/LEDs to be tweaked from the project file
+    sw_reset_n     <= not sw1 when SW1ActiveHigh else sw1;
+    sw_interrupt_n <= not sw2 when SW2ActiveHigh else sw2;
+    led3           <= not led3_n when LEDsActiveHigh else led3_n;
+    led6           <= not led6_n when LEDsActiveHigh else led6_n;
+    led8           <= not led8_n when LEDsActiveHigh else led8_n;
 
     inst_dcm0 : entity work.DCM0 port map(
         CLKIN_IN          => clock49,
@@ -130,15 +146,15 @@ begin
         CLKFX_OUT         => clock_16x,
         LOCKED            => dcm_locked,
         RESET             => dcm_reset
-    ); 
-    
+    );
+
     core : entity work.MOS6502CpuMonCore
     generic map (
         UseT65Core        => UseT65Core,
         UseAlanDCore      => UseAlanDCore,
         avr_prog_mem_size => 1024 * 8
     )
-    port map ( 
+    port map (
         clock_avr    => clock_avr,
         busmon_clk   => clock_16x,
         busmon_clken => busmon_clken,
@@ -158,11 +174,11 @@ begin
         trig         => trig,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
-        sw1          => sw1,
-        nsw2         => nsw2,
-        led3         => led3,
-        led6         => led6,
-        led8         => led8,
+        sw1          => not sw_reset_n,
+        nsw2         => sw_interrupt_n,
+        led3         => led3_n,
+        led6         => led6_n,
+        led8         => led8_n,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk
@@ -171,12 +187,12 @@ begin
     -- Tristate buffer driving reset back out
     Res_n_in <= Res_n;
     Res_n <= '0' when Res_n_out <= '0' else 'Z';
-    
+
     sync_gen : process(clock_16x)
     begin
         if rising_edge(clock_16x) then
           NMI_n_sync <= NMI_n;
-          IRQ_n_sync <= IRQ_n;            
+          IRQ_n_sync <= IRQ_n;
         end if;
     end process;
 
@@ -197,14 +213,14 @@ begin
             if (clk_div = "1111") then
                 cpu_clken <= '1';
             else
-                cpu_clken <= '0';        
+                cpu_clken <= '0';
             end if;
             -- clock the Busmon out of phase with the cpu
             -- exactly which cycle is not critical
             if (clk_div = "0111") then
                 busmon_clken <= '1';
             else
-                busmon_clken <= '0';        
+                busmon_clken <= '0';
             end if;
             -- toggle Phi1/2 on cycles 0 and 8
             if (clk_div = "0000") then
@@ -220,7 +236,7 @@ begin
                 Addr1  <= Addr0;
                 R_W_n1 <= R_W_n0;
                 Sync1  <= Sync0;
-            end if;        
+            end if;
             -- Skew data release by one cycle wrt Phi1/2
             if (clk_div = "1000") then
                 cpu_dataen <= '1';
@@ -238,7 +254,7 @@ begin
         if rising_edge(clock49) then
             edge0 <= clk_div(0);
             edge1 <= edge0;
-            -- Look for an edge on the clock 
+            -- Look for an edge on the clock
             if (edge0 /= edge1) then
                 dcm_count <= (others => '0');
             elsif (dcm_count = "1111001111") then
@@ -248,9 +264,9 @@ begin
                 dcm_count <= dcm_count + 1;
             else
                 dcm_count <= dcm_count + 1;
-            end if;            
+            end if;
         end if;
     end process;
-    
+
 end behavioral;
-    
+

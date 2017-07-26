@@ -2,15 +2,15 @@
 -- Copyright (c) 2015 David Banks
 --
 --------------------------------------------------------------------------------
---   ____  ____ 
---  /   /\/   / 
--- /___/  \  /    
--- \   \   \/    
---  \   \         
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /
+-- \   \   \/
+--  \   \
 --  /   /         Filename  : Z80CpuMon.vhd
 -- /___/   /\     Timestamp : 22/06/2015
--- \   \  /  \ 
---  \___\/\___\ 
+-- \   \  /  \
+--  \___\/\___\
 --
 --Design Name: Z80CpuMon
 --Device: XC3S250E
@@ -30,7 +30,7 @@ entity Z80CpuMon is
        );
     port (
         clock49         : in    std_logic;
-          
+
         -- Z80 Signals
         RESET_n         : in    std_logic;
         CLK_n           : in    std_logic;
@@ -51,11 +51,11 @@ entity Z80CpuMon is
 
         -- External trigger inputs
         trig            : in    std_logic_vector(1 downto 0);
-        
+
         -- Serial Console
         avr_RxD         : in    std_logic;
         avr_TxD         : out   std_logic;
-        
+
         -- GODIL Switches
         sw1             : in    std_logic;
         sw2             : in    std_logic;
@@ -69,13 +69,13 @@ entity Z80CpuMon is
         tmosi           : out   std_logic;
         tdin            : out   std_logic;
         tcclk           : out   std_logic;
-        
+
         -- Debugging signals
         test1           : out   std_logic;
         test2           : out   std_logic;
         test3           : out   std_logic;
         test4           : out   std_logic
-        
+
     );
 end Z80CpuMon;
 
@@ -83,72 +83,72 @@ architecture behavioral of Z80CpuMon is
 
 type state_type is (idle, rd_init, rd_setup, rd, rd_hold, wr_init, wr_setup, wr, wr_hold, release);
 
-signal state : state_type;
+    signal state  : state_type;
 
-signal clock_avr     : std_logic;
+    signal clock_avr      : std_logic;
 
-signal RESET_n_int : std_logic;
-signal cpu_clk : std_logic;
-signal busmon_clk : std_logic;
+    signal RESET_n_int    : std_logic;
+    signal cpu_clk        : std_logic;
+    signal busmon_clk     : std_logic;
 
-signal Addr_int : std_logic_vector(15 downto 0);        
-signal RD_n_int : std_logic;
-signal WR_n_int : std_logic;
-signal MREQ_n_int : std_logic;
-signal IORQ_n_int : std_logic;
-signal M1_n_int : std_logic;
-signal WAIT_n_int : std_logic;
-signal TState : std_logic_vector(2 downto 0);        
-signal SS_Single : std_logic;
-signal SS_Step : std_logic;
-signal SS_Step_held : std_logic;
-signal CountCycle : std_logic;
-signal skipNextOpcode : std_logic;
+    signal Addr_int       : std_logic_vector(15 downto 0);
+    signal RD_n_int       : std_logic;
+    signal WR_n_int       : std_logic;
+    signal MREQ_n_int     : std_logic;
+    signal IORQ_n_int     : std_logic;
+    signal M1_n_int       : std_logic;
+    signal WAIT_n_int     : std_logic;
+    signal TState         : std_logic_vector(2 downto 0);
+    signal SS_Single      : std_logic;
+    signal SS_Step        : std_logic;
+    signal SS_Step_held   : std_logic;
+    signal CountCycle     : std_logic;
+    signal skipNextOpcode : std_logic;
 
-signal Regs : std_logic_vector(255 downto 0);        
-signal io_not_mem    : std_logic;
-signal io_rd         : std_logic;
-signal io_wr         : std_logic;
-signal memory_rd     : std_logic;
-signal memory_wr     : std_logic;
-signal memory_addr   : std_logic_vector(15 downto 0);
-signal memory_dout   : std_logic_vector(7 downto 0);
-signal memory_din    : std_logic_vector(7 downto 0);
-signal memory_done   : std_logic;
+    signal Regs           : std_logic_vector(255 downto 0);
+    signal io_not_mem     : std_logic;
+    signal io_rd          : std_logic;
+    signal io_wr          : std_logic;
+    signal memory_rd      : std_logic;
+    signal memory_wr      : std_logic;
+    signal memory_addr    : std_logic_vector(15 downto 0);
+    signal memory_dout    : std_logic_vector(7 downto 0);
+    signal memory_din     : std_logic_vector(7 downto 0);
+    signal memory_done    : std_logic;
 
-signal INT_n_sync : std_logic;
-signal NMI_n_sync : std_logic;
+    signal INT_n_sync     : std_logic;
+    signal NMI_n_sync     : std_logic;
 
-signal Rdy        : std_logic;
-signal Read_n     : std_logic;
-signal Read_n0    : std_logic;
-signal Read_n1    : std_logic;
-signal Write_n    : std_logic;
-signal Write_n0   : std_logic;
-signal ReadIO_n   : std_logic;
-signal ReadIO_n0  : std_logic;
-signal ReadIO_n1  : std_logic;
-signal WriteIO_n  : std_logic;
-signal WriteIO_n0 : std_logic;
-signal Sync       : std_logic;
-signal Sync0      : std_logic;
-signal Mem_IO_n   : std_logic;
-signal nRST       : std_logic;
+    signal Rdy            : std_logic;
+    signal Read_n         : std_logic;
+    signal Read_n0        : std_logic;
+    signal Read_n1        : std_logic;
+    signal Write_n        : std_logic;
+    signal Write_n0       : std_logic;
+    signal ReadIO_n       : std_logic;
+    signal ReadIO_n0      : std_logic;
+    signal ReadIO_n1      : std_logic;
+    signal WriteIO_n      : std_logic;
+    signal WriteIO_n0     : std_logic;
+    signal Sync           : std_logic;
+    signal Sync0          : std_logic;
+    signal Mem_IO_n       : std_logic;
+    signal nRST           : std_logic;
 
-signal MemState   : std_logic_vector(2 downto 0);
+    signal MemState       : std_logic_vector(2 downto 0);
 
-signal Din        : std_logic_vector(7 downto 0);
-signal Dout       : std_logic_vector(7 downto 0);
-signal Den        : std_logic;
-signal ex_data    : std_logic_vector(7 downto 0);
-signal rd_data    : std_logic_vector(7 downto 0);
-signal mon_data   : std_logic_vector(7 downto 0);
+    signal Din            : std_logic_vector(7 downto 0);
+    signal Dout           : std_logic_vector(7 downto 0);
+    signal Den            : std_logic;
+    signal ex_data        : std_logic_vector(7 downto 0);
+    signal rd_data        : std_logic_vector(7 downto 0);
+    signal mon_data       : std_logic_vector(7 downto 0);
 
-signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
-signal led6_n         : std_logic;  -- led to indicate ext trig 1 is active
-signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
-signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
-signal sw_reset_n     : std_logic;  -- switch to reset the CPU
+    signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
+    signal led6_n         : std_logic;  -- led to indicate ext trig 1 is active
+    signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
+    signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
+    signal sw_reset_n     : std_logic;  -- switch to reset the CPU
 
 begin
 
@@ -169,7 +169,7 @@ begin
         num_comparators => 4,
         avr_prog_mem_size => 1024 * 9
       )
-      port map (  
+      port map (
         clock_avr    => clock_avr,
         busmon_clk   => busmon_clk,
         busmon_clken => '1',
@@ -238,10 +238,10 @@ begin
             DEn     => Den
         );
     end generate;
- 
+
     WAIT_n_int <= WAIT_n when SS_Single = '0' else
                   WAIT_n and SS_Step_held;
-                  
+
     CountCycle <= '1' when SS_Single = '0' or SS_Step_held = '1' else '0';
 
     sync_gen : process(CLK_n, RESET_n_int)
@@ -262,8 +262,8 @@ begin
             end if;
         end if;
     end process;
-    
-        
+
+
     -- Logic to ignore the second M1 in multi-byte opcodes
     skip_opcode_latch : process(CLK_n)
     begin
@@ -277,19 +277,19 @@ begin
             end if;
         end if;
     end process;
-    
+
     -- For instruction breakpoints, we make the monitoring decision as early as possibe
     -- to allow time to stop the current instruction, which is possible because we don't
     -- really care about the data (it's re-read from memory by the disassembler).
-    Sync0    <= '1' when M1_n_int = '0' and TState = "001" and skipNextOpcode = '0' else '0'; 
+    Sync0    <= '1' when M1_n_int = '0' and TState = "001" and skipNextOpcode = '0' else '0';
 
     -- For memory reads/write breakpoints we make the monitoring decision in the middle of T2
     -- but only if WAIT_n is '1' so we catch the right data.
-    Read_n0  <= not (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
-    Write_n0 <= not (WAIT_n_int and (not WR_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
+    Read_n0  <= not (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1';
+    Write_n0 <= not (WAIT_n_int and (not WR_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1';
 
-    ReadIO_n0  <= not (WAIT_n_int and (not RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "010" else '1'; 
-    WriteIO_n0 <= not (               (    RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "011" else '1'; 
+    ReadIO_n0  <= not (WAIT_n_int and (not RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "010" else '1';
+    WriteIO_n0 <= not (               (    RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "011" else '1';
 
     -- Hold the monitoring decision so it is valid on the rising edge of the clock
     -- For instruction fetches and writes, the monitor sees these at the start of T3
@@ -311,17 +311,17 @@ begin
     ex_data_latch : process(CLK_n)
     begin
         if rising_edge(CLK_n) then
-            if (Sync = '1' or Write_n = '0' or WriteIO_n = '0') then            
+            if (Sync = '1' or Write_n = '0' or WriteIO_n = '0') then
                 ex_data <= Data;
             end if;
         end if;
     end process;
-    
+
     -- Register the read data on the falling edge of clock in the middle of T3
     rd_data_latch : process(CLK_n)
     begin
         if falling_edge(CLK_n) then
-            if (Read_n1 = '0' or ReadIO_n1 = '0') then            
+            if (Read_n1 = '0' or ReadIO_n1 = '0') then
                 rd_data <= Data;
             end if;
             memory_din <= Data;
@@ -333,14 +333,14 @@ begin
 
     -- Memory access
     Addr   <= memory_addr when (state /= idle)   else Addr_int;
-    
+
     MREQ_n <= '1'         when (state = rd_init or state = wr_init or state = release) else
               '0'         when (state /= idle and io_not_mem = '0') else MREQ_n_int;
 
     IORQ_n <= '1'         when (state = rd_init or state = wr_init or state = release) else
               '0'         when (state /= idle and io_not_mem = '1') else IORQ_n_int;
 
-    WR_n   <= '0'         when (state = wr)      else 
+    WR_n   <= '0'         when (state = wr)      else
               '1'         when (state /= idle)   else WR_n_int;
 
     RD_n   <= '0'         when (state = rd_setup or state = rd or state = rd_hold) else
@@ -351,15 +351,15 @@ begin
     memory_done <= '1'    when (state = rd_hold or state = wr_hold) else '0';
 
     -- TODO: Also need to take account of BUSRQ_n/BUSAK_n
-        
+
     Data   <= memory_dout when state = wr_setup or state = wr or state = wr_hold else
                      Dout when state = idle and Den = '1' else
                      (others => 'Z');
     Din    <= Data;
-    
-    
+
+
     -- TODO: Add refresh generation into idle loop
-    
+
     men_access_machine : process(CLK_n)
     begin
         if (RESET_n = '0') then
@@ -393,21 +393,21 @@ begin
             when wr =>
                 state <= wr_hold;
             when wr_hold =>
-                state <= release;                
+                state <= release;
             when release =>
-                state <= idle;                
+                state <= idle;
             end case;
         end if;
     end process;
 
     RESET_n_int <= RESET_n and sw_reset_n and nRST;
-    
+
     test1 <= TState(0);
     test2 <= TState(1);
     test3 <= TState(2);
     test4 <= CLK_n;
-    
+
     cpu_clk <= CLK_n;
     busmon_clk <= CLK_n;
-    
+
 end behavioral;

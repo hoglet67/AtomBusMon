@@ -2,15 +2,15 @@
 -- Copyright (c) 2015 David Banks
 --
 --------------------------------------------------------------------------------
---   ____  ____ 
---  /   /\/   / 
--- /___/  \  /    
--- \   \   \/    
---  \   \         
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /
+-- \   \   \/
+--  \   \
 --  /   /         Filename  : AtomBusMon.vhd
 -- /___/   /\     Timestamp : 30/05/2015
--- \   \  /  \ 
---  \___\/\___\ 
+-- \   \  /  \
+--  \___\/\___\
 --
 --Design Name: AtomBusMon
 --Device: XC3S250E
@@ -21,9 +21,14 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
 entity AtomBusMon is
+    generic (
+       LEDsActiveHigh : boolean := false;    -- default value correct for GODIL
+       SW1ActiveHigh  : boolean := true;     -- default value correct for GODIL
+       SW2ActiveHigh  : boolean := false     -- default value correct for GODIL
+       );
     port (
         clock49         : in    std_logic;
-          
+
         -- 6502 Signals
         Addr             : in    std_logic_vector(15 downto 0);
         Phi2             : in    std_logic;
@@ -31,10 +36,10 @@ entity AtomBusMon is
         Sync             : in    std_logic;
         Rdy              : out   std_logic;
         nRST             : inout std_logic;
-        
+
         -- External trigger inputs
         trig             : in    std_logic_vector(1 downto 0);
-                    
+
         -- HD44780 LCD
         --lcd_rs           : out   std_logic;
         --lcd_rw           : out   std_logic;
@@ -47,7 +52,7 @@ entity AtomBusMon is
 
         -- GODIL Switches
         sw1              : in    std_logic;
-        nsw2             : in    std_logic;
+        sw2              : in    std_logic;
 
         -- GODIL LEDs
         led3             : out   std_logic;
@@ -68,18 +73,31 @@ signal Rdy_int   : std_logic;
 signal nRSTin    : std_logic;
 signal nRSTout   : std_logic;
 
+    signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
+    signal led6_n         : std_logic;  -- led to indicate ext trig 1 is active
+    signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
+    signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
+    signal sw_reset_n     : std_logic;  -- switch to reset the CPU
+
 begin
+
+    -- Generics allows polarity of switches/LEDs to be tweaked from the project file
+    sw_reset_n     <= not sw1 when SW1ActiveHigh else sw1;
+    sw_interrupt_n <= not sw2 when SW2ActiveHigh else sw2;
+    led3           <= not led3_n when LEDsActiveHigh else led3_n;
+    led6           <= not led6_n when LEDsActiveHigh else led6_n;
+    led8           <= not led8_n when LEDsActiveHigh else led8_n;
 
     inst_dcm0 : entity work.DCM0 port map(
         CLKIN_IN          => clock49,
         CLKFX_OUT         => clock_avr
-    );    
+    );
 
     mon : entity work.BusMonCore
     generic map (
         avr_prog_mem_size => 1024 * 8
     )
-    port map (  
+    port map (
         clock_avr    => clock_avr,
         busmon_clk   => Phi2,
         busmon_clken => '1',
@@ -112,11 +130,11 @@ begin
         lcd_db       => open,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
-        sw1          => sw1,
-        nsw2         => nsw2,
-        led3         => led3,
-        led6         => led6,
-        led8         => led8,
+        sw1          => not sw_reset_n,
+        nsw2         => sw_interrupt_n,
+        led3         => led3_n,
+        led6         => led6_n,
+        led8         => led8_n,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk,

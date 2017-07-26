@@ -2,15 +2,15 @@
 -- Copyright (c) 2015 David Banks
 --
 --------------------------------------------------------------------------------
---   ____  ____ 
---  /   /\/   / 
--- /___/  \  /    
--- \   \   \/    
---  \   \         
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /
+-- \   \   \/
+--  \   \
 --  /   /         Filename  : MC6808ECpuMon.vhd
 -- /___/   /\     Timestamp : 02/07/2015
--- \   \  /  \ 
---  \___\/\___\ 
+-- \   \  /  \
+--  \___\/\___\
 --
 --Design Name: MC6808ECpuMon
 --Device: XC3S250E
@@ -23,7 +23,10 @@ use work.OhoPack.all ;
 
 entity MC6809ECpuMon is
     generic (
-       UseCPU09Core    : boolean := true
+       UseCPU09Core   : boolean := true;
+       LEDsActiveHigh : boolean := false;    -- default value correct for GODIL
+       SW1ActiveHigh  : boolean := true;     -- default value correct for GODIL
+       SW2ActiveHigh  : boolean := false     -- default value correct for GODIL
        );
     port (
         clock49         : in    std_logic;
@@ -32,17 +35,17 @@ entity MC6809ECpuMon is
         -- 1.8457 MHz in E     Mode (6809E) so it can drive E     (PIN34)
         -- 7.3728 MHz in Normal Mode (6809) so it can drive EXTAL (PIN38)
         clock_test      : out   std_logic;
-          
+
         -- 6809/6809E mode selection
         -- Jumper is between pins B1 and D1
         -- Jumper off is 6809 mode, where a 4x clock should be fed into EXTAL (PIN38)
         -- Jumper on is 6909E mode, where a 1x clock should be fed into E (PIN34)
         EMode_n         : in   std_logic;
-          
+
         --6809 Signals
-        PIN33           : inout std_logic;        
+        PIN33           : inout std_logic;
         PIN34           : inout std_logic;
-        PIN35           : inout std_logic;        
+        PIN35           : inout std_logic;
         PIN36           : inout std_logic;
         PIN38           : inout std_logic;
         PIN39           : in    std_logic;
@@ -62,14 +65,14 @@ entity MC6809ECpuMon is
 
         -- External trigger inputs
         trig            : in    std_logic_vector(1 downto 0);
-        
+
         -- Serial Console
         avr_RxD         : in    std_logic;
         avr_TxD         : out   std_logic;
-        
+
         -- GODIL Switches
         sw1             : in    std_logic;
-        nsw2            : in    std_logic;
+        sw2             : in    std_logic;
 
         -- GODIL LEDs
         led3            : out   std_logic;
@@ -80,90 +83,102 @@ entity MC6809ECpuMon is
         tmosi           : out   std_logic;
         tdin            : out   std_logic;
         tcclk           : out   std_logic;
-        
+
         -- Debugging signals
         test1           : out   std_logic;
         test2           : out   std_logic
-                
+
     );
 end MC6809ECpuMon;
 
 architecture behavioral of MC6809ECpuMon is
 
-signal clock_avr     : std_logic;
+    signal clock_avr      : std_logic;
 
-signal cpu_clk       : std_logic;
-signal busmon_clk    : std_logic;
-signal R_W_n_int     : std_logic;
-signal NMI_sync      : std_logic;
-signal IRQ_sync      : std_logic;
-signal FIRQ_sync     : std_logic;
-signal nRST_sync      : std_logic;
-signal HALT_sync     : std_logic;
-signal Addr_int      : std_logic_vector(15 downto 0);
-signal Din           : std_logic_vector(7 downto 0);
-signal Dout          : std_logic_vector(7 downto 0);
-signal Sync_int      : std_logic;
-signal Rdy_int       : std_logic;
-signal hold          : std_logic;
+    signal cpu_clk        : std_logic;
+    signal busmon_clk     : std_logic;
+    signal R_W_n_int      : std_logic;
+    signal NMI_sync       : std_logic;
+    signal IRQ_sync       : std_logic;
+    signal FIRQ_sync      : std_logic;
+    signal nRST_sync      : std_logic;
+    signal HALT_sync      : std_logic;
+    signal Addr_int       : std_logic_vector(15 downto 0);
+    signal Din            : std_logic_vector(7 downto 0);
+    signal Dout           : std_logic_vector(7 downto 0);
+    signal Sync_int       : std_logic;
+    signal Rdy_int        : std_logic;
+    signal hold           : std_logic;
 
-signal memory_rd     : std_logic;
-signal memory_wr     : std_logic;
-signal memory_rd1    : std_logic;
-signal memory_wr1    : std_logic;
-signal memory_addr   : std_logic_vector(15 downto 0);
-signal memory_addr1  : std_logic_vector(15 downto 0);
-signal memory_dout   : std_logic_vector(7 downto 0);
-signal memory_din    : std_logic_vector(7 downto 0);
-signal memory_done   : std_logic;
+    signal memory_rd      : std_logic;
+    signal memory_wr      : std_logic;
+    signal memory_rd1     : std_logic;
+    signal memory_wr1     : std_logic;
+    signal memory_addr    : std_logic_vector(15 downto 0);
+    signal memory_addr1   : std_logic_vector(15 downto 0);
+    signal memory_dout    : std_logic_vector(7 downto 0);
+    signal memory_din     : std_logic_vector(7 downto 0);
+    signal memory_done    : std_logic;
 
-signal Regs          : std_logic_vector(111 downto 0);
-signal Regs1         : std_logic_vector(255 downto 0);
-signal last_PC       : std_logic_vector(15 downto 0);
+    signal Regs           : std_logic_vector(111 downto 0);
+    signal Regs1          : std_logic_vector(255 downto 0);
+    signal last_PC        : std_logic_vector(15 downto 0);
 
-signal ifetch        : std_logic;
-signal ifetch1       : std_logic;
-signal SS_Single     : std_logic;
-signal SS_Step       : std_logic;
-signal CountCycle    : std_logic;
+    signal ifetch         : std_logic;
+    signal ifetch1        : std_logic;
+    signal SS_Single      : std_logic;
+    signal SS_Step        : std_logic;
+    signal CountCycle     : std_logic;
 
-signal clk_count     : std_logic_vector(1 downto 0);
-signal quadrature    : std_logic_vector(1 downto 0);
-signal LIC           : std_logic;
-signal AVMA          : std_logic;
-signal XTAL          : std_logic;
-signal EXTAL         : std_logic;
-signal MRDY          : std_logic;
-signal TSC           : std_logic;
-signal BUSY          : std_logic;
-signal Q             : std_logic;
-signal E             : std_logic;
-signal DMA_n_BREQ_n  : std_logic;
+    signal clk_count      : std_logic_vector(1 downto 0);
+    signal quadrature     : std_logic_vector(1 downto 0);
+    signal LIC            : std_logic;
+    signal AVMA           : std_logic;
+    signal XTAL           : std_logic;
+    signal EXTAL          : std_logic;
+    signal MRDY           : std_logic;
+    signal TSC            : std_logic;
+    signal BUSY           : std_logic;
+    signal Q              : std_logic;
+    signal E              : std_logic;
+    signal DMA_n_BREQ_n   : std_logic;
 
-signal clock7_3728   : std_logic;
+    signal clock7_3728    : std_logic;
 
-signal E_a           : std_logic; -- E delayed by 0..20ns
-signal E_b           : std_logic; -- E delayed by 20..40ns
-signal E_c           : std_logic; -- E delayed by 40..60ns
-signal E_d           : std_logic; -- E delayed by 60..80ns
-signal E_e           : std_logic; -- E delayed by 80..100ns
-signal data_wr       : std_logic;
-signal nRSTout       : std_logic;
+    signal E_a            : std_logic; -- E delayed by 0..20ns
+    signal E_b            : std_logic; -- E delayed by 20..40ns
+    signal E_c            : std_logic; -- E delayed by 40..60ns
+    signal E_d            : std_logic; -- E delayed by 60..80ns
+    signal E_e            : std_logic; -- E delayed by 80..100ns
+    signal data_wr        : std_logic;
+    signal nRSTout        : std_logic;
 
+    signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
+    signal led6_n         : std_logic;  -- led to indicate ext trig 1 is active
+    signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
+    signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
+    signal sw_reset_n     : std_logic;  -- switch to reset the CPU
 
 begin
+
+    -- Generics allows polarity of switches/LEDs to be tweaked from the project file
+    sw_reset_n     <= not sw1 when SW1ActiveHigh else sw1;
+    sw_interrupt_n <= not sw2 when SW2ActiveHigh else sw2;
+    led3           <= not led3_n when LEDsActiveHigh else led3_n;
+    led6           <= not led6_n when LEDsActiveHigh else led6_n;
+    led8           <= not led8_n when LEDsActiveHigh else led8_n;
 
     inst_dcm0 : entity work.DCM0 port map(
         CLKIN_IN          => clock49,
         CLKFX_OUT         => clock_avr
     );
-    
+
     mon : entity work.BusMonCore
       generic map (
         num_comparators => 8,
         avr_prog_mem_size => 1024 * 9
       )
-      port map (  
+      port map (
         clock_avr    => clock_avr,
         busmon_clk   => busmon_clk,
         busmon_clken => '1',
@@ -187,11 +202,11 @@ begin
         lcd_db       => open,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
-        sw1          => sw1,
-        nsw2         => nsw2,
-        led3         => led3,
-        led6         => led6,
-        led8         => led8,
+        sw1          => not sw_reset_n,
+        nsw2         => sw_interrupt_n,
+        led3         => led3_n,
+        led6         => led6_n,
+        led8         => led8_n,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk,
@@ -207,7 +222,7 @@ begin
         SS_Step      => SS_Step,
         SS_Single    => SS_Single
     );
-    
+
     -- The CPU is slightly pipelined and the register update of the last
     -- instruction overlaps with the opcode fetch of the next instruction.
     --
@@ -219,7 +234,7 @@ begin
     --
     -- To hide this from the user single stepping, all we need to do is to
     -- also pipeline the value of the program counter by one stage to compensate.
-    
+
     last_pc_gen : process(cpu_clk)
     begin
         if rising_edge(cpu_clk) then
@@ -228,7 +243,7 @@ begin
             end if;
         end if;
     end process;
-    
+
     Regs1( 79 downto   0) <= Regs( 79 downto   0);
     Regs1( 95 downto  80) <= last_PC;
     Regs1(111 downto  96) <= Regs(111 downto  96);
@@ -269,7 +284,7 @@ begin
             HALT_sync  <= not HALT_n;
         end if;
     end process;
-    
+
     -- This block generates a sync signal that has the same characteristic as
     -- a 6502 sync, i.e. asserted during the fetching the first byte of each instruction.
     -- The below logic copes ifetch being active for all bytes of the instruction.
@@ -313,7 +328,7 @@ begin
             memory_addr1 <= memory_addr;
         end if;
     end process;
-    
+
     R_W_n <= 'Z' when TSC = '1' else
              '1' when memory_rd1 = '1' else
              '0' when memory_wr1 = '1' else
@@ -330,7 +345,7 @@ begin
             memory_din <= Data;
        end if;
     end process;
- 
+
     Data       <= memory_dout when TSC = '0' and data_wr = '1' and memory_wr1 = '1' else
                          Dout when TSC = '0' and data_wr = '1' and R_W_n_int = '0' and memory_rd1 = '0' else
                   (others => 'Z');
@@ -343,7 +358,7 @@ begin
 
     -- The following inputs are not implemented
     -- DMA_n_BREQ_n  (6809 mode)
-    
+
     -- Pins whose functions are dependent on "E" mode
     PIN33        <= BUSY  when EMode_n = '0' else 'Z';
     DMA_n_BREQ_n <= '1'   when EMode_n = '0' else PIN33;
@@ -359,9 +374,9 @@ begin
 
     PIN38        <= LIC   when EMode_n = '0' else 'Z';
     EXTAL        <= '0'   when EMode_n = '0' else PIN38;
-    
+
     TSC          <= PIN39 when EMode_n = '0' else '0';
-    XTAL         <= '0'   when EMode_n = '0' else PIN39; 
+    XTAL         <= '0'   when EMode_n = '0' else PIN39;
 
     -- A locally generated test clock
     -- 1.8457 MHz in E     Mode (6809E) so it can drive E     (PIN34)
@@ -381,12 +396,12 @@ begin
           E_e <= E_d;
         end if;
     end process;
-    
+
     -- Main clocks
     cpu_clk    <= not E_e;
     busmon_clk <= E_e;
     data_wr    <= E_c;
-    
+
     -- Quadrature clock generator, unused in 6809E mode
     quadrature_gen : process(EXTAL)
     begin
@@ -403,7 +418,7 @@ begin
                 end if;
             end if;
         end if;
-    end process;    
+    end process;
 
     -- Seperate piece of circuitry that emits a 7.3728MHz clock
 
@@ -413,14 +428,14 @@ begin
         CLK0_OUT1         => open,
         CLK2X_OUT         => open
     );
-    
+
     clk_gen : process(clock7_3728)
     begin
         if rising_edge(clock7_3728) then
             clk_count <= clk_count + 1;
         end if;
     end process;
-       
+
     -- Spare pins used for testing
     test1   <= Sync_int;
     test2   <= RDY_int;
