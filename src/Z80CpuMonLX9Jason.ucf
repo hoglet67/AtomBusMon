@@ -1,83 +1,72 @@
 
 NET "CLK_n" CLOCK_DEDICATED_ROUTE = FALSE;
 
-NET "clock49"  LOC="P50" | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns  ; # 49.152 MHz Oscillator
+NET "clock49"  LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
 
-NET "Addr<11>" LOC="P111" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 1
-NET "Addr<12>" LOC="P104" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 2
-NET "Addr<13>" LOC="P101" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 3
-NET "Addr<14>" LOC="P102" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 4
-NET "Addr<15>" LOC="P99 " | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 5
-NET "CLK_n"    LOC="P100" | IOSTANDARD = LVCMOS33 | PERIOD = 250.0 ; # Z80 pin 6
-NET "Data<4>"  LOC="P97"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 7
-NET "Data<3>"  LOC="P98"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 8
-NET "Data<5>"  LOC="P94"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 9
-NET "Data<6>"  LOC="P95"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 10
-#NET "VCC"     LOC="P92"  | IOSTANDARD = LVCMOS33 ; # Z80 pin 11
-NET "Data<2>"  LOC="P93"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 12
-NET "Data<7>"  LOC="P87"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 13
-NET "Data<0>"  LOC="P88"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 14
-NET "Data<1>"  LOC="P84"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 15
-NET "INT_n"    LOC="P85"  | IOSTANDARD = LVCMOS33 ; # Z80 pin 16
-NET "NMI_n"    LOC="P83"  | IOSTANDARD = LVCMOS33 ; # Z80 pin 17
-NET "HALT_n"   LOC="P82"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 18
-NET "MREQ_n"   LOC="P80"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 19
-NET "IORQ_n"   LOC="P78"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 20
-NET "RD_n"     LOC="P32"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 21
-NET "WR_n"     LOC="P29"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 22
-NET "BUSAK_n"  LOC="P26"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 23
-NET "WAIT_n"   LOC="P24"  | IOSTANDARD = LVCMOS33 ; # Z80 pin 24
-NET "BUSRQ_n"  LOC="P23"  | IOSTANDARD = LVCMOS33 ; # Z80 pin 25
-NET "RESET_n"  LOC="P22"  | IOSTANDARD = LVCMOS33 ; # Z80 pin 26
-NET "M1_n"     LOC="P21"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 27
-NET "RFSH_n"   LOC="P17"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 28
-#NET "GND"     LOC="P16"  | IOSTANDARD = LVCMOS33 ; # Z80 pin 29
-NET "Addr<0>"  LOC="P15"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 30
-NET "Addr<1>"  LOC="P14"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 31
-NET "Addr<2>"  LOC="P12"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 32
-NET "Addr<3>"  LOC="P11"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 33
-NET "Addr<4>"  LOC="P10"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 34
-NET "Addr<5>"  LOC="P9"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 35
-NET "Addr<6>"  LOC="P8"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 36
-NET "Addr<7>"  LOC="P7"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 37
-NET "Addr<8>"  LOC="P6"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 38
-NET "Addr<9>"  LOC="P5"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 39
-NET "Addr<10>" LOC="P2"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ; # Z80 pin 40
+NET "Addr<11>" LOC="P94"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 1
+NET "Addr<12>" LOC="P95"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 2
+NET "Addr<13>" LOC="P98"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 3
+NET "Addr<14>" LOC="P99"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 4
+NET "Addr<15>" LOC="P100" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 5
+NET "CLK_n"    LOC="P101" | IOSTANDARD = LVCMOS33 | PERIOD = 250.0          ; # Z80 pin 6
+NET "Data<4>"  LOC="P104" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 7
+NET "Data<3>"  LOC="P102" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 8
+NET "Data<5>"  LOC="P111" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 9
+NET "Data<6>"  LOC="P97"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 10
+#NET "VCC"     LOC="P78"  | IOSTANDARD = LVCMOS33                           ; # Z80 pin 11
+NET "Data<2>"  LOC="P88"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 12
+NET "Data<7>"  LOC="P87"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 13
+NET "Data<0>"  LOC="P85"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 14
+NET "Data<1>"  LOC="P84"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 15
+NET "INT_n"    LOC="P83"  | IOSTANDARD = LVCMOS33                           ; # Z80 pin 16
+NET "NMI_n"    LOC="P82"  | IOSTANDARD = LVCMOS33                           ; # Z80 pin 17
+NET "HALT_n"   LOC="P80"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 18
+NET "MREQ_n"   LOC="P92"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 19
+NET "IORQ_n"   LOC="P93"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 20
 
-NET "led3"       LOC="P134" | IOSTANDARD = LVCMOS33 ; # Red LED (near SW1)
-NET "led6"       LOC="P119" | IOSTANDARD = LVCMOS33 ; # Red LED (just left of FPGA)
-NET "led8"       LOC="P117" | IOSTANDARD = LVCMOS33 ; # Green LED (near SW1)
-NET "sw1"        LOC="P132" | IOSTANDARD = LVCMOS33 ; # Bottom Switch
-NET "sw2"        LOC="P131" | IOSTANDARD = LVCMOS33 ; # Top Switch
+NET "RD_n"     LOC="P16"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 21
+NET "WR_n"     LOC="P15"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 22
+NET "BUSAK_n"  LOC="P17"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 23
+NET "WAIT_n"   LOC="P23"  | IOSTANDARD = LVCMOS33                           ; # Z80 pin 24
+NET "BUSRQ_n"  LOC="P22"  | IOSTANDARD = LVCMOS33                           ; # Z80 pin 25
+NET "RESET_n"  LOC="P26"  | IOSTANDARD = LVCMOS33                           ; # Z80 pin 26
+NET "M1_n"     LOC="P29"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 27
+NET "RFSH_n"   LOC="P24"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 28
+#NET "GND"     LOC="P32"  | IOSTANDARD = LVCMOS33                           ; # Z80 pin 29
+NET "Addr<0>"  LOC="P21"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 30
+NET "Addr<1>"  LOC="P1"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 31
+NET "Addr<2>"  LOC="P10"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 32
+NET "Addr<3>"  LOC="P11"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 33
+NET "Addr<4>"  LOC="P8"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 34
+NET "Addr<5>"  LOC="P9"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 35
+NET "Addr<6>"  LOC="P6"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 36
+NET "Addr<7>"  LOC="P5"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 37
+NET "Addr<8>"  LOC="P7"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 38
+NET "Addr<9>"  LOC="P14"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 39
+NET "Addr<10>" LOC="P12"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 40
 
-# I/O's for test connector
-#NET tvs1                      LOC=P48 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-#NET tvs0                      LOC=P49 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-NET tmosi                     LOC=P44 | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;
-NET tdin                      LOC=P41 | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;
-NET tcclk                     LOC=P35 | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;
-#NET tm1                       LOC=P42 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-#NET thsw                      LOC=P99 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+# LEDs and Switches
+NET "led3"     LOC="P134" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 0 active
+NET "led6"     LOC="P119" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 1 active
+NET "led8"     LOC="P117" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # stopped at breakpoint
+NET "sw1"      LOC="P132" | IOSTANDARD = LVCMOS33                           ; # reset
+NET "sw2"      LOC="P131" | IOSTANDARD = LVCMOS33                           ; # interrupt
 
-NET "avr_TxD" LOC="P46" | IOSTANDARD = LVCMOS33 ;
-NET "avr_RxD" LOC="P47" | IOSTANDARD = LVCMOS33 ;
+# 7-segment LED
+NET tmosi      LOC="P45"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET tdin       LOC="P44"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET tcclk      LOC="P43"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 
-NET "trig<0>" LOC="P140" | IOSTANDARD = LVCMOS33 ;
-NET "trig<1>" LOC="P139" | IOSTANDARD = LVCMOS33 ;
+# UART
+NET "avr_TxD"  LOC="P46"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "avr_RxD"  LOC="P47"  | IOSTANDARD = LVCMOS33                           ;
 
-NET "test1" LOC="P127" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;
-NET "test2" LOC="P124" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;
-NET "test3" LOC="P121" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;
-NET "test4" LOC="P115" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;
+# External trigger inputs
+NET "trig<0>"  LOC="P126" | IOSTANDARD = LVCMOS33                           ;
+NET "trig<1>"  LOC="P127" | IOSTANDARD = LVCMOS33                           ;
 
-
-# NET ""  LOC="P48" | IOSTANDARD = LVCMOS33 ; # connector pin E2 
-# NET ""  LOC="P49" | IOSTANDARD = LVCMOS33 ; # connector pin E3
-# NET ""  LOC="P27" | IOSTANDARD = LVCMOS33 ; # connector pin E4
-# NET ""  LOC="P44" | IOSTANDARD = LVCMOS33 ; # connector pin E5
-# NET ""  LOC="P50" | IOSTANDARD = LVCMOS33 ; # connector pin E6
-# NET ""  LOC="P42" | IOSTANDARD = LVCMOS33 ; # connector pin E7
-# NET ""  LOC="P99" | IOSTANDARD = LVCMOS33 ; # connector pin E8
-
-
- 
+# Test outputs
+NET "test1"    LOC="P139" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test2"    LOC="P140" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test3"    LOC="P141" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test4"    LOC="P142" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
