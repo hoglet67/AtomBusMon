@@ -1,7 +1,7 @@
 #!/bin/bash
 DATE=$(date +"%Y%m%d_%H%M")
 
-VERSION=$(grep "define VERSION" firmware/AtomBusMon.c | cut -d\" -f2)
+VERSION=$(grep "define VERSION" firmware/AtomBusMon.c | cut -d\" -f2 | tr -d "." )
 
 NAME=ice_${DATE}_${VERSION}
 
