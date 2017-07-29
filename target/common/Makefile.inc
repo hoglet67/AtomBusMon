@@ -5,12 +5,14 @@ XILINX      ?= /opt/Xilinx/14.7
 PATH       := $(PATH):${XILINX}/ISE_DS/ISE/bin/lin:${PAPILIO}/linux32
 SHELL      := env PATH=$(PATH) /bin/bash
 
+# Frequency of the AVR CPU
+F_CPU       ?= 15855484
+
 # Path of the back anotated block memory map file
 BMM_FILE    ?= memory_bd.bmm
 
 # AVR dev environment
 MCU=atmega103
-F_CPU=15855484
 CC=avr-gcc
 OBJCOPY=avr-objcopy
 

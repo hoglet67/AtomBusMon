@@ -5,6 +5,11 @@ library UNISIM;
 use UNISIM.Vcomponents.all;
 
 entity DCM0 is
+    generic (
+       ClkMult        : integer := 10;       -- default value correct for GODIL
+       ClkDiv         : integer := 31;       -- default value correct for GODIL
+       ClkPer         : real    := 20.345    -- default value correct for GODIL
+       );
     port (CLKIN_IN  : in  std_logic;
           CLKFX_OUT : out std_logic); 
 end DCM0;
@@ -23,10 +28,10 @@ begin
     DCM_INST : DCM
         generic map(CLK_FEEDBACK          => "1X",
                     CLKDV_DIVIDE          => 4.0,  -- 15.855 =49.152 * 10 / 31
-                    CLKFX_DIVIDE          => 31,
-                    CLKFX_MULTIPLY        => 10,
+                    CLKFX_DIVIDE          => ClkDiv,
+                    CLKFX_MULTIPLY        => ClkMult,
                     CLKIN_DIVIDE_BY_2     => false,
-                    CLKIN_PERIOD          => 20.345,
+                    CLKIN_PERIOD          => ClkPer,
                     CLKOUT_PHASE_SHIFT    => "NONE",
                     DESKEW_ADJUST         => "SYSTEM_SYNCHRONOUS",
                     DFS_FREQUENCY_MODE    => "LOW",

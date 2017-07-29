@@ -354,7 +354,7 @@
     <property xil_pn:name="Generate Testbench File" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Generate Timegroups Section" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Generate Timegroups Section Post Trace" xil_pn:value="false" xil_pn:valueState="default"/>
-    <property xil_pn:name="Generics, Parameters" xil_pn:value="SW2ActiveHigh=true LEDsActiveHigh=true" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Generics, Parameters" xil_pn:value="SW2ActiveHigh=true LEDsActiveHigh=true ClkMult=12 ClkDiv=31 ClkPer=20.0" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Global Optimization Goal" xil_pn:value="AllClockNets" xil_pn:valueState="default"/>
     <property xil_pn:name="Global Optimization map spartan6" xil_pn:value="Off" xil_pn:valueState="default"/>
     <property xil_pn:name="Global Set/Reset Port Name" xil_pn:value="GSR_PORT" xil_pn:valueState="default"/>

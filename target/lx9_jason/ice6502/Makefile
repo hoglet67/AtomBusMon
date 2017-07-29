@@ -10,6 +10,9 @@ PROJECT    = AtomCpuMon
 # The target .bit file to be generated including the monitor program
 TARGET     = ice6502
 
+# Frequuency that the AVR runs at
+F_CPU      = 19354838
+
 # Common include files
 include $(COMMON)/Makefile_$(TARGET).inc
 include $(COMMON)/Makefile.inc

@@ -63,8 +63,8 @@ NET tdin       LOC="P44"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 NET tcclk      LOC="P43"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 
 # UART
-NET "avr_TxD"  LOC="P46"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET "avr_RxD"  LOC="P47"  | IOSTANDARD = LVCMOS33                           ;
+NET "avr_TxD"  LOC="P51"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "avr_RxD"  LOC="P55"  | IOSTANDARD = LVCMOS33                           ;
 
 # External trigger inputs
 NET "trig<0>"  LOC="P126" | IOSTANDARD = LVCMOS33                           ;

@@ -26,7 +26,10 @@ entity Z80CpuMon is
        UseT80Core     : boolean := true;
        LEDsActiveHigh : boolean := false;    -- default value correct for GODIL
        SW1ActiveHigh  : boolean := true;     -- default value correct for GODIL
-       SW2ActiveHigh  : boolean := false     -- default value correct for GODIL
+       SW2ActiveHigh  : boolean := false;    -- default value correct for GODIL
+       ClkMult        : integer := 10;       -- default value correct for GODIL
+       ClkDiv         : integer := 31;       -- default value correct for GODIL
+       ClkPer         : real    := 20.345    -- default value correct for GODIL
        );
     port (
         clock49         : in    std_logic;
@@ -150,6 +153,11 @@ type state_type is (idle, rd_init, rd_setup, rd, rd_hold, wr_init, wr_setup, wr,
     signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
     signal sw_reset_n     : std_logic;  -- switch to reset the CPU
 
+    signal avr_TxD_int    : std_logic;
+
+    signal clock_49_ctr   : std_logic_vector(23 downto 0);
+    signal clock_avr_ctr  : std_logic_vector(23 downto 0);
+
 begin
 
     -- Generics allows polarity of switches/LEDs to be tweaked from the project file
@@ -159,10 +167,16 @@ begin
     led6           <= not led6_n when LEDsActiveHigh else led6_n;
     led8           <= not led8_n when LEDsActiveHigh else led8_n;
 
-    inst_dcm0 : entity work.DCM0 port map(
-        CLKIN_IN          => clock49,
-        CLKFX_OUT         => clock_avr
-    );
+    inst_dcm0 : entity work.DCM0
+      generic map (
+        ClkMult      => ClkMult,
+        ClkDiv       => ClkDiv,
+        ClkPer       => ClkPer
+      )
+      port map(
+        CLKIN_IN     => clock49,
+        CLKFX_OUT    => clock_avr
+      );
 
     mon : entity work.BusMonCore
       generic map (
@@ -192,7 +206,7 @@ begin
         lcd_e        => open,
         lcd_db       => open,
         avr_RxD      => avr_RxD,
-        avr_TxD      => avr_TxD,
+        avr_TxD      => avr_TxD_int,
         sw1          => '0',
         nsw2         => sw_interrupt_n,
         led3         => led3_n,
@@ -402,10 +416,32 @@ begin
 
     RESET_n_int <= RESET_n and sw_reset_n and nRST;
 
-    test1 <= TState(0);
-    test2 <= TState(1);
-    test3 <= TState(2);
-    test4 <= CLK_n;
+    avr_TxD <= avr_Txd_int;
+
+    test1 <= sw_reset_n and sw_interrupt_n;
+
+    process(clock_avr)
+    begin
+        if rising_edge(clock_avr) then
+            clock_avr_ctr <= clock_avr_ctr + 1;
+            test2 <= sw_reset_n or clock_avr_ctr(23);
+        end if;
+    end process;
+
+    process(clock49)
+    begin
+        if rising_edge(clock49) then
+            clock_49_ctr <= clock_49_ctr + 1;
+            test3 <= sw_interrupt_n or clock_49_ctr(23);
+        end if;
+    end process;
+
+    test4 <= not avr_TxD_int;
+
+    --test1 <= TState(0);
+    --test2 <= TState(1);
+    --test3 <= TState(2);
+    --test4 <= CLK_n;
 
     cpu_clk <= CLK_n;
     busmon_clk <= CLK_n;
