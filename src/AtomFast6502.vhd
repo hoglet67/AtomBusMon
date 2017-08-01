@@ -43,7 +43,10 @@ entity AtomFast6502 is
        UseAlanDCore   : boolean := false;
        LEDsActiveHigh : boolean := false;    -- default value correct for GODIL
        SW1ActiveHigh  : boolean := true;     -- default value correct for GODIL
-       SW2ActiveHigh  : boolean := false     -- default value correct for GODIL
+       SW2ActiveHigh  : boolean := false;    -- default value correct for GODIL
+       ClkMult        : integer := 10;       -- default value correct for GODIL
+       ClkDiv         : integer := 31;       -- default value correct for GODIL
+       ClkPer         : real    := 20.345    -- default value correct for GODIL
        );
     port (
         clock49         : in    std_logic;
@@ -136,10 +139,16 @@ begin
     led6           <= not led6_n when LEDsActiveHigh else led6_n;
     led8           <= not led8_n when LEDsActiveHigh else led8_n;
 
-    inst_dcm0 : entity work.DCM0 port map(
-        CLKIN_IN          => clock49,
-        CLKFX_OUT         => clock_avr
-    );
+    inst_dcm0 : entity work.DCM0
+      generic map (
+        ClkMult      => ClkMult,
+        ClkDiv       => ClkDiv,
+        ClkPer       => ClkPer
+      )
+      port map(
+        CLKIN_IN     => clock49,
+        CLKFX_OUT    => clock_avr
+      );
 
     inst_dcm2 : entity work.DCM2 port map(
         CLKIN_IN          => Phi0,
