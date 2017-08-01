@@ -161,8 +161,8 @@ type state_type is (idle, rd_init, rd_setup, rd, rd_hold, wr_init, wr_setup, wr,
 begin
 
     -- Generics allows polarity of switches/LEDs to be tweaked from the project file
-    sw_reset_n     <= not sw1 when SW1ActiveHigh else sw1;
-    sw_interrupt_n <= not sw2 when SW2ActiveHigh else sw2;
+    sw_interrupt_n <= not sw1 when SW1ActiveHigh else sw1;
+    sw_reset_n     <= not sw2 when SW2ActiveHigh else sw2;
     led3           <= not led3_n when LEDsActiveHigh else led3_n;
     led6           <= not led6_n when LEDsActiveHigh else led6_n;
     led8           <= not led8_n when LEDsActiveHigh else led8_n;
@@ -208,7 +208,7 @@ begin
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD_int,
         sw1          => '0',
-        nsw2         => sw_interrupt_n,
+        nsw2         => sw_reset_n,
         led3         => led3_n,
         led6         => led6_n,
         led8         => led8_n,
@@ -414,17 +414,17 @@ begin
         end if;
     end process;
 
-    RESET_n_int <= RESET_n and sw_reset_n and nRST;
+    RESET_n_int <= RESET_n and sw_interrupt_n and nRST;
 
     avr_TxD <= avr_Txd_int;
 
-    test1 <= sw_reset_n and sw_interrupt_n;
+    test1 <= sw_interrupt_n and sw_reset_n;
 
     process(clock_avr)
     begin
         if rising_edge(clock_avr) then
             clock_avr_ctr <= clock_avr_ctr + 1;
-            test2 <= sw_reset_n or clock_avr_ctr(23);
+            test2 <= sw_interrupt_n or clock_avr_ctr(23);
         end if;
     end process;
 
@@ -432,7 +432,7 @@ begin
     begin
         if rising_edge(clock49) then
             clock_49_ctr <= clock_49_ctr + 1;
-            test3 <= sw_interrupt_n or clock_49_ctr(23);
+            test3 <= sw_reset_n or clock_49_ctr(23);
         end if;
     end process;
 

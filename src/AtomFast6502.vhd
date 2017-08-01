@@ -130,8 +130,8 @@ architecture behavioral of AtomFast6502 is
 begin
 
     -- Generics allows polarity of switches/LEDs to be tweaked from the project file
-    sw_reset_n     <= not sw1 when SW1ActiveHigh else sw1;
-    sw_interrupt_n <= not sw2 when SW2ActiveHigh else sw2;
+    sw_interrupt_n <= not sw1 when SW1ActiveHigh else sw1;
+    sw_reset_n     <= not sw2 when SW2ActiveHigh else sw2;
     led3           <= not led3_n when LEDsActiveHigh else led3_n;
     led6           <= not led6_n when LEDsActiveHigh else led6_n;
     led8           <= not led8_n when LEDsActiveHigh else led8_n;
@@ -174,8 +174,8 @@ begin
         trig         => trig,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
-        sw1          => not sw_reset_n,
-        nsw2         => sw_interrupt_n,
+        sw1          => not sw_interrupt_n,
+        nsw2         => sw_reset_n,
         led3         => led3_n,
         led6         => led6_n,
         led8         => led8_n,
