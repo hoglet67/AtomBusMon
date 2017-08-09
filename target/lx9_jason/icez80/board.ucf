@@ -43,8 +43,8 @@ NET "Addr<3>"  LOC="P11"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # 
 NET "Addr<4>"  LOC="P8"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 34
 NET "Addr<5>"  LOC="P9"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 35
 NET "Addr<6>"  LOC="P6"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 36
-NET "Addr<7>"  LOC="P5"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 37
-NET "Addr<8>"  LOC="P7"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 38
+NET "Addr<7>"  LOC="P7"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 37
+NET "Addr<8>"  LOC="P5"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 38
 NET "Addr<9>"  LOC="P14"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 39
 NET "Addr<10>" LOC="P12"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 40
 
