@@ -1,4 +1,4 @@
-SUB_DIRS = godil_250 godil_500 lx9_jason
+SUB_DIRS = godil_250 godil_500 lx9_jason lx9_jason_flipped
 
 build:
 	for dir in $(SUB_DIRS); do \
