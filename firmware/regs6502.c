@@ -12,11 +12,11 @@ char statusString[8] = "NV-BDIZC";
 void doCmdRegs(char *params) {
   int i;
   unsigned int p = hwRead8(OFFSET_REG_P);
-  log0("6502 Registers:\n  A=%02X X=%02X Y=%02X SP=%04X PC=%04X\n",
+  log0("6502 Registers:\n  A=%02X X=%02X Y=%02X SP=%02X PC=%04X\n",
        hwRead8(OFFSET_REG_A),
        hwRead8(OFFSET_REG_X),
        hwRead8(OFFSET_REG_Y),
-       hwRead16(OFFSET_REG_SP),
+       hwRead8(OFFSET_REG_SP),
        hwRead16(OFFSET_REG_PC));
   char *sp = statusString;
   log0("  Status: ");
