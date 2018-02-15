@@ -173,9 +173,9 @@ begin
         end if;
     end process;
 
-    data_latch : process(Phi0_b)
+    data_latch : process(Phi0_a)
     begin
-        if falling_edge(Phi0_b) then
+        if falling_edge(Phi0_a) then
             if (fakeTube_n = '0' and Addr_int = x"FEE0") then
                 Din        <= x"FE";
             else
