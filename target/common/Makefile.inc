@@ -2,7 +2,7 @@ VPATH      = $(ROOT)/firmware
 
 XILINX      ?= /opt/Xilinx/14.7
 
-PATH       := $(PATH):${XILINX}/ISE_DS/ISE/bin/lin:${PAPILIO}/linux32
+PATH       := $(PATH):${XILINX}/ISE_DS/ISE/bin/lin64:${PAPILIO}/linux64
 SHELL      := env PATH=$(PATH) /bin/bash
 
 # Frequency of the AVR CPU
