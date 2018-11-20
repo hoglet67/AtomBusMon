@@ -1,0 +1,5 @@
+(sym_lib_table
+  (lib (name 6502_adapter-rescue)(type Legacy)(uri ${KIPRJMOD}/6502_adapter-rescue.lib)(options "")(descr ""))
+  (lib (name 65xx)(type Legacy)(uri ${KIPRJMOD}/65xx.lib)(options "")(descr ""))
+  (lib (name 74lvc)(type Legacy)(uri ${KIPRJMOD}/74lvc.lib)(options "")(descr ""))
+)

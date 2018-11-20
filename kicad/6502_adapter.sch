@@ -1,36 +1,6 @@
-EESchema Schematic File Version 2
-LIBS:power
-LIBS:device
-LIBS:transistors
-LIBS:conn
-LIBS:linear
-LIBS:regul
-LIBS:74xx
-LIBS:cmos4000
-LIBS:adc-dac
-LIBS:memory
-LIBS:xilinx
-LIBS:microcontrollers
-LIBS:dsp
-LIBS:microchip
-LIBS:analog_switches
-LIBS:motorola
-LIBS:texas
-LIBS:intel
-LIBS:audio
-LIBS:interface
-LIBS:digital-audio
-LIBS:philips
-LIBS:display
-LIBS:cypress
-LIBS:siliconi
-LIBS:opto
-LIBS:atmel
-LIBS:contrib
-LIBS:valves
-LIBS:65xx
-LIBS:74lvc
-EELAYER 25 0
+EESchema Schematic File Version 4
+LIBS:6502_adapter-cache
+EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -45,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L WD65C02 U1
+L 65xx:WD65C02 U1
 U 1 1 5975BF41
 P 5800 3600
 F 0 "U1" H 5800 2450 60  0000 C CNN
@@ -56,7 +26,7 @@ F 3 "" H 5300 3800 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74LVC8T245 U4
+L 74lvc:74LVC8T245 U4
 U 1 1 5975C5CE
 P 3650 5600
 F 0 "U4" H 3150 6300 60  0000 L CNN
@@ -67,7 +37,7 @@ F 3 "" H 3650 5500 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L CONN_02X20 P2
+L 6502_adapter-rescue:CONN_02X20 P2
 U 1 1 5975C737
 P 1200 4100
 F 0 "P2" H 1200 5150 50  0000 C CNN
@@ -78,7 +48,7 @@ F 3 "" H 1200 3150 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L CONN_02X20 P1
+L 6502_adapter-rescue:CONN_02X20 P1
 U 1 1 5975C7A4
 P 10450 3950
 F 0 "P1" H 10450 5000 50  0000 C CNN
@@ -89,7 +59,7 @@ F 3 "" H 10450 3000 50  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L 74LVC8T245 U5
+L 74lvc:74LVC8T245 U5
 U 1 1 5975C870
 P 8100 3750
 F 0 "U5" H 7600 4450 60  0000 L CNN
@@ -100,7 +70,7 @@ F 3 "" H 8100 3650 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74LVC8T245 U2
+L 74lvc:74LVC8T245 U2
 U 1 1 5975C8C1
 P 3300 1650
 F 0 "U2" H 2800 2350 60  0000 L CNN
@@ -111,7 +81,7 @@ F 3 "" H 3300 1550 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L 74LVC8T245 U3
+L 74lvc:74LVC8T245 U3
 U 1 1 5975C914
 P 3250 3850
 F 0 "U3" H 2750 4550 60  0000 L CNN
@@ -122,7 +92,7 @@ F 3 "" H 3250 3750 60  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L 74LVC8T245 U6
+L 74lvc:74LVC8T245 U6
 U 1 1 5975C957
 P 8100 1950
 F 0 "U6" H 7600 2650 60  0000 L CNN
@@ -292,7 +262,7 @@ Text Label 7250 2300 2    60   ~ 0
 nNMI
 NoConn ~ 6450 3200
 $Comp
-L CONN_01X03 P3
+L 6502_adapter-rescue:CONN_01X03 P3
 U 1 1 59760CE2
 P 5150 1050
 F 0 "P3" H 5150 1250 50  0000 C CNN
@@ -305,7 +275,7 @@ $EndComp
 Text Label 5350 1250 0    60   ~ 0
 GND
 $Comp
-L CONN_01X02 P4
+L 6502_adapter-rescue:CONN_01X02 P4
 U 1 1 5976110F
 P 4300 2850
 F 0 "P4" H 4300 3000 50  0000 C CNN
@@ -407,7 +377,7 @@ LV_RnW
 Text Label 2600 1900 2    60   ~ 0
 LV_SYNC
 $Comp
-L R_Small R1
+L 6502_adapter-rescue:R_Small R1
 U 1 1 59761BB3
 P 7050 1100
 F 0 "R1" H 7080 1120 50  0000 L CNN
@@ -420,7 +390,7 @@ $EndComp
 Text Label 7050 900  2    60   ~ 0
 5V
 $Comp
-L C_Small C1
+L 6502_adapter-rescue:C_Small C1
 U 1 1 597620E8
 P 1100 6900
 F 0 "C1" H 1110 6970 50  0000 L CNN
@@ -431,7 +401,7 @@ F 3 "" H 1100 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C_Small C2
+L 6502_adapter-rescue:C_Small C2
 U 1 1 5976220A
 P 1400 6900
 F 0 "C2" H 1410 6970 50  0000 L CNN
@@ -442,7 +412,7 @@ F 3 "" H 1400 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C_Small C3
+L 6502_adapter-rescue:C_Small C3
 U 1 1 59762254
 P 1700 6900
 F 0 "C3" H 1710 6970 50  0000 L CNN
@@ -453,7 +423,7 @@ F 3 "" H 1700 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C_Small C4
+L 6502_adapter-rescue:C_Small C4
 U 1 1 59762296
 P 2000 6900
 F 0 "C4" H 2010 6970 50  0000 L CNN
@@ -464,7 +434,7 @@ F 3 "" H 2000 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C_Small C5
+L 6502_adapter-rescue:C_Small C5
 U 1 1 597622DF
 P 2300 6900
 F 0 "C5" H 2310 6970 50  0000 L CNN
@@ -475,7 +445,7 @@ F 3 "" H 2300 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C_Small C7
+L 6502_adapter-rescue:C_Small C7
 U 1 1 597624D7
 P 3250 6900
 F 0 "C7" H 3260 6970 50  0000 L CNN
@@ -486,7 +456,7 @@ F 3 "" H 3250 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C_Small C8
+L 6502_adapter-rescue:C_Small C8
 U 1 1 5976252A
 P 3550 6900
 F 0 "C8" H 3560 6970 50  0000 L CNN
@@ -497,7 +467,7 @@ F 3 "" H 3550 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C_Small C9
+L 6502_adapter-rescue:C_Small C9
 U 1 1 59762588
 P 3850 6900
 F 0 "C9" H 3860 6970 50  0000 L CNN
@@ -508,7 +478,7 @@ F 3 "" H 3850 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C_Small C10
+L 6502_adapter-rescue:C_Small C10
 U 1 1 597625E5
 P 4150 6900
 F 0 "C10" H 4160 6970 50  0000 L CNN
@@ -519,7 +489,7 @@ F 3 "" H 4150 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C_Small C11
+L 6502_adapter-rescue:C_Small C11
 U 1 1 59762645
 P 4450 6900
 F 0 "C11" H 4460 6970 50  0000 L CNN
@@ -530,7 +500,7 @@ F 3 "" H 4450 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L CP1_Small C6
+L 6502_adapter-rescue:CP1_Small C6
 U 1 1 597630BE
 P 2600 6900
 F 0 "C6" H 2610 6970 50  0000 L CNN
@@ -541,7 +511,7 @@ F 3 "" H 2600 6900 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L CP1_Small C12
+L 6502_adapter-rescue:CP1_Small C12
 U 1 1 59763501
 P 4750 6900
 F 0 "C12" H 4760 6970 50  0000 L CNN
@@ -671,7 +641,7 @@ NoConn ~ 950  3150
 NoConn ~ 1450 3150
 NoConn ~ 1450 3250
 $Comp
-L PWR_FLAG #FLG01
+L power:PWR_FLAG #FLG01
 U 1 1 597673C3
 P 1100 6700
 F 0 "#FLG01" H 1100 6795 50  0001 C CNN
@@ -682,7 +652,7 @@ F 3 "" H 1100 6700 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L PWR_FLAG #FLG02
+L power:PWR_FLAG #FLG02
 U 1 1 59767405
 P 3250 6700
 F 0 "#FLG02" H 3250 6795 50  0001 C CNN
@@ -693,7 +663,7 @@ F 3 "" H 3250 6700 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L PWR_FLAG #FLG03
+L power:PWR_FLAG #FLG03
 U 1 1 59767675
 P 800 7100
 F 0 "#FLG03" H 800 7195 50  0001 C CNN
@@ -762,7 +732,7 @@ Wire Wire Line
 Wire Wire Line
 	4950 1700 4000 1700
 Wire Wire Line
-	6450 3300 7400 3300
+	6450 3300 6650 3300
 Wire Wire Line
 	5150 3300 4550 3300
 Wire Wire Line
@@ -841,7 +811,7 @@ Wire Wire Line
 Wire Wire Line
 	1100 7000 1100 7100
 Wire Wire Line
-	800  7100 4750 7100
+	800  7100 1100 7100
 Wire Wire Line
 	4450 7100 4450 7000
 Wire Wire Line
@@ -849,9 +819,7 @@ Wire Wire Line
 Connection ~ 4150 7100
 Wire Wire Line
 	3850 7000 3850 7100
-Wire Wire Line
-	3850 7100 3900 7100
-Connection ~ 3900 7100
+Connection ~ 3850 7100
 Wire Wire Line
 	3550 7000 3550 7100
 Connection ~ 3550 7100
@@ -873,7 +841,7 @@ Connection ~ 1400 7100
 Wire Wire Line
 	1100 6800 1100 6700
 Wire Wire Line
-	1100 6700 2600 6700
+	1100 6700 1400 6700
 Wire Wire Line
 	2300 6700 2300 6800
 Wire Wire Line
@@ -888,7 +856,7 @@ Connection ~ 1400 6700
 Wire Wire Line
 	3250 6800 3250 6700
 Wire Wire Line
-	3250 6700 4750 6700
+	3250 6700 3550 6700
 Wire Wire Line
 	4450 6700 4450 6800
 Wire Wire Line
@@ -949,4 +917,42 @@ Wire Wire Line
 	5150 4600 5150 5950
 Wire Wire Line
 	5150 5950 4350 5950
+Wire Wire Line
+	6650 3300 7400 3300
+Wire Wire Line
+	4150 7100 4450 7100
+Wire Wire Line
+	3250 7100 3550 7100
+Wire Wire Line
+	2300 7100 2600 7100
+Wire Wire Line
+	2000 7100 2300 7100
+Wire Wire Line
+	1700 7100 2000 7100
+Wire Wire Line
+	1400 7100 1700 7100
+Wire Wire Line
+	2000 6700 2300 6700
+Wire Wire Line
+	1700 6700 2000 6700
+Wire Wire Line
+	1400 6700 1700 6700
+Wire Wire Line
+	4150 6700 4450 6700
+Wire Wire Line
+	3850 6700 4150 6700
+Wire Wire Line
+	3550 6700 3850 6700
+Wire Wire Line
+	2300 6700 2600 6700
+Wire Wire Line
+	2600 7100 3250 7100
+Wire Wire Line
+	4450 6700 4750 6700
+Wire Wire Line
+	4450 7100 4750 7100
+Wire Wire Line
+	1100 7100 1400 7100
+Wire Wire Line
+	3550 7100 4150 7100
 $EndSCHEMATC
