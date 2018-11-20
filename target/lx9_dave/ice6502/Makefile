@@ -5,7 +5,7 @@ ROOT       = ../../..
 COMMON     = ../../common
 
 # The project .bit file produced by the Xilinx .xise project
-PROJECT    = AtomCpuMon
+PROJECT    = W65C02CpuMon
 
 # The target .bit file to be generated including the monitor program
 TARGET     = ice6502
