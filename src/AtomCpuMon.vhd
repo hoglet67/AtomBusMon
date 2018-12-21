@@ -198,8 +198,8 @@ begin
         end if;
     end process;
 
-    Phi1       <= not (Phi0_b or Phi0_d);
-    Phi2       <= Phi0_b and Phi0_d;
+    Phi1       <= not Phi0_b;
+    Phi2       <= Phi0_b;
     cpu_clk    <= not Phi0_d;
     busmon_clk <= Phi0_d;
 
