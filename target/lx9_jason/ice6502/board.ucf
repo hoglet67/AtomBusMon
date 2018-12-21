@@ -71,4 +71,4 @@ NET "trig<0>"  LOC="P126" | IOSTANDARD = LVCMOS33                           ;
 NET "trig<1>"  LOC="P127" | IOSTANDARD = LVCMOS33                           ;
 
 # Jumpers
-NET "fakeTube_n" LOC="P123" | IOSTANDARD = LVCMOS33 ;
+NET "fakeTube_n" LOC="P112" | IOSTANDARD = LVCMOS33 | PULLUP ;
