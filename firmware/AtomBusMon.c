@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.73"
+#define VERSION "0.74"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -28,9 +28,9 @@
 
 #ifdef CPUEMBEDDED
   #if (CPU == Z80)
-    #define NUM_CMDS 30
+    #define NUM_CMDS 31
   #else
-    #define NUM_CMDS 23
+    #define NUM_CMDS 24
   #endif
 #else
   #define NUM_CMDS 14
@@ -59,6 +59,7 @@ char *cmdStrings[NUM_CMDS] = {
 #endif
   "test",
   "srec",
+  "special",
 #endif
   "reset",
   "trace",
@@ -99,6 +100,7 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
 #endif
   doCmdTest,
   doCmdSRec,
+  doCmdSpecial,
 #endif
   doCmdReset,
   doCmdTrace,
@@ -132,8 +134,13 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
 #define CMD_EDGE          0x20
 
 // Commands are placed on bits 4..0
-// Currently bits 6 and 7 are unused
 #define CMD_MASK          0x3F
+
+// Bits 7..6 are the special function output bits
+// On the 6502, these are used to mask IRQ and NMI
+#define SPECIAL_0            6
+#define SPECIAL_1            7
+#define SPECIAL_MASK      ((1<<SPECIAL_0) | (1<<SPECIAL_1))
 
 // Hardware Commands:
 //
@@ -1115,7 +1122,7 @@ void doCmdSRec(char *params) {
          // Read the character
          c = Serial_RxByte0();
       }
-      
+
       // Read the S record type
       c = Serial_RxByte0();
 
@@ -1129,7 +1136,7 @@ void doCmdSRec(char *params) {
       crc = 1;
       count = getHex() - 3;
       addr = (getHex() << 8) + getHex();
-      while (count-- > 0) { 
+      while (count-- > 0) {
          data = getHex();
          if (addr < addrlo) {
             addrlo = addr;
@@ -1155,6 +1162,30 @@ void doCmdSRec(char *params) {
       }
    }
 
+}
+
+void logSpecial(char *function, int value) {
+   log0("%s", function);
+   if (value) {
+      log0(" inhibited\n");
+   } else {
+      log0(" enabled\n");
+   }
+}
+
+void doCmdSpecial(char *params) {
+#if (CPU == 6502)
+   int special = -1;
+   sscanf(params, "%x", &special);
+   if (special >= 0 && special <= 3) {
+      CTRL_PORT &= ~SPECIAL_MASK;
+      CTRL_PORT = (CTRL_PORT & ~SPECIAL_MASK) | (special << SPECIAL_0);
+   }
+   logSpecial("NMI", CTRL_PORT & (1 << SPECIAL_1));
+   logSpecial("IRQ", CTRL_PORT & (1 << SPECIAL_0));
+#else
+   log0("Special functions not implemented\n");
+#endif
 }
 
 #endif // CPUEMBEDDED

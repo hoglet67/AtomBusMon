@@ -2,15 +2,15 @@
 -- Copyright (c) 2015 David Banks
 --
 --------------------------------------------------------------------------------
---   ____  ____ 
---  /   /\/   / 
--- /___/  \  /    
--- \   \   \/    
---  \   \         
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /
+-- \   \   \/
+--  \   \
 --  /   /         Filename  : BusMonCore.vhd
 -- /___/   /\     Timestamp : 30/05/2015
--- \   \  /  \ 
---  \___\/\___\ 
+-- \   \  /  \
+--  \___\/\___\
 --
 --Design Name: AtomBusMon
 --Device: XC3S250E
@@ -51,7 +51,7 @@ entity BusMonCore is
         nRSTout          : out   std_logic;
 
         CountCycle       : in    std_logic;
-        
+
         -- CPU Registers
         -- unused in pure bus monitor mode
         Regs             : in    std_logic_vector(255 downto 0);
@@ -66,14 +66,17 @@ entity BusMonCore is
         DataOut          : out std_logic_vector(7 downto 0);
         DataIn           : in std_logic_vector(7 downto 0);
         Done             : in std_logic;
-        
+
+        -- Special outputs (function is CPU specific)
+        Special          : out std_logic_vector(1 downto 0);
+
         -- Single Step interface
         SS_Single        : out std_logic;
         SS_Step          : out std_logic;
-        
+
         -- External trigger inputs
         trig             : in    std_logic_vector(1 downto 0);
-                    
+
         -- HD44780 LCD
         lcd_rs           : out   std_logic;
         lcd_rw           : out   std_logic;
@@ -103,7 +106,7 @@ end BusMonCore;
 architecture behavioral of BusMonCore is
 
     signal nrst_avr        : std_logic;
-    
+
     signal lcd_rw_int      : std_logic;
     signal lcd_db_in       : std_logic_vector(7 downto 4);
     signal lcd_db_out      : std_logic_vector(7 downto 4);
@@ -131,15 +134,15 @@ architecture behavioral of BusMonCore is
 
     signal bw_status       : std_logic_vector(3 downto 0);
     signal bw_status1      : std_logic_vector(3 downto 0);
-    
+
     signal auto_inc        : std_logic;
-    
+
     signal brkpt_reg       : std_logic_vector(num_comparators * reg_width - 1 downto 0);
     signal brkpt_enable    : std_logic;
     signal brkpt_active    : std_logic;
     signal brkpt_active1   : std_logic;
     signal watch_active    : std_logic;
-    
+
     signal fifo_din        : std_logic_vector(fifo_width - 1 downto 0);
     signal fifo_dout       : std_logic_vector(fifo_width - 1 downto 0);
     signal fifo_empty      : std_logic;
@@ -164,7 +167,7 @@ architecture behavioral of BusMonCore is
     signal unused_b7       : std_logic;
     signal unused_d6       : std_logic;
     signal unused_d7       : std_logic;
-    
+
 begin
 
     inst_oho_dy1 : entity work.Oho_Dy1 port map (
@@ -181,7 +184,7 @@ begin
         dy_ser         => tcclk,
         dy_rclk        => tmosi
     );
-    
+
     Inst_AVR8: entity work.AVR8
     generic map(
         CDATAMEMSIZE         => avr_data_mem_size,
@@ -224,9 +227,9 @@ begin
         portbout(3)          => cmd(3),
         portbout(4)          => cmd(4),
         portbout(5)          => cmd_edge,
-        portbout(6)          => unused_b6,
-        portbout(7)          => unused_b7,
-        
+        portbout(6)          => Special(0),
+        portbout(7)          => Special(1),
+
         -- Status Port
         portdin(0)           => '0',
         portdin(1)           => '0',
@@ -236,7 +239,7 @@ begin
         portdin(5)           => '0',
         portdin(6)           => sw1,
         portdin(7)           => fifo_empty_n,
-        
+
         portdout(0)           => muxsel(0),
         portdout(1)           => muxsel(1),
         portdout(2)           => muxsel(2),
@@ -249,11 +252,11 @@ begin
         -- Mux Port
         portein              => mux,
         porteout             => open,
-                
+
         spi_mosio            => open,
         spi_scko             => open,
         spi_misoi            => '0',
-     
+
         rxd                  => avr_RxD,
         txd                  => avr_TxD
     );
@@ -271,7 +274,7 @@ begin
     );
     fifo_wr_en <= fifo_wr and busmon_clken;
     fifo_rd_en <= fifo_rd and busmon_clken;
-  
+
     -- The fifo is writen the cycle after the break point
     -- Addr1 is the address bus delayed by 1 cycle
     -- DataWr1 is the data being written delayed by 1 cycle
@@ -288,7 +291,7 @@ begin
     led8 <= not brkpt_active;  -- green
 
     nrst_avr <= nsw2;
-    
+
     -- OHO DY1 Display for Testing
     dy_data(0) <= hex & "0000" & Addr(3 downto 0);
     dy_data(1) <= hex & "0000" & Addr(7 downto 4);
@@ -304,13 +307,13 @@ begin
            fifo_dout(7 downto 0)            when muxsel = 6 else
            fifo_dout(15 downto 8)           when muxsel = 7 else
            fifo_dout(23 downto 16)          when muxsel = 8 else
-           fifo_dout(31 downto 24)          when muxsel = 9 else          
+           fifo_dout(31 downto 24)          when muxsel = 9 else
            fifo_dout(39 downto 32)          when muxsel = 10 else
            fifo_dout(47 downto 40)          when muxsel = 11 else
            fifo_dout(55 downto 48)          when muxsel = 12 else
            fifo_dout(63 downto 56)          when muxsel = 13 else
            fifo_dout(71 downto 64)          when muxsel = 14 else
-           
+
            Regs(8 * to_integer(unsigned(muxsel(4 downto 0))) + 7 downto 8 * to_integer(unsigned(muxsel(4 downto 0))));
 
     -- Combinatorial set of comparators to decode breakpoint/watch addresses
@@ -324,7 +327,7 @@ begin
         variable reg_mode_biw : std_logic;
         variable reg_mode_bx  : std_logic;
         variable reg_mode_wmr : std_logic;
-        variable reg_mode_wmw : std_logic;        
+        variable reg_mode_wmw : std_logic;
         variable reg_mode_wir : std_logic;
         variable reg_mode_wiw : std_logic;
         variable reg_mode_wx  : std_logic;
@@ -402,7 +405,7 @@ begin
         brkpt_active <= bactive;
         bw_status    <= status;
     end process;
-   
+
     -- CPU Control Commands
     -- 0000x Enable/Disable single strpping
     -- 0001x Enable/Disable breakpoints / watches
@@ -435,7 +438,7 @@ begin
                 elsif (CountCycle = '1') then
                     cycleCount <= cycleCount + 1;
                 end if;
-            
+
                 -- Command processing
                 cmd_edge1 <= cmd_edge;
                 cmd_edge2 <= cmd_edge1;
@@ -451,11 +454,11 @@ begin
                     if (cmd(4 downto 1) = "0000") then
                         single <= cmd(0);
                     end if;
-                    
+
                     if (cmd(4 downto 1) = "0001") then
                         brkpt_enable <= cmd(0);
                     end if;
-                    
+
                     if (cmd(4 downto 1) = "0010") then
                         brkpt_reg <= cmd(0) & brkpt_reg(brkpt_reg'length - 1 downto 1);
                     end if;
@@ -463,14 +466,14 @@ begin
                     if (cmd(4 downto 1) = "0110") then
                         addr_dout_reg <= cmd(0) & addr_dout_reg(addr_dout_reg'length - 1 downto 1);
                     end if;
-                    
+
                     if (cmd(4 downto 1) = "0011") then
                         reset <= cmd(0);
                     end if;
 
                     if (cmd(4 downto 0) = "01001") then
                         fifo_rd <= '1';
-                    end if;                
+                    end if;
 
                     if (cmd(4 downto 0) = "01010") then
                         fifo_rst <= '1';
@@ -478,26 +481,26 @@ begin
 
                     if (cmd(4 downto 1) = "1000") then
                         memory_rd <= '1';
-                        auto_inc  <= cmd(0); 
+                        auto_inc  <= cmd(0);
                     end if;
 
                     if (cmd(4 downto 1) = "1001") then
                         memory_wr <= '1';
-                        auto_inc  <= cmd(0); 
+                        auto_inc  <= cmd(0);
                     end if;
 
                     if (cmd(4 downto 1) = "1010") then
                         io_rd <= '1';
-                        auto_inc  <= cmd(0); 
+                        auto_inc  <= cmd(0);
                     end if;
 
                     if (cmd(4 downto 1) = "1011") then
                         io_wr <= '1';
-                        auto_inc  <= cmd(0); 
+                        auto_inc  <= cmd(0);
                     end if;
-                    
+
                 end if;
-                
+
                 -- Auto increment the memory address reg the cycle after a rd/wr
                 if (auto_inc = '1' and Done = '1') then
                     addr_dout_reg(23 downto 8) <= addr_dout_reg(23 downto 8) + 1;
@@ -507,22 +510,22 @@ begin
                 if (brkpt_active = '1') then
                     single <= '1';
                 end if;
-                
+
                 if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "01000")) then
                     Rdy_int <= (not brkpt_active);
-                    SS_Step <= (not brkpt_active);            
+                    SS_Step <= (not brkpt_active);
                 else
                     Rdy_int <= (not Sync);
                 end if;
-                
+
                 nRSTout <= not reset;
-                
+
                 -- Latch instruction address for the whole cycle
                 if (Sync = '1') then
                     addr_inst <= Addr;
                     cycleCount_inst <= cycleCount;
                 end if;
-                
+
                 -- Breakpoints and Watches written to the FIFO
                 brkpt_active1 <= brkpt_active;
                 bw_status1    <= bw_status;
@@ -547,7 +550,7 @@ begin
             end if;
         end if;
     end process;
-    
+
     Rdy <= Rdy_int;
     RdMemOut <= memory_rd;
     WrMemOut <= memory_wr;
@@ -558,5 +561,3 @@ begin
     SS_Single <= single;
 
 end behavioral;
-
-

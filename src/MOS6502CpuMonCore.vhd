@@ -2,15 +2,15 @@
 -- Copyright (c) 2015 David Banks
 --
 --------------------------------------------------------------------------------
---   ____  ____ 
---  /   /\/   / 
--- /___/  \  /    
--- \   \   \/    
---  \   \         
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /
+-- \   \   \/
+--  \   \
 --  /   /         Filename  : AtomBusMon.vhd
 -- /___/   /\     Timestamp : 30/05/2015
--- \   \  /  \ 
---  \___\/\___\ 
+-- \   \  /  \
+--  \___\/\___\
 --
 --Design Name: AtomBusMon
 --Device: XC3S250E
@@ -35,11 +35,11 @@ entity MOS6502CpuMonCore is
         busmon_clken     : in    std_logic;
         cpu_clk          : in    std_logic;
         cpu_clken        : in    std_logic;
-        
+
         -- 6502 Signals
         IRQ_n           : in    std_logic;
         NMI_n           : in    std_logic;
-        Sync            : out   std_logic;                
+        Sync            : out   std_logic;
         Addr            : out   std_logic_vector(15 downto 0);
         R_W_n           : out   std_logic;
         Din             : in    std_logic_vector(7 downto 0);
@@ -51,11 +51,11 @@ entity MOS6502CpuMonCore is
 
         -- External trigger inputs
         trig             : in    std_logic_vector(1 downto 0);
-        
+
         -- Serial Console
         avr_RxD         : in     std_logic;
         avr_TxD         : out    std_logic;
-        
+
         -- GODIL Switches
         sw1              : in    std_logic;
         nsw2             : in    std_logic;
@@ -83,8 +83,6 @@ architecture behavioral of MOS6502CpuMonCore is
     signal Sync_int      : std_logic;
     signal hold          : std_logic;
     signal Addr_int      : std_logic_vector(23 downto 0);
-    signal IRQ_n_sync    : std_logic;
-    signal NMI_n_sync    : std_logic;
 
     signal cpu_addr_us: unsigned (15 downto 0);
     signal cpu_dout_us: unsigned (7 downto 0);
@@ -95,6 +93,7 @@ architecture behavioral of MOS6502CpuMonCore is
     signal SS_Single     : std_logic;
     signal SS_Step       : std_logic;
     signal CountCycle    : std_logic;
+    signal special       : std_logic_vector(1 downto 0);
 
     signal memory_rd     : std_logic;
     signal memory_rd1    : std_logic;
@@ -105,9 +104,12 @@ architecture behavioral of MOS6502CpuMonCore is
     signal memory_dout   : std_logic_vector(7 downto 0);
     signal memory_din    : std_logic_vector(7 downto 0);
     signal memory_done   : std_logic;
-    
+
+    signal NMI_n_masked  : std_logic;
+    signal IRQ_n_masked  : std_logic;
+
 begin
-    
+
     mon : entity work.BusMonCore
     generic map (
         avr_data_mem_size => avr_data_mem_size,
@@ -154,12 +156,15 @@ begin
         DataOut      => memory_dout,
         DataIn       => memory_din,
         Done         => memory_done,
+        Special      => special,
         SS_Step      => SS_Step,
         SS_Single    => SS_Single
     );
     Wr_n_int <= R_W_n_int;
     Rd_n_int <= not R_W_n_int;
     Data <= Din when R_W_n_int = '1' else Dout_int;
+    NMI_n_masked <= NMI_n or special(1);
+    IRQ_n_masked <= IRQ_n or special(0);
 
     -- The CPU is slightly pipelined and the register update of the last
     -- instruction overlaps with the opcode fetch of the next instruction.
@@ -172,7 +177,7 @@ begin
     --
     -- To hide this from the user single stepping, all we need to do is to
     -- also pipeline the value of the program counter by one stage to compensate.
-    
+
     last_pc_gen : process(cpu_clk)
     begin
         if rising_edge(cpu_clk) then
@@ -183,7 +188,7 @@ begin
             end if;
         end if;
     end process;
-    
+
     Regs1( 47 downto  0) <= Regs( 47 downto   0);
     Regs1( 63 downto 48) <= last_PC;
     Regs1(255 downto 64) <= (others => '0');
@@ -199,8 +204,8 @@ begin
             Enable          => cpu_clken_ss,
             Clk             => cpu_clk,
             Rdy             => '1',
-            IRQ_n           => IRQ_n,
-            NMI_n           => NMI_n,
+            IRQ_n           => IRQ_n_masked,
+            NMI_n           => NMI_n_masked,
             R_W_n           => R_W_n_int,
             Sync            => Sync_int,
             A               => Addr_int,
@@ -208,22 +213,22 @@ begin
             DO              => Dout_int,
             Regs            => Regs
         );
-    end generate;    
-    
+    end generate;
+
     GenAlanDCore: if UseAlanDCore generate
         inst_r65c02: entity work.r65c02 port map (
             reset    => Res_n_in,
             clk      => cpu_clk,
             enable   => cpu_clken_ss,
-            nmi_n    => NMI_n,
-            irq_n    => IRQ_n,
+            nmi_n    => NMI_n_masked,
+            irq_n    => IRQ_n_masked,
             di       => unsigned(Din),
             do       => cpu_dout_us,
             addr     => cpu_addr_us,
             nwe      => R_W_n_int,
             sync     => Sync_int,
             sync_irq => open,
-            Regs     => Regs            
+            Regs     => Regs
         );
         Dout_int <= std_logic_vector(cpu_dout_us);
         Addr_int(15 downto 0) <= std_logic_vector(cpu_addr_us);
@@ -246,7 +251,7 @@ begin
             end if;
         end if;
     end process;
-    
+
     -- Only count cycles when the 6809 is actually running
     CountCycle <= not hold;
 
@@ -263,16 +268,15 @@ begin
             end if;
         end if;
     end process;
-    
+
     R_W_n <= '1' when memory_rd1 = '1' else '0' when memory_wr1 = '1' else R_W_n_int;
     Addr <= memory_addr1 when (memory_rd1 = '1' or memory_wr1 = '1') else Addr_int(15 downto 0);
     Sync <= Sync_int;
-    
+
     Dout   <= memory_dout when memory_wr1 = '1' else Dout_int;
-  
+
     memory_done <= memory_rd1 or memory_wr1;
 
     memory_din <= Din;
- 
+
 end behavioral;
-    

@@ -57,6 +57,7 @@ void doCmdReset(char *params);
 void doCmdStep(char *params);
 void doCmdTest(char *params);
 void doCmdSRec(char *params);
+void doCmdSpecial(char *params);
 void doCmdTrace(char *params);
 void doCmdTrigger(char *params);
 void doCmdWatchI(char *params);
