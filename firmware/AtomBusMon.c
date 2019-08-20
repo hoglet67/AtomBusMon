@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.74"
+#define VERSION "0.75"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -26,21 +26,13 @@
  * User Command Definitions
  ********************************************************/
 
-#ifdef CPUEMBEDDED
-  #if (CPU == Z80)
-    #define NUM_CMDS 31
-  #else
-    #define NUM_CMDS 24
-  #endif
-#else
-  #define NUM_CMDS 14
-#endif
+#define NUM_CMDS (sizeof(cmdStrings) / sizeof (char *))
 
 // The command process accepts abbreviated forms, for example
 // if h is entered, then help will match.
 
 // Must be kept in step with cmdFuncs (just below)
-char *cmdStrings[NUM_CMDS] = {
+char *cmdStrings[] = {
   "help",
   "continue",
   "step",
@@ -59,7 +51,9 @@ char *cmdStrings[NUM_CMDS] = {
 #endif
   "test",
   "srec",
+#if (CPU == 6502)
   "special",
+#endif
 #endif
   "reset",
   "trace",
@@ -81,7 +75,7 @@ char *cmdStrings[NUM_CMDS] = {
 };
 
 // Must be kept in step with cmdStrings (just above)
-void (*cmdFuncs[NUM_CMDS])(char *params) = {
+void (*cmdFuncs[])(char *params) = {
   doCmdHelp,
   doCmdContinue,
   doCmdStep,
@@ -100,7 +94,9 @@ void (*cmdFuncs[NUM_CMDS])(char *params) = {
 #endif
   doCmdTest,
   doCmdSRec,
+#if (CPU == 6502)
   doCmdSpecial,
+#endif
 #endif
   doCmdReset,
   doCmdTrace,
@@ -1164,6 +1160,7 @@ void doCmdSRec(char *params) {
 
 }
 
+#if (CPU == 6502)
 void logSpecial(char *function, int value) {
    log0("%s", function);
    if (value) {
@@ -1174,7 +1171,6 @@ void logSpecial(char *function, int value) {
 }
 
 void doCmdSpecial(char *params) {
-#if (CPU == 6502)
    int special = -1;
    sscanf(params, "%x", &special);
    if (special >= 0 && special <= 3) {
@@ -1183,10 +1179,8 @@ void doCmdSpecial(char *params) {
    }
    logSpecial("NMI", CTRL_PORT & (1 << SPECIAL_1));
    logSpecial("IRQ", CTRL_PORT & (1 << SPECIAL_0));
-#else
-   log0("Special functions not implemented\n");
-#endif
 }
+#endif
 
 #endif // CPUEMBEDDED
 
