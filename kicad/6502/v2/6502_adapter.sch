@@ -224,30 +224,8 @@ BE
 Text Label 5900 2150 2    60   ~ 0
 nNMI
 NoConn ~ 5050 3050
-$Comp
-L 6502_adapter-rescue:CONN_01X03 P3
-U 1 1 59760CE2
-P 3750 900
-F 0 "P3" H 3750 1100 50  0000 C CNN
-F 1 "CONN_01X03" V 3850 900 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 3750 900 50  0001 C CNN
-F 3 "" H 3750 900 50  0000 C CNN
-	1    3750 900 
-	0    -1   -1   0   
-$EndComp
 Text Label 3950 1100 0    60   ~ 0
 GND
-$Comp
-L 6502_adapter-rescue:CONN_01X02 P4
-U 1 1 5976110F
-P 3150 2600
-F 0 "P4" H 3150 2750 50  0000 C CNN
-F 1 "CONN_01X02" V 3250 2600 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3150 2600 50  0001 C CNN
-F 3 "" H 3150 2600 50  0000 C CNN
-	1    3150 2600
-	-1   0    0    1   
-$EndComp
 Text Label 1150 3250 2    60   ~ 0
 LV_A0
 Text Label 1150 3350 2    60   ~ 0
@@ -336,7 +314,7 @@ LV_RnW
 Text Label 1200 1750 2    60   ~ 0
 LV_SYNC
 $Comp
-L 6502_adapter-rescue:R_Small R1
+L Device:R_Small R1
 U 1 1 59761BB3
 P 5850 850
 F 0 "R1" H 5880 870 50  0000 L CNN
@@ -347,7 +325,7 @@ F 3 "" H 5850 850 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C1
+L Device:C_Small C1
 U 1 1 597620E8
 P 1100 7400
 F 0 "C1" H 1110 7470 50  0000 L CNN
@@ -358,7 +336,7 @@ F 3 "" H 1100 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C2
+L Device:C_Small C2
 U 1 1 5976220A
 P 1400 7400
 F 0 "C2" H 1410 7470 50  0000 L CNN
@@ -369,7 +347,7 @@ F 3 "" H 1400 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C3
+L Device:C_Small C3
 U 1 1 59762254
 P 1700 7400
 F 0 "C3" H 1710 7470 50  0000 L CNN
@@ -380,7 +358,7 @@ F 3 "" H 1700 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C4
+L Device:C_Small C4
 U 1 1 59762296
 P 2000 7400
 F 0 "C4" H 2010 7470 50  0000 L CNN
@@ -391,7 +369,7 @@ F 3 "" H 2000 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C5
+L Device:C_Small C5
 U 1 1 597622DF
 P 2300 7400
 F 0 "C5" H 2310 7470 50  0000 L CNN
@@ -402,7 +380,7 @@ F 3 "" H 2300 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C7
+L Device:C_Small C7
 U 1 1 597624D7
 P 3250 7400
 F 0 "C7" H 3260 7470 50  0000 L CNN
@@ -413,7 +391,7 @@ F 3 "" H 3250 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C8
+L Device:C_Small C8
 U 1 1 5976252A
 P 3550 7400
 F 0 "C8" H 3560 7470 50  0000 L CNN
@@ -424,7 +402,7 @@ F 3 "" H 3550 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C9
+L Device:C_Small C9
 U 1 1 59762588
 P 3850 7400
 F 0 "C9" H 3860 7470 50  0000 L CNN
@@ -435,7 +413,7 @@ F 3 "" H 3850 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C10
+L Device:C_Small C10
 U 1 1 597625E5
 P 4150 7400
 F 0 "C10" H 4160 7470 50  0000 L CNN
@@ -446,7 +424,7 @@ F 3 "" H 4150 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:C_Small C11
+L Device:C_Small C11
 U 1 1 59762645
 P 4450 7400
 F 0 "C11" H 4460 7470 50  0000 L CNN
@@ -457,7 +435,7 @@ F 3 "" H 4450 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:CP1_Small C6
+L Device:CP1_Small C6
 U 1 1 597630BE
 P 2600 7400
 F 0 "C6" H 2610 7470 50  0000 L CNN
@@ -468,7 +446,7 @@ F 3 "" H 2600 7400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:CP1_Small C12
+L Device:CP1_Small C12
 U 1 1 59763501
 P 4750 7400
 F 0 "C12" H 4760 7470 50  0000 L CNN
@@ -933,17 +911,6 @@ Wire Wire Line
 	7700 6300 8050 6300
 Text Label 7850 6300 0    50   ~ 0
 GND
-$Comp
-L 6502_adapter-rescue:CONN_02X20 P1
-U 1 1 5975C7A4
-P 9550 5350
-F 0 "P1" H 9550 6400 50  0000 C CNN
-F 1 "CONN_02X20" V 9550 5350 50  0000 C CNN
-F 2 "footprints:Socket_Strip_Straight_2x20_Pitch2.54mm" H 9550 4400 50  0001 C CNN
-F 3 "" H 9550 4400 50  0000 C CNN
-	1    9550 5350
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	6050 5600 5800 5600
 Wire Wire Line
@@ -966,17 +933,6 @@ Text Label 6600 4650 0    50   ~ 0
 3V3
 Wire Wire Line
 	6750 5050 6600 5050
-$Comp
-L 6502_adapter-rescue:CONN_01X02 P5
-U 1 1 5D935898
-P 6250 4850
-F 0 "P5" H 6250 5000 50  0000 C CNN
-F 1 "CONN_01X02" V 6350 4850 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 6250 4850 50  0001 C CNN
-F 3 "" H 6250 4850 50  0000 C CNN
-	1    6250 4850
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	6200 5050 5800 5050
 Wire Wire Line
@@ -995,21 +951,10 @@ Text Label 1350 2500 2    60   ~ 0
 LV_OERW
 Text Label 9300 4700 2    60   ~ 0
 LV_OERW
-$Comp
-L 6502_adapter-rescue:CONN_01X03 P6
-U 1 1 5D9D7FCA
-P 8250 3600
-F 0 "P6" H 8250 3800 50  0000 C CNN
-F 1 "CONN_01X03" V 8350 3600 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 8250 3600 50  0001 C CNN
-F 3 "" H 8250 3600 50  0000 C CNN
-	1    8250 3600
-	-1   0    0    -1  
-$EndComp
 Text Label 8450 3700 0    60   ~ 0
 GND
 $Comp
-L 6502_adapter-rescue:R_Small R2
+L Device:R_Small R2
 U 1 1 5DA3EC0B
 P 5600 850
 F 0 "R2" H 5630 870 50  0000 L CNN
@@ -1041,7 +986,7 @@ LV_TRIG0
 Text Label 9000 3900 2    60   ~ 0
 TRIG1
 $Comp
-L 6502_adapter-rescue:R_Small R4
+L Device:R_Small R4
 U 1 1 5DAD83A7
 P 8700 2900
 F 0 "R4" H 8730 2920 50  0000 L CNN
@@ -1062,7 +1007,7 @@ Wire Wire Line
 Text Label 5700 650  0    60   ~ 0
 5V
 $Comp
-L 6502_adapter-rescue:R_Small R6
+L Device:R_Small R6
 U 1 1 5DB1C0F5
 P 6600 5400
 F 0 "R6" H 6630 5420 50  0000 L CNN
@@ -1073,7 +1018,7 @@ F 3 "" H 6600 5400 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:R_Small R10
+L Device:R_Small R10
 U 1 1 5DB1C76D
 P 7350 5700
 F 0 "R10" H 7380 5720 50  0000 L CNN
@@ -1084,7 +1029,7 @@ F 3 "" H 7350 5700 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 6502_adapter-rescue:R_Small R9
+L Device:R_Small R9
 U 1 1 5DB1CD21
 P 7700 5700
 F 0 "R9" H 7730 5720 50  0000 L CNN
@@ -1101,7 +1046,7 @@ Wire Wire Line
 Wire Wire Line
 	8050 5500 8050 5600
 $Comp
-L 6502_adapter-rescue:R_Small R7
+L Device:R_Small R7
 U 1 1 5DB3B488
 P 6600 6100
 F 0 "R7" H 6630 6120 50  0000 L CNN
@@ -1120,7 +1065,7 @@ Wire Wire Line
 Wire Wire Line
 	6600 6200 6600 6300
 $Comp
-L 6502_adapter-rescue:R_Small R5
+L Device:R_Small R5
 U 1 1 5DB3B00F
 P 6600 4850
 F 0 "R5" H 6630 4870 50  0000 L CNN
@@ -1160,7 +1105,7 @@ Wire Wire Line
 Text Label 5900 1750 2    60   ~ 0
 nSO
 $Comp
-L 6502_adapter-rescue:R_Small R8
+L Device:R_Small R8
 U 1 1 5DB1D074
 P 8050 5700
 F 0 "R8" H 8080 5720 50  0000 L CNN
@@ -1197,7 +1142,7 @@ LED2
 Text Label 7350 5500 0    60   ~ 0
 LED3
 $Comp
-L 6502_adapter-rescue:R_Small R3
+L Device:R_Small R3
 U 1 1 5DAD7D35
 P 8550 2900
 F 0 "R3" H 8580 2920 50  0000 L CNN
@@ -1329,17 +1274,6 @@ Wire Wire Line
 	5300 1750 5300 2750
 NoConn ~ 6000 1450
 NoConn ~ 7400 1550
-$Comp
-L 6502_adapter-rescue:CONN_02X20 P2
-U 1 1 5975C737
-P 9500 1800
-F 0 "P2" H 9500 2850 50  0000 C CNN
-F 1 "CONN_02X20" V 9500 1800 50  0000 C CNN
-F 2 "footprints:Socket_Strip_Straight_2x20_Pitch2.54mm" H 9500 850 50  0001 C CNN
-F 3 "" H 9500 850 50  0000 C CNN
-	1    9500 1800
-	1    0    0    -1  
-$EndComp
 Text Label 6750 5050 0    60   ~ 0
 JUMPER
 Text Label 9250 2750 2    60   ~ 0
@@ -1360,4 +1294,70 @@ Text Label 9800 6300 0    60   ~ 0
 LED3
 NoConn ~ 9800 6200
 NoConn ~ 9250 950 
+$Comp
+L Connector_Generic:Conn_02x20_Odd_Even P2
+U 1 1 5D781733
+P 9450 1750
+F 0 "P2" H 9500 2750 50  0000 C CNN
+F 1 "Conn_02x20_Odd_Even" H 9550 650 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_2x20_P2.54mm_Vertical" H 9450 1750 50  0001 C CNN
+F 3 "~" H 9450 1750 50  0001 C CNN
+	1    9450 1750
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x20_Odd_Even P1
+U 1 1 5D790677
+P 9500 5300
+F 0 "P1" H 9550 6300 50  0000 C CNN
+F 1 "Conn_02x20_Odd_Even" H 9600 4200 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_2x20_P2.54mm_Vertical" H 9500 5300 50  0001 C CNN
+F 3 "~" H 9500 5300 50  0001 C CNN
+	1    9500 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x03 P6
+U 1 1 5D79943A
+P 8250 3600
+F 0 "P6" H 8168 3917 50  0000 C CNN
+F 1 "Conn_01x03" H 8168 3826 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 8250 3600 50  0001 C CNN
+F 3 "~" H 8250 3600 50  0001 C CNN
+	1    8250 3600
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x02 P5
+U 1 1 5D79B15B
+P 6200 4850
+F 0 "P5" V 6350 4850 50  0000 R CNN
+F 1 "Conn_01x02" V 6300 5000 50  0000 R CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 6200 4850 50  0001 C CNN
+F 3 "~" H 6200 4850 50  0001 C CNN
+	1    6200 4850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x03 P3
+U 1 1 5D79BE74
+P 3750 900
+F 0 "P3" V 3950 950 50  0000 R CNN
+F 1 "Conn_01x03" V 3850 1150 50  0000 R CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 3750 900 50  0001 C CNN
+F 3 "~" H 3750 900 50  0001 C CNN
+	1    3750 900 
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x02 P4
+U 1 1 5D79CBE2
+P 3150 2650
+F 0 "P4" V 3300 2650 50  0000 R CNN
+F 1 "Conn_01x02" V 3250 2800 50  0000 R CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3150 2650 50  0001 C CNN
+F 3 "~" H 3150 2650 50  0001 C CNN
+	1    3150 2650
+	-1   0    0    1   
+$EndComp
 $EndSCHEMATC
