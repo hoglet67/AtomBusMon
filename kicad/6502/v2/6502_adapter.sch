@@ -865,7 +865,7 @@ U 1 1 5D81F17A
 P 7350 6050
 F 0 "D3" V 7389 5933 50  0000 R CNN
 F 1 "LED" V 7298 5933 50  0000 R CNN
-F 2 "LED_SMD:LED_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 7350 6050 50  0001 C CNN
+F 2 "LED_THT:LED_D3.0mm" H 7350 6050 50  0001 C CNN
 F 3 "~" H 7350 6050 50  0001 C CNN
 	1    7350 6050
 	0    -1   -1   0   
@@ -880,7 +880,7 @@ U 1 1 5D84BFB8
 P 7700 6050
 F 0 "D2" V 7739 5933 50  0000 R CNN
 F 1 "LED" V 7648 5933 50  0000 R CNN
-F 2 "LED_SMD:LED_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 7700 6050 50  0001 C CNN
+F 2 "LED_THT:LED_D3.0mm" H 7700 6050 50  0001 C CNN
 F 3 "~" H 7700 6050 50  0001 C CNN
 	1    7700 6050
 	0    -1   -1   0   
@@ -895,7 +895,7 @@ U 1 1 5D8531A5
 P 8050 6050
 F 0 "D1" V 8089 5933 50  0000 R CNN
 F 1 "LED" V 7998 5933 50  0000 R CNN
-F 2 "LED_SMD:LED_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 8050 6050 50  0001 C CNN
+F 2 "LED_THT:LED_D3.0mm" H 8050 6050 50  0001 C CNN
 F 3 "~" H 8050 6050 50  0001 C CNN
 	1    8050 6050
 	0    -1   -1   0   
@@ -975,15 +975,15 @@ F 3 "" H 6700 1700 60  0000 C CNN
 	1    6700 1800
 	1    0    0    -1  
 $EndComp
-Text Label 10000 3350 0    60   ~ 0
-LV_TRIG0
 Text Label 10000 4000 0    60   ~ 0
-LV_TRIG1
-Text Label 9300 4500 2    60   ~ 0
+LV_TRIG0
+Text Label 10000 3350 0    60   ~ 0
 LV_TRIG1
 Text Label 9300 4600 2    60   ~ 0
+LV_TRIG1
+Text Label 9300 4500 2    60   ~ 0
 LV_TRIG0
-Text Label 9000 3900 2    60   ~ 0
+Text Label 9000 3250 2    60   ~ 0
 TRIG1
 $Comp
 L Device:R_Small R4
@@ -1202,7 +1202,7 @@ U 1 1 5DEE6A68
 P 6250 5600
 F 0 "SW1" H 6250 5885 50  0000 C CNN
 F 1 "SW_Push" H 6250 5794 50  0000 C CNN
-F 2 "Button_Switch_THT:SW_PUSH_6mm_H5mm" H 6250 5800 50  0001 C CNN
+F 2 "footprints:SW_Tactile_SKHH_Angled" H 6250 5800 50  0001 C CNN
 F 3 "~" H 6250 5800 50  0001 C CNN
 	1    6250 5600
 	1    0    0    -1  
@@ -1213,7 +1213,7 @@ U 1 1 5DEE72B2
 P 6250 6300
 F 0 "SW2" H 6250 6585 50  0000 C CNN
 F 1 "SW_Push" H 6250 6494 50  0000 C CNN
-F 2 "Button_Switch_THT:SW_PUSH_6mm_H5mm" H 6250 6500 50  0001 C CNN
+F 2 "footprints:SW_Tactile_SKHH_Angled" H 6250 6500 50  0001 C CNN
 F 3 "~" H 6250 6500 50  0001 C CNN
 	1    6250 6300
 	1    0    0    -1  
@@ -1250,7 +1250,7 @@ Wire Wire Line
 	9000 3900 8700 3900
 Wire Wire Line
 	8700 3900 8700 3600
-Text Label 9000 3250 2    60   ~ 0
+Text Label 9000 3900 2    60   ~ 0
 TRIG0
 Wire Wire Line
 	8700 3000 8700 3500
@@ -1322,10 +1322,10 @@ U 1 1 5D79943A
 P 8250 3600
 F 0 "P6" H 8168 3917 50  0000 C CNN
 F 1 "Conn_01x03" H 8168 3826 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 8250 3600 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal" H 8250 3600 50  0001 C CNN
 F 3 "~" H 8250 3600 50  0001 C CNN
 	1    8250 3600
-	-1   0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Connector_Generic:Conn_01x02 P5
@@ -1333,7 +1333,7 @@ U 1 1 5D79B15B
 P 6200 4850
 F 0 "P5" V 6350 4850 50  0000 R CNN
 F 1 "Conn_01x02" V 6300 5000 50  0000 R CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 6200 4850 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 6200 4850 50  0001 C CNN
 F 3 "~" H 6200 4850 50  0001 C CNN
 	1    6200 4850
 	0    -1   -1   0   
@@ -1344,10 +1344,10 @@ U 1 1 5D79BE74
 P 3750 900
 F 0 "P3" V 3950 950 50  0000 R CNN
 F 1 "Conn_01x03" V 3850 1150 50  0000 R CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 3750 900 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal" H 3750 900 50  0001 C CNN
 F 3 "~" H 3750 900 50  0001 C CNN
 	1    3750 900 
-	0    -1   -1   0   
+	0    1    -1   0   
 $EndComp
 $Comp
 L Connector_Generic:Conn_01x02 P4
@@ -1355,7 +1355,7 @@ U 1 1 5D79CBE2
 P 3150 2650
 F 0 "P4" V 3300 2650 50  0000 R CNN
 F 1 "Conn_01x02" V 3250 2800 50  0000 R CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3150 2650 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 3150 2650 50  0001 C CNN
 F 3 "~" H 3150 2650 50  0001 C CNN
 	1    3150 2650
 	-1   0    0    1   

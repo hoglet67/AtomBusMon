@@ -407,9 +407,9 @@ begin
     end process;
 
     -- Main clocks
-    cpu_clk    <= not E_e;
-    busmon_clk <= E_e;
-    data_wr    <= E_c;
+    cpu_clk    <= not E_d;
+    busmon_clk <= E_d;
+    data_wr    <= E_b;
 
     -- Quadrature clock generator, unused in 6809E mode
     quadrature_gen : process(EXTAL)
