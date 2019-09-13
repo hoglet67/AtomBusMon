@@ -528,7 +528,6 @@ NoConn ~ 9000 2500
 NoConn ~ 8500 2500
 NoConn ~ 8500 2400
 NoConn ~ 9000 2400
-NoConn ~ 9000 2300
 NoConn ~ 9000 1800
 NoConn ~ 9000 1300
 NoConn ~ 8500 1800
@@ -607,13 +606,13 @@ Wire Wire Line
 Wire Wire Line
 	3650 4300 3550 4300
 Wire Wire Line
-	4950 4300 5150 4300
+	4950 4300 5200 4300
 Wire Wire Line
-	4950 4200 5250 4200
+	4950 4200 5300 4200
 Wire Wire Line
-	4950 4100 5350 4100
+	4950 4100 5400 4100
 Wire Wire Line
-	4950 4000 5450 4000
+	4950 4000 5500 4000
 Wire Wire Line
 	3650 2700 3450 2700
 Wire Wire Line
@@ -727,21 +726,21 @@ Connection ~ 1100 7600
 Wire Wire Line
 	5900 1300 5750 1300
 Wire Wire Line
-	2850 5050 5450 5050
+	2850 5050 5500 5050
 Wire Wire Line
-	5450 5050 5450 4000
+	5500 5050 5500 4000
 Wire Wire Line
-	5350 4100 5350 5150
+	5400 4100 5400 5150
 Wire Wire Line
-	5350 5150 2850 5150
+	5400 5150 2850 5150
 Wire Wire Line
-	5250 4200 5250 5250
+	5300 4200 5300 5250
 Wire Wire Line
-	5250 5250 2850 5250
+	5300 5250 2850 5250
 Wire Wire Line
-	2850 5350 5150 5350
+	2850 5350 5200 5350
 Wire Wire Line
-	5150 5350 5150 4300
+	5200 5350 5200 4300
 Wire Wire Line
 	3350 4100 3350 5450
 Wire Wire Line
@@ -1138,7 +1137,7 @@ F 1 "SW_Push" H 6950 5644 50  0000 C CNN
 F 2 "footprints:SW_Tactile_SKHH_Angled" H 6950 5650 50  0001 C CNN
 F 3 "~" H 6950 5650 50  0001 C CNN
 	1    6950 5450
-	1    0    0    -1  
+	-1   0    0    -1  
 $EndComp
 $Comp
 L Switch:SW_Push SW2
@@ -1337,8 +1336,6 @@ Wire Wire Line
 	4950 2600 5000 2600
 Wire Wire Line
 	5000 2600 5000 2350
-Wire Wire Line
-	5100 3100 5550 3100
 Connection ~ 5100 3100
 Wire Wire Line
 	4950 3100 5100 3100
@@ -1356,7 +1353,7 @@ Wire Wire Line
 	5900 1700 5200 1700
 Wire Wire Line
 	5200 1700 5200 2700
-Text Label 5200 3100 0    60   ~ 0
+Text Label 4900 2150 0    60   ~ 0
 RnW
 Text Notes 8600 3850 0    118  ~ 0
 Optional Components
@@ -1427,10 +1424,11 @@ Wire Wire Line
 Wire Wire Line
 	10250 5950 10250 6350
 Wire Wire Line
-	10250 6350 5550 6350
+	10250 6350 5100 6350
 Wire Wire Line
-	5550 6350 5550 3100
-Connection ~ 5550 3100
-Wire Wire Line
-	5550 3100 5900 3100
+	5100 6350 5100 3100
+Text Label 9000 2300 0    60   ~ 0
+LV_DIRD
+Text Label 5900 3100 2    60   ~ 0
+LV_DIRD
 $EndSCHEMATC
