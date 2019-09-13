@@ -1241,10 +1241,10 @@ F 3 "~" H 8700 2100 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector_Generic:Conn_01x03 P6
+L Connector_Generic:Conn_01x03 P3
 U 1 1 5D79943A
 P 8500 4950
-F 0 "P6" H 8418 5267 50  0000 C CNN
+F 0 "P3" H 8418 5267 50  0000 C CNN
 F 1 "Conn_01x03" H 8418 5176 50  0000 C CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal" H 8500 4950 50  0001 C CNN
 F 3 "~" H 8500 4950 50  0001 C CNN
@@ -1252,10 +1252,10 @@ F 3 "~" H 8500 4950 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Connector_Generic:Conn_01x02 P5
+L Connector_Generic:Conn_01x02 LK3
 U 1 1 5D79B15B
 P 6900 4700
-F 0 "P5" V 7050 4700 50  0000 R CNN
+F 0 "LK3" V 7050 4700 50  0000 R CNN
 F 1 "Conn_01x02" V 7000 4850 50  0000 R CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 6900 4700 50  0001 C CNN
 F 3 "~" H 6900 4700 50  0001 C CNN
@@ -1263,10 +1263,10 @@ F 3 "~" H 6900 4700 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L Connector_Generic:Conn_01x03 P3
+L Connector_Generic:Conn_01x03 LK1
 U 1 1 5D79BE74
 P 3650 850
-F 0 "P3" V 3850 900 50  0000 R CNN
+F 0 "LK1" V 3850 900 50  0000 R CNN
 F 1 "Conn_01x03" V 3750 1100 50  0000 R CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal" H 3650 850 50  0001 C CNN
 F 3 "~" H 3650 850 50  0001 C CNN
@@ -1274,10 +1274,10 @@ F 3 "~" H 3650 850 50  0001 C CNN
 	0    1    -1   0   
 $EndComp
 $Comp
-L Connector_Generic:Conn_01x02 P4
+L Connector_Generic:Conn_01x02 LK2
 U 1 1 5D79CBE2
 P 3050 2700
-F 0 "P4" V 3050 2850 50  0000 R CNN
+F 0 "LK2" V 3050 2900 50  0000 R CNN
 F 1 "Conn_01x02" V 3150 2850 50  0000 R CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 3050 2700 50  0001 C CNN
 F 3 "~" H 3050 2700 50  0001 C CNN
