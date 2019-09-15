@@ -524,12 +524,7 @@ NoConn ~ 10550 1800
 NoConn ~ 10550 1900
 NoConn ~ 10050 1900
 NoConn ~ 10050 1800
-NoConn ~ 9000 2500
-NoConn ~ 8500 2500
-NoConn ~ 8500 2400
-NoConn ~ 9000 2400
 NoConn ~ 9000 1800
-NoConn ~ 9000 1300
 NoConn ~ 8500 1800
 NoConn ~ 8500 1200
 NoConn ~ 1100 1000
@@ -1203,9 +1198,6 @@ JUMPER
 Text Label 10050 3100 2    60   ~ 0
 JUMPER
 NoConn ~ 9000 1200
-NoConn ~ 9000 1600
-NoConn ~ 9000 1500
-NoConn ~ 9000 1400
 Text Label 10550 1200 0    60   ~ 0
 LED1
 Text Label 10550 1300 0    60   ~ 0
@@ -1227,17 +1219,6 @@ F 1 "Conn_02x20_Odd_Even" H 10350 1000 50  0000 C CNN
 F 2 "Connector_PinSocket_2.54mm:PinSocket_2x20_P2.54mm_Vertical" H 10250 2100 50  0001 C CNN
 F 3 "~" H 10250 2100 50  0001 C CNN
 	1    10250 2100
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector_Generic:Conn_02x20_Odd_Even P1
-U 1 1 5D790677
-P 8700 2100
-F 0 "P1" H 8750 3100 50  0000 C CNN
-F 1 "Conn_02x20_Odd_Even" H 8800 1000 50  0000 C CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_2x20_P2.54mm_Vertical" H 8700 2100 50  0001 C CNN
-F 3 "~" H 8700 2100 50  0001 C CNN
-	1    8700 2100
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1431,4 +1412,98 @@ Text Label 9000 2300 0    60   ~ 0
 LV_DIRD
 Text Label 5900 3100 2    60   ~ 0
 LV_DIRD
+$Comp
+L Device:R_Small R11
+U 1 1 5D7EEC6E
+P 4100 6000
+F 0 "R11" V 4000 5950 50  0000 L TNN
+F 1 "0" V 4100 6000 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4100 6000 50  0001 C CNN
+F 3 "" H 4100 6000 50  0000 C CNN
+	1    4100 6000
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R_Small R12
+U 1 1 5D802707
+P 4100 6250
+F 0 "R12" V 4000 6200 50  0000 L TNN
+F 1 "0" V 4100 6250 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4100 6250 50  0001 C CNN
+F 3 "" H 4100 6250 50  0000 C CNN
+	1    4100 6250
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R_Small R13
+U 1 1 5D802C8C
+P 4100 6500
+F 0 "R13" V 4000 6450 50  0000 L TNN
+F 1 "0" V 4100 6500 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4100 6500 50  0001 C CNN
+F 3 "" H 4100 6500 50  0000 C CNN
+	1    4100 6500
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R_Small R14
+U 1 1 5D802F0D
+P 4100 6750
+F 0 "R14" V 4000 6700 50  0000 L TNN
+F 1 "0" V 4100 6750 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4100 6750 50  0001 C CNN
+F 3 "" H 4100 6750 50  0000 C CNN
+	1    4100 6750
+	0    1    1    0   
+$EndComp
+Text Label 4350 6000 0    60   ~ 0
+GND
+Wire Wire Line
+	4200 6000 4350 6000
+Wire Wire Line
+	4350 6000 4350 6250
+Wire Wire Line
+	4350 6750 4200 6750
+Wire Wire Line
+	4200 6500 4350 6500
+Connection ~ 4350 6500
+Wire Wire Line
+	4350 6500 4350 6750
+Wire Wire Line
+	4200 6250 4350 6250
+Connection ~ 4350 6250
+Wire Wire Line
+	4350 6250 4350 6500
+Text Label 4000 6000 2    60   ~ 0
+ID0
+Text Label 4000 6250 2    60   ~ 0
+ID1
+Text Label 4000 6500 2    60   ~ 0
+ID2
+Text Label 4000 6750 2    60   ~ 0
+ID3
+NoConn ~ 9000 1300
+NoConn ~ 9000 1400
+NoConn ~ 9000 1500
+NoConn ~ 9000 1600
+$Comp
+L Connector_Generic:Conn_02x20_Odd_Even P1
+U 1 1 5D790677
+P 8700 2100
+F 0 "P1" H 8750 3100 50  0000 C CNN
+F 1 "Conn_02x20_Odd_Even" H 8800 1000 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_2x20_P2.54mm_Vertical" H 8700 2100 50  0001 C CNN
+F 3 "~" H 8700 2100 50  0001 C CNN
+	1    8700 2100
+	1    0    0    -1  
+$EndComp
+Text Label 9000 2400 0    60   ~ 0
+ID0
+Text Label 9000 2500 0    60   ~ 0
+ID2
+Text Label 8500 2400 2    60   ~ 0
+ID1
+Text Label 8500 2500 2    60   ~ 0
+ID3
+NoConn ~ 9650 3250
 $EndSCHEMATC
