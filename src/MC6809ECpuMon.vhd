@@ -151,8 +151,6 @@ architecture behavioral of MC6809ECpuMon is
     signal E_a            : std_logic; -- E delayed by 0..20ns
     signal E_b            : std_logic; -- E delayed by 20..40ns
     signal E_c            : std_logic; -- E delayed by 40..60ns
-    signal E_d            : std_logic; -- E delayed by 60..80ns
-    signal E_e            : std_logic; -- E delayed by 80..100ns
     signal data_wr        : std_logic;
     signal nRSTout        : std_logic;
 
@@ -393,23 +391,30 @@ begin
     clock_test   <= clk_count(1) when EMode_n = '0' else clock7_3728;
 
     -- Delayed version of the E clock
-    -- E_e is delayed by 80-100ns which is a close approximation to the real 6809
-    -- E_c is delayed by 40-60ns which is used to provide extra data hold time on writes
     e_gen : process(clock49)
     begin
         if rising_edge(clock49) then
           E_a <= E;
           E_b <= E_a;
           E_c <= E_b;
-          E_d <= E_c;
-          E_e <= E_d;
         end if;
     end process;
 
-    -- Main clocks
-    cpu_clk    <= not E_e;
-    busmon_clk <= E_e;
-    data_wr    <= E_c;
+    -- Main clock timing control
+    -- E_c is delayed by 40-60ns
+    -- On a real 6809 the output delay (to ADDR, RNW, BA, BS) is 65ns (measured)
+    cpu_clk    <= not E_c;
+    busmon_clk <= E_c;
+
+    -- Data bus write timing control
+    --
+    -- When data_wr is 0 the bus is high impedence
+    --
+    -- This avoids bus conflicts when the direction of the data bus
+    -- changes from read to write (or visa versa).
+    --
+    -- Note: on the dragon this is not critical; setting to '1' seemed to work
+    data_wr    <= Q or E;
 
     -- Quadrature clock generator, unused in 6809E mode
     quadrature_gen : process(EXTAL)
