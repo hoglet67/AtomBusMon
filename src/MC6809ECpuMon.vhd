@@ -151,6 +151,12 @@ architecture behavioral of MC6809ECpuMon is
     signal E_a            : std_logic; -- E delayed by 0..20ns
     signal E_b            : std_logic; -- E delayed by 20..40ns
     signal E_c            : std_logic; -- E delayed by 40..60ns
+    signal E_d            : std_logic; -- E delayed by 60..80ns
+    signal E_e            : std_logic; -- E delayed by 80..100ns
+    signal E_f            : std_logic; -- E delayed by 100..120ns
+    signal E_g            : std_logic; -- E delayed by 120..140ns
+    signal E_h            : std_logic; -- E delayed by 120..140ns
+    signal E_i            : std_logic; -- E delayed by 120..140ns
     signal data_wr        : std_logic;
     signal nRSTout        : std_logic;
 
@@ -390,13 +396,21 @@ begin
     -- 7.3728 MHz in Normal Mode (6809) so it can drive EXTAL (PIN38)
     clock_test   <= clk_count(1) when EMode_n = '0' else clock7_3728;
 
-    -- Delayed version of the E clock
+    -- Delayed/Deglitched version of the E clock
     e_gen : process(clock49)
     begin
         if rising_edge(clock49) then
-          E_a <= E;
-          E_b <= E_a;
-          E_c <= E_b;
+            E_a <= E;
+            E_b <= E_a;
+            if E_b /= E_i then
+                E_c <= E_b;
+            end if;
+            E_d <= E_c;
+            E_e <= E_d;
+            E_f <= E_e;
+            E_g <= E_f;
+            E_h <= E_g;
+            E_i <= E_h;
         end if;
     end process;
 
@@ -451,7 +465,7 @@ begin
     end process;
 
     -- Spare pins used for testing
-    test1   <= Sync_int;
-    test2   <= RDY_int;
+    test1   <= E_a;
+    test2   <= E_c;
 
 end behavioral;
