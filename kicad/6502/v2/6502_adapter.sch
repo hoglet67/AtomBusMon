@@ -217,7 +217,7 @@ Text Label 5800 1600 2    60   ~ 0
 RDY
 Text Label 5800 1800 2    60   ~ 0
 nIRQ
-Text Label 5800 1900 2    60   ~ 0
+Text Label 4350 1100 2    60   ~ 0
 PHI2
 Text Label 5800 2000 2    60   ~ 0
 BE
@@ -617,7 +617,7 @@ Wire Wire Line
 Wire Wire Line
 	3650 3100 2750 3100
 Wire Wire Line
-	4950 2500 5300 2500
+	4950 2500 5400 2500
 Wire Wire Line
 	3650 2600 3550 2600
 Wire Wire Line
@@ -627,11 +627,9 @@ Wire Wire Line
 Wire Wire Line
 	3350 1800 5900 1800
 Wire Wire Line
-	4950 2800 5400 2800
+	4950 2800 5200 2800
 Wire Wire Line
-	5400 2800 5400 1900
-Wire Wire Line
-	5400 1900 5900 1900
+	5200 2800 5200 1900
 Wire Wire Line
 	4950 2900 5500 2900
 Wire Wire Line
@@ -901,10 +899,10 @@ LV_OERW
 Text Label 8700 5050 0    60   ~ 0
 GND
 $Comp
-L Device:R_Small R14
+L Device:R_Small R15
 U 1 1 5DA3EC0B
 P 5500 800
-F 0 "R14" H 5530 820 50  0000 L CNN
+F 0 "R15" H 5530 820 50  0000 L CNN
 F 1 "22K" H 5530 760 50  0000 L CNN
 F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 5500 800 50  0001 C CNN
 F 3 "" H 5500 800 50  0000 C CNN
@@ -1184,9 +1182,9 @@ Wire Wire Line
 Wire Wire Line
 	9050 4600 9050 4850
 Wire Wire Line
-	5900 1500 5300 1500
+	5900 1500 5400 1500
 Wire Wire Line
-	5300 1500 5300 2500
+	5400 1500 5400 2500
 Wire Wire Line
 	5900 1600 3550 1600
 Wire Wire Line
@@ -1329,11 +1327,11 @@ Wire Wire Line
 Wire Wire Line
 	5600 2250 5600 2100
 Wire Wire Line
-	4950 2700 5200 2700
+	4950 2700 5300 2700
 Wire Wire Line
-	5900 1700 5200 1700
+	5900 1700 5300 1700
 Wire Wire Line
-	5200 1700 5200 2700
+	5300 1700 5300 2700
 Text Label 4900 2150 0    60   ~ 0
 RnW
 Text Notes 8600 3850 0    118  ~ 0
@@ -1506,4 +1504,47 @@ ID1
 Text Label 8500 2500 2    60   ~ 0
 ID3
 NoConn ~ 9650 3250
+$Comp
+L Device:R_Small R14
+U 1 1 5D90172A
+P 4550 1100
+F 0 "R14" V 4450 1050 50  0000 L TNN
+F 1 "0" V 4550 1100 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4550 1100 50  0001 C CNN
+F 3 "" H 4550 1100 50  0000 C CNN
+	1    4550 1100
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:C_Small C15
+U 1 1 5D902442
+P 4750 1300
+F 0 "C15" H 4760 1370 50  0000 L CNN
+F 1 "0" H 4760 1220 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4750 1300 50  0001 C CNN
+F 3 "" H 4750 1300 50  0000 C CNN
+	1    4750 1300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4450 1100 4350 1100
+Wire Wire Line
+	4350 1100 4350 1900
+Wire Wire Line
+	4350 1900 5200 1900
+Text Label 4750 1400 3    60   ~ 0
+GND
+Wire Wire Line
+	4650 1100 4750 1100
+Wire Wire Line
+	4750 1100 4750 1200
+Wire Wire Line
+	5900 1900 5600 1900
+Wire Wire Line
+	5600 1900 5600 1100
+Wire Wire Line
+	5600 1100 4750 1100
+Connection ~ 4750 1100
+Text Label 5450 1100 2    60   ~ 0
+FILTERED_PHI2
 $EndSCHEMATC
