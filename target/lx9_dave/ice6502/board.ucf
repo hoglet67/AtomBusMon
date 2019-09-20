@@ -1,16 +1,16 @@
-NET "clock49" TNM_NET = clk_period_grp_49;
-TIMESPEC TS_clk_period_49 = PERIOD "clk_period_grp_49" 20.00ns HIGH;
+NET "clock" TNM_NET = clk_period_grp_50;
+TIMESPEC TS_clk_period_50 = PERIOD "clk_period_grp_50" 20.00ns HIGH;
 
-NET "Phi0" TNM_NET = clk_period_grp_phi0;
-TIMESPEC TS_clk_period_phi0 = PERIOD "clk_period_grp_phi0" 250ns LOW;
+NET "PhiIn" TNM_NET = clk_period_grp_phi;
+TIMESPEC TS_clk_period_phi = PERIOD "clk_period_grp_phi" 250ns LOW;
 
-NET "Phi0" CLOCK_DEDICATED_ROUTE = FALSE;
+NET "PhiIn" CLOCK_DEDICATED_ROUTE = FALSE;
 
-NET "clock49"  LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
+NET "clock"    LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
 
 NET "VP_n"     LOC="P35"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 1
 #NET "Rdy"     LOC="P79"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 2
-NET "Phi1"     LOC="P33"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 3
+NET "Phi1Out"  LOC="P33"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 3
 NET "IRQ_n"    LOC="P81"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 4
 NET "ML_n"     LOC="P34"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 5
 NET "NMI_n"    LOC="P82"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 6
@@ -42,41 +42,54 @@ NET "Data<3>"  LOC="P97"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # 
 NET "Data<2>"  LOC="P98"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 31
 NET "Data<1>"  LOC="P94"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 32
 NET "Data<0>"  LOC="P95"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 33
-NET "R_W_n"    LOC="P30"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 34
+NET "R_W_n<0>" LOC="P111" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 34
+NET "R_W_n<1>" LOC="P30"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 34
 #NET "NC"      LOC="P"    | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 35
 NET "BE"       LOC="P83"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 36
-NET "Phi0"     LOC="P40"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 37
+NET "PhiIn"    LOC="P80"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 37
 NET "SO_n"     LOC="P78"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 38
-NET "Phi2"     LOC="P80"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 39
+NET "Phi2Out"  LOC="P40"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 39
 NET "Res_n"    LOC="P74"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 40
 
-# Level-shifter OE signals
-NET "OEAL_n"   LOC="P10"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+# Output Enables
+NET "OERW_n"   LOC="P114" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 NET "OEAH_n"   LOC="P139" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "OEAL_n"   LOC="P10"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 NET "OED_n"    LOC="P92"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "DIRD"     LOC="P93"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 
 # LEDs and Switches
-NET "led3"     LOC="P134" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 0 active
-NET "led6"     LOC="P119" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 1 active
-NET "led8"     LOC="P117" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # stopped at breakpoint
-NET "sw1"      LOC="P132" | IOSTANDARD = LVCMOS33                           ; # reset
-NET "sw2"      LOC="P131" | IOSTANDARD = LVCMOS33                           ; # interrupt
+NET "led1"     LOC="P44"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # stopped at breakpoint
+NET "led2"     LOC="P41"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 0 active
+NET "led3"     LOC="P67"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 1 active
+NET "sw1"      LOC="P45"  | IOSTANDARD = LVCMOS33                           ; # reset
+NET "sw2"      LOC="P66"  | IOSTANDARD = LVCMOS33                           ; # interrupt
 
-# 7-segment LED
-NET tmosi      LOC="P45"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET tdin       LOC="P44"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET tcclk      LOC="P43"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+# ID/Jumper
+NET "mode"    LOC="P140" | IOSTANDARD = LVCMOS33                           ; # mode jumper
+NET "id<0>"   LOC="P88 " | IOSTANDARD = LVCMOS33                           ; # id links
+NET "id<1>"   LOC="P87 " | IOSTANDARD = LVCMOS33                           ; # id links
+NET "id<2>"   LOC="P85"  | IOSTANDARD = LVCMOS33                           ; # id links
+NET "id<3>"   LOC="P84"  | IOSTANDARD = LVCMOS33                           ; # id links
 
 # UART
 NET "avr_TxD"  LOC="P51"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 NET "avr_RxD"  LOC="P55"  | IOSTANDARD = LVCMOS33                           ;
 
 # External trigger inputs
-NET "trig<0>"  LOC="P126" | IOSTANDARD = LVCMOS33                           ;
-NET "trig<1>"  LOC="P127" | IOSTANDARD = LVCMOS33                           ;
+NET "trig<0>"  LOC="P127" | IOSTANDARD = LVCMOS33                           ;
+NET "trig<1>"  LOC="P126" | IOSTANDARD = LVCMOS33                           ;
 
-# Jumpers
-NET "fakeTube_n" LOC="P123" | IOSTANDARD = LVCMOS33                         ;
+# 7-segment LED (connect to J5 on FPGA board)
+NET "tmosi"    LOC="P58"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "tdin"     LOC="P61"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "tcclk"    LOC="P62"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+
+# Test outputs (connect to J5 on FPGA board)
+#NET "test1"    LOC="P46"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+#NET "test2"    LOC="P48"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+#NET "test3"    LOC="P57"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+#NET "test4"    LOC="P59"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 
 
 

@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
--- Copyright (c) 2018 David Banks
+-- Copyright (c) 2019 David Banks
 --
 --------------------------------------------------------------------------------
 --   ____  ____
@@ -8,11 +8,11 @@
 -- \   \   \/
 --  \   \
 --  /   /         Filename  : W65C02CpuMon.vhd
--- /___/   /\     Timestamp : 20/11/2018
+-- /___/   /\     Timestamp : 20/09/2019
 -- \   \  /  \
 --  \___\/\___\
 --
---Design Name: W65C02BusMon
+--Design Name: W65C02CpuMon
 --Device: XC6SLX9
 --
 --
@@ -20,6 +20,7 @@
 --   OEAH_n
 --   OEAL_n
 --   OED_n
+--   DIRD
 --   BE
 --   ML_n
 --   VP_n
@@ -31,28 +32,28 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
 entity W65C02CpuMon is
-    generic (
+   generic (
        UseT65Core     : boolean := true;
        UseAlanDCore   : boolean := false;
        LEDsActiveHigh : boolean := true;     -- default value for EEPIZZA
-       SW1ActiveHigh  : boolean := true;     -- default value for EEPIZZA
-       SW2ActiveHigh  : boolean := true;     -- default value for EEPIZZA
-       ClkMult        : integer := 10;       -- default value for EEPIZZA
-       ClkDiv         : integer := 31;       -- default value for EEPIZZA
-       ClkPer         : real    := 20.000    -- default value for EEPIZZA
+       SW1ActiveHigh  : boolean := false;    -- default value for EEPIZZA
+       SW2ActiveHigh  : boolean := false;    -- default value for EEPIZZA
+       ClkMult        : integer :=  8;       -- default value for EEPIZZA
+       ClkDiv         : integer := 25;       -- default value for EEPIZZA
+       ClkPer         : real    := 16.000    -- default value for EEPIZZA
        );
     port (
-        clock49         : in    std_logic;
+        clock           : in    std_logic;
 
         -- 6502 Signals
-        Phi0            : in    std_logic;
-        Phi1            : out   std_logic;
-        Phi2            : out   std_logic;
+        PhiIn           : in    std_logic;
+        Phi1Out         : out   std_logic;
+        Phi2Out         : out   std_logic;
         IRQ_n           : in    std_logic;
         NMI_n           : in    std_logic;
         Sync            : out   std_logic;
         Addr            : out   std_logic_vector(15 downto 0);
-        R_W_n           : out   std_logic;
+        R_W_n           : out   std_logic_vector(1 downto 0);
         Data            : inout std_logic_vector(7 downto 0);
         SO_n            : in    std_logic;
         Res_n           : inout std_logic;
@@ -64,15 +65,18 @@ entity W65C02CpuMon is
         VP_n            : out   std_logic;
 
         -- Level Shifter Controls
+        OERW_n          : out   std_logic;
         OEAH_n          : out   std_logic;
         OEAL_n          : out   std_logic;
         OED_n           : out   std_logic;
+        DIRD            : out   std_logic;
 
         -- External trigger inputs
         trig            : in    std_logic_vector(1 downto 0);
 
-        -- Jumpers
-        fakeTube_n      : in    std_logic;
+        -- ID/mode inputs
+        mode            : in    std_logic;
+        id              : in    std_logic_vector(3 downto 0);
 
         -- Serial Console
         avr_RxD         : in    std_logic;
@@ -83,9 +87,9 @@ entity W65C02CpuMon is
         sw2              : in   std_logic;
 
         -- LEDs
+        led1             : out  std_logic;
+        led2             : out  std_logic;
         led3             : out  std_logic;
-        led6             : out  std_logic;
-        led8             : out  std_logic;
 
         -- OHO_DY1 LED display
         tmosi            : out  std_logic;
@@ -112,12 +116,12 @@ begin
        ClkPer         => ClkPer
     )
     port map (
-        clock49         => clock49,
+        clock49         => clock,
 
         -- 6502 Signals
-        Phi0            => Phi0,
-        Phi1            => Phi1,
-        Phi2            => Phi2,
+        Phi0            => PhiIn,
+        Phi1            => Phi1Out,
+        Phi2            => Phi2Out,
         IRQ_n           => IRQ_n,
         NMI_n           => NMI_n,
         Sync            => Sync,
@@ -132,7 +136,7 @@ begin
         trig            => trig,
 
         -- Jumpers
-        fakeTube_n      => fakeTube_n,
+        fakeTube_n      => '1',
 
         -- Serial Console
         avr_RxD         => avr_RxD,
@@ -143,9 +147,9 @@ begin
         sw2              => sw2,
 
         -- LEDs
-        led3             => led3,
-        led6             => led6,
-        led8             => led8,
+        led3             => led2, -- trig 0
+        led6             => led3, -- trig 1
+        led8             => led1, -- break
 
         -- OHO_DY1 LED display
         tmosi            => tmosi,
@@ -154,15 +158,17 @@ begin
     );
 
     -- 6502 Outputs
-    R_W_n <= R_W_n_int;
+    R_W_n <= R_W_n_int & R_W_n_int;
 
     -- 65C02 Outputs
     ML_n   <= '1';
     VP_n   <= '1';
 
     -- Level Shifter Controls
+    OERW_n <= not (BE);
     OEAH_n <= not (BE);
     OEAL_n <= not (BE);
-    OED_n  <= not (BE or (Phi0 and not R_W_n_int)); -- TODO: might need to use a slightly delayed version of Phi0 here
+    OED_n  <= not (BE and PhiIn); -- TODO: might need to use a slightly delayed version of Phi2 here
+    DIRD   <= R_W_n_int;
 
 end behavioral;
