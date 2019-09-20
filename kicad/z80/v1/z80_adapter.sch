@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:z80_adapter-cache
 EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
@@ -1102,8 +1103,6 @@ Text Label 5300 5900 2    60   ~ 0
 TRIG0
 Text Label 5300 6000 2    60   ~ 0
 TRIG1
-Text Label 5300 5600 2    60   ~ 0
-CLK
 Text Label 5300 5300 2    60   ~ 0
 RESET
 Text Label 5300 5400 2    60   ~ 0
@@ -1324,4 +1323,39 @@ NoConn ~ 10550 2500
 NoConn ~ 10550 2700
 NoConn ~ 10550 3000
 NoConn ~ 10550 3100
+$Comp
+L Device:C_Small C15
+U 1 1 5D84DB65
+P 4600 5800
+F 0 "C15" H 4610 5870 50  0000 L CNN
+F 1 "0pF" H 4610 5720 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4600 5800 50  0001 C CNN
+F 3 "" H 4600 5800 50  0000 C CNN
+	1    4600 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R_Small R14
+U 1 1 5D84D2A8
+P 4400 5600
+F 0 "R14" V 4300 5550 50  0000 L TNN
+F 1 "0" V 4400 5600 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4400 5600 50  0001 C CNN
+F 3 "" H 4400 5600 50  0000 C CNN
+	1    4400 5600
+	0    1    1    0   
+$EndComp
+Text Label 4300 5600 2    60   ~ 0
+CLK
+Text Label 4600 5900 3    60   ~ 0
+GND
+Wire Wire Line
+	4600 5700 4600 5600
+Wire Wire Line
+	4500 5600 4600 5600
+Wire Wire Line
+	4600 5600 5300 5600
+Connection ~ 4600 5600
+Text Label 5300 5600 2    60   ~ 0
+FILTERED_CLK
 $EndSCHEMATC
