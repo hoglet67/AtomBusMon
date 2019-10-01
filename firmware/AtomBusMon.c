@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.75"
+#define VERSION "0.76"
 
 #if (CPU == Z80)
   #define NAME "ICE-T80"
@@ -51,7 +51,7 @@ char *cmdStrings[] = {
 #endif
   "test",
   "srec",
-#if (CPU == 6502)
+#if (CPU != Z80)
   "special",
 #endif
 #endif
@@ -94,7 +94,7 @@ void (*cmdFuncs[])(char *params) = {
 #endif
   doCmdTest,
   doCmdSRec,
-#if (CPU == 6502)
+#if (CPU != Z80)
   doCmdSpecial,
 #endif
 #endif
@@ -1160,7 +1160,7 @@ void doCmdSRec(char *params) {
 
 }
 
-#if (CPU == 6502)
+#if (CPU != Z80)
 void logSpecial(char *function, int value) {
    log0("%s", function);
    if (value) {

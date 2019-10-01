@@ -132,6 +132,7 @@ architecture behavioral of MC6809ECpuMon is
     signal SS_Single      : std_logic;
     signal SS_Step        : std_logic;
     signal CountCycle     : std_logic;
+    signal special       : std_logic_vector(1 downto 0);
 
     signal clk_count      : std_logic_vector(1 downto 0);
     signal quadrature     : std_logic_vector(1 downto 0);
@@ -165,6 +166,10 @@ architecture behavioral of MC6809ECpuMon is
     signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
     signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
     signal sw_reset_n     : std_logic;  -- switch to reset the CPU
+
+    signal NMI_n_masked   : std_logic;
+    signal IRQ_n_masked   : std_logic;
+    signal FIRQ_n_masked  : std_logic;
 
 begin
 
@@ -232,9 +237,14 @@ begin
         DataOut      => memory_dout,
         DataIn       => memory_din,
         Done         => memory_done,
+        Special      => special,
         SS_Step      => SS_Step,
         SS_Single    => SS_Single
     );
+
+    NMI_n_masked  <= NMI_n  or special(1);
+    FIRQ_n_masked <= FIRQ_n or special(1);
+    IRQ_n_masked  <= IRQ_n  or special(0);
 
     -- The CPU is slightly pipelined and the register update of the last
     -- instruction overlaps with the opcode fetch of the next instruction.
@@ -290,9 +300,9 @@ begin
     irq_gen : process(cpu_clk)
     begin
         if falling_edge(cpu_clk) then
-            NMI_sync   <= not NMI_n;
-            IRQ_sync   <= not IRQ_n;
-            FIRQ_sync  <= not FIRQ_n;
+            NMI_sync   <= not NMI_n_masked;
+            IRQ_sync   <= not IRQ_n_masked;
+            FIRQ_sync  <= not FIRQ_n_masked;
             nRST_sync  <= RES_n and nRSTout;
             HALT_sync  <= not HALT_n;
         end if;
