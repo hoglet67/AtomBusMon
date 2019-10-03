@@ -59,23 +59,23 @@ NET "DIRD"     LOC="P7"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 NET "led1"     LOC="P44"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # stopped at breakpoint
 NET "led2"     LOC="P41"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 0 active
 NET "led3"     LOC="P67"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 1 active
-NET "sw1"      LOC="P45"  | IOSTANDARD = LVCMOS33                           ; # reset
-NET "sw2"      LOC="P66"  | IOSTANDARD = LVCMOS33                           ; # interrupt
+NET "sw1"      LOC="P45"  | IOSTANDARD = LVCMOS33 | PULLUP                  ; # reset
+NET "sw2"      LOC="P66"  | IOSTANDARD = LVCMOS33 | PULLUP                  ; # interrupt
 
 # ID/Jumper
-NET "mode"    LOC="P140" | IOSTANDARD = LVCMOS33                           ; # mode jumper
-NET "id<0>"   LOC="P88 " | IOSTANDARD = LVCMOS33                           ; # id links
-NET "id<1>"   LOC="P87 " | IOSTANDARD = LVCMOS33                           ; # id links
-NET "id<2>"   LOC="P85"  | IOSTANDARD = LVCMOS33                           ; # id links
-NET "id<3>"   LOC="P84"  | IOSTANDARD = LVCMOS33                           ; # id links
+NET "mode"    LOC="P140"  | IOSTANDARD = LVCMOS33 | PULLUP                  ; # mode jumper
+NET "id<0>"   LOC="P88 "  | IOSTANDARD = LVCMOS33 | PULLUP                  ; # id links
+NET "id<1>"   LOC="P87 "  | IOSTANDARD = LVCMOS33 | PULLUP                  ; # id links
+NET "id<2>"   LOC="P85"   | IOSTANDARD = LVCMOS33 | PULLUP                  ; # id links
+NET "id<3>"   LOC="P84"   | IOSTANDARD = LVCMOS33 | PULLUP                  ; # id links
 
 # UART
 NET "avr_TxD"  LOC="P51"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 NET "avr_RxD"  LOC="P55"  | IOSTANDARD = LVCMOS33                           ;
 
 # External trigger inputs
-NET "trig<0>"  LOC="P127" | IOSTANDARD = LVCMOS33                           ;
-NET "trig<1>"  LOC="P126" | IOSTANDARD = LVCMOS33                           ;
+NET "trig<0>"  LOC="P116" | IOSTANDARD = LVCMOS33                           ;
+NET "trig<1>"  LOC="P123" | IOSTANDARD = LVCMOS33                           ;
 
 # 7-segment LED (connect to J5 on FPGA board)
 NET "tmosi"    LOC="P58"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;

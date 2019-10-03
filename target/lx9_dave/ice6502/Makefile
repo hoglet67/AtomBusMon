@@ -11,7 +11,7 @@ PROJECT    = W65C02CpuMon
 TARGET     = ice6502
 
 # Frequuency that the AVR runs at
-F_CPU      = 19354838
+F_CPU      = 16000000
 
 # Common include files
 include $(COMMON)/Makefile_$(TARGET).inc
