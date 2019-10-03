@@ -74,8 +74,8 @@ NET "avr_TxD"  LOC="P51"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 NET "avr_RxD"  LOC="P55"  | IOSTANDARD = LVCMOS33                           ;
 
 # External trigger inputs
-NET "trig<0>"  LOC="P116" | IOSTANDARD = LVCMOS33                           ;
-NET "trig<1>"  LOC="P123" | IOSTANDARD = LVCMOS33                           ;
+NET "trig<0>"  LOC="P127" | IOSTANDARD = LVCMOS33                           ;
+NET "trig<1>"  LOC="P126" | IOSTANDARD = LVCMOS33                           ;
 
 # 7-segment LED (connect to J5 on FPGA board)
 NET "tmosi"    LOC="P58"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
