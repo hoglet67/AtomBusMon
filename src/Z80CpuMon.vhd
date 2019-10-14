@@ -105,7 +105,6 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal SS_Single      : std_logic;
     signal SS_Step        : std_logic;
     signal SS_Step_held   : std_logic;
-    signal SS_Running     : std_logic;
     signal CountCycle     : std_logic;
     signal skipNextOpcode : std_logic;
 
@@ -146,6 +145,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal WriteIO_n0     : std_logic;
     signal Sync           : std_logic;
     signal Sync0          : std_logic;
+    signal Sync1          : std_logic;
     signal Mem_IO_n       : std_logic;
     signal nRST           : std_logic;
 
@@ -282,37 +282,31 @@ begin
     end generate;
 
     --------------------------------------------------------
+    -- Synchronise external interrupts
+    --------------------------------------------------------
+
+    int_gen : process(CLK_n)
+    begin
+        if rising_edge(CLK_n) then
+            NMI_n_sync <= NMI_n;
+            INT_n_sync <= INT_n;
+        end if;
+    end process;
+
+    --------------------------------------------------------
     -- Z80 specific single step / breakpoint logic
     --------------------------------------------------------
 
-    WAIT_n_int <= WAIT_n and SS_Running;
+    CountCycle <= '1' when state = idle else '0';
 
-    CountCycle <= '1' when SS_Single = '0' or SS_Running = '1' else '0';
+    -- For the break point logic to work, the following must happen
+    -- SS_Single taken high by BusMonCore on the rising edge at the start of T2
+    -- WAIT_n_int must be taken low before the falling edge in the middle of T2
+    -- This implies a combinatorial path from SS_Single to WAIT_n_int
 
-    sync_gen : process(CLK_n, RESET_n_int)
-    begin
-        if RESET_n_int = '0' then
-            NMI_n_sync <= '1';
-            INT_n_sync <= '1';
-            SS_Running <= '1';
-            SS_Step_held <= '0';
-        elsif rising_edge(CLK_n) then
-            NMI_n_sync <= NMI_n;
-            INT_n_sync <= INT_n;
-            if Sync0 = '1' and SS_Single = '1' then
-                -- stop at the end of T1 instruction fetch
-                SS_Running <= '0';
-            elsif SS_Step_held = '1' and state = nop_t4 then
-                -- start again when the single step command is issued
-                SS_Running <= '1';
-            end if;
-            if SS_Step = '1' then
-                SS_Step_held <= '1';
-            elsif SS_Running = '1' then
-                SS_Step_held <= '0';
-            end if;
-        end if;
-    end process;
+    WAIT_n_int <= '0'    when state = idle and SS_Single = '1' and Sync1 = '1'            else
+                  '0'    when state /= idle                                               else
+                  WAIT_n;
 
     -- Logic to ignore the second M1 in multi-byte opcodes
     skip_opcode_latch : process(CLK_n)
@@ -419,6 +413,7 @@ begin
             memory_wr1 <= '0';
             io_rd1 <= '0';
             io_wr1 <= '0';
+            SS_Step_held <= '0';
 
         elsif rising_edge(CLK_n) then
 
@@ -444,13 +439,20 @@ begin
             elsif state = wr_t1 then
                 io_wr1 <= '0';
             end if;
+            if SS_Step = '1' then
+                SS_Step_held <= '1';
+            elsif state = idle then
+                SS_Step_held <= '0';
+            end if;
+
+            Sync1 <= Sync0;
 
             -- Main state machine, generating refresh, read and write cycles
             -- (the timing should exactly match those of the Z80)
             case state is
                 -- Idle is when T80 is running
                 when idle =>
-                    if SS_Running = '0' then
+                    if SS_Single = '1' and Sync1 = '1' then
                         -- If the T80 is stopped, start genering refresh cycles
                         state <= nop_t1;
                         -- Load the initial refresh address from I/R in the T80
