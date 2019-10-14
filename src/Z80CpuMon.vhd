@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
--- Copyright (c) 2015 David Banks
+-- Copyright (c) 2019 David Banks
 --
 --------------------------------------------------------------------------------
 --   ____  ____
@@ -8,18 +8,17 @@
 -- \   \   \/
 --  \   \
 --  /   /         Filename  : Z80CpuMon.vhd
--- /___/   /\     Timestamp : 22/06/2015
+-- /___/   /\     Timestamp : 14/10/2018
 -- \   \  /  \
 --  \___\/\___\
 --
 --Design Name: Z80CpuMon
---Device: XC3S250E
+--Device: multiple
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
-use work.OhoPack.all ;
 
 entity Z80CpuMon is
     generic (
@@ -51,6 +50,7 @@ entity Z80CpuMon is
         BUSAK_n         : out   std_logic;
         Addr            : out   std_logic_vector(15 downto 0);
         Data            : inout std_logic_vector(7 downto 0);
+        DOE_n           : out   std_logic;
 
         -- External trigger inputs
         trig            : in    std_logic_vector(1 downto 0);
@@ -84,7 +84,7 @@ end Z80CpuMon;
 
 architecture behavioral of Z80CpuMon is
 
-type state_type is (idle, rd_init, rd_setup, rd, rd_hold, wr_init, wr_setup, wr, wr_hold, release);
+type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, rd_t3, wr_t1, wr_wa, wr_t2, wr_t3);
 
     signal state  : state_type;
 
@@ -105,6 +105,7 @@ type state_type is (idle, rd_init, rd_setup, rd, rd_hold, wr_init, wr_setup, wr,
     signal SS_Single      : std_logic;
     signal SS_Step        : std_logic;
     signal SS_Step_held   : std_logic;
+    signal SS_Running     : std_logic;
     signal CountCycle     : std_logic;
     signal skipNextOpcode : std_logic;
 
@@ -118,6 +119,16 @@ type state_type is (idle, rd_init, rd_setup, rd, rd_hold, wr_init, wr_setup, wr,
     signal memory_dout    : std_logic_vector(7 downto 0);
     signal memory_din     : std_logic_vector(7 downto 0);
     signal memory_done    : std_logic;
+
+    signal io_rd1         : std_logic;
+    signal io_wr1         : std_logic;
+    signal memory_rd1     : std_logic;
+    signal memory_wr1     : std_logic;
+    signal mon_mreq_n     : std_logic;
+    signal mon_iorq_n     : std_logic;
+    signal mon_rd_n       : std_logic;
+    signal mon_wr_n       : std_logic;
+    signal mon_wait_n     : std_logic;
 
     signal INT_n_sync     : std_logic;
     signal NMI_n_sync     : std_logic;
@@ -158,6 +169,8 @@ type state_type is (idle, rd_init, rd_setup, rd, rd_hold, wr_init, wr_setup, wr,
     signal clock_49_ctr   : std_logic_vector(23 downto 0);
     signal clock_avr_ctr  : std_logic_vector(23 downto 0);
 
+    signal rfsh_addr      : std_logic_vector(15 downto 0);
+
 begin
 
     -- Generics allows polarity of switches/LEDs to be tweaked from the project file
@@ -166,6 +179,10 @@ begin
     led3           <= not led3_n when LEDsActiveHigh else led3_n;
     led6           <= not led6_n when LEDsActiveHigh else led6_n;
     led8           <= not led8_n when LEDsActiveHigh else led8_n;
+
+    --------------------------------------------------------
+    -- Clocking
+    --------------------------------------------------------
 
     inst_dcm0 : entity work.DCM0
       generic map (
@@ -177,6 +194,13 @@ begin
         CLKIN_IN     => clock49,
         CLKFX_OUT    => clock_avr
       );
+
+    cpu_clk <= CLK_n;
+    busmon_clk <= CLK_n;
+
+    --------------------------------------------------------
+    -- BusMonCore
+    --------------------------------------------------------
 
     mon : entity work.BusMonCore
       generic map (
@@ -228,6 +252,10 @@ begin
         SS_Step      => SS_Step
     );
 
+    --------------------------------------------------------
+    -- T80
+    --------------------------------------------------------
+
     GenT80Core: if UseT80Core generate
         inst_t80: entity work.T80a port map (
             TS      => TState,
@@ -253,30 +281,38 @@ begin
         );
     end generate;
 
-    WAIT_n_int <= WAIT_n when SS_Single = '0' else
-                  WAIT_n and SS_Step_held;
+    --------------------------------------------------------
+    -- Z80 specific single step / breakpoint logic
+    --------------------------------------------------------
 
-    CountCycle <= '1' when SS_Single = '0' or SS_Step_held = '1' else '0';
+    WAIT_n_int <= WAIT_n and SS_Running;
+
+    CountCycle <= '1' when SS_Single = '0' or SS_Running = '1' else '0';
 
     sync_gen : process(CLK_n, RESET_n_int)
     begin
         if RESET_n_int = '0' then
             NMI_n_sync <= '1';
             INT_n_sync <= '1';
-            SS_Step_held <= '1';
+            SS_Running <= '1';
+            SS_Step_held <= '0';
         elsif rising_edge(CLK_n) then
             NMI_n_sync <= NMI_n;
             INT_n_sync <= INT_n;
-            if (Sync0 = '1') then
+            if Sync0 = '1' and SS_Single = '1' then
                 -- stop at the end of T1 instruction fetch
-                SS_Step_held <= '0';
-            elsif (SS_Step = '1') then
-                -- start again when the single step command is issues
+                SS_Running <= '0';
+            elsif SS_Step_held = '1' and state = nop_t4 then
+                -- start again when the single step command is issued
+                SS_Running <= '1';
+            end if;
+            if SS_Step = '1' then
                 SS_Step_held <= '1';
+            elsif SS_Running = '1' then
+                SS_Step_held <= '0';
             end if;
         end if;
     end process;
-
 
     -- Logic to ignore the second M1 in multi-byte opcodes
     skip_opcode_latch : process(CLK_n)
@@ -345,74 +381,180 @@ begin
     -- Mux the data seen by the bus monitor appropriately
     mon_data <= rd_data when Read_n <= '0' or ReadIO_n = '0' else ex_data;
 
-    -- Memory access
-    Addr   <= memory_addr when (state /= idle)   else Addr_int;
+    -- Mark the memory access as done when t3 is reached
+    memory_done <= '1' when state = rd_t3 or state = wr_t3 else '0';
 
-    MREQ_n <= '1'         when (state = rd_init or state = wr_init or state = release) else
-              '0'         when (state /= idle and io_not_mem = '0') else MREQ_n_int;
-
-    IORQ_n <= '1'         when (state = rd_init or state = wr_init or state = release) else
-              '0'         when (state /= idle and io_not_mem = '1') else IORQ_n_int;
-
-    WR_n   <= '0'         when (state = wr)      else
-              '1'         when (state /= idle)   else WR_n_int;
-
-    RD_n   <= '0'         when (state = rd_setup or state = rd or state = rd_hold) else
-              '1'         when (state /= idle)   else RD_n_int;
-
-    M1_n   <= '1'         when (state /= idle)   else M1_n_int;
-
-    memory_done <= '1'    when (state = rd_hold or state = wr_hold) else '0';
+    -- Multiplex the bus control signals
+    -- The _int versions come from the T80
+    -- The mon_ versions come from the state machine below
 
     -- TODO: Also need to take account of BUSRQ_n/BUSAK_n
 
-    Data   <= memory_dout when state = wr_setup or state = wr or state = wr_hold else
+    MREQ_n <= MREQ_n_int  when state = idle else mon_mreq_n;
+    IORQ_n <= IORQ_n_int  when state = idle else mon_iorq_n;
+    WR_n   <= WR_n_int    when state = idle else mon_wr_n;
+    RD_n   <= RD_n_int    when state = idle else mon_rd_n;
+    M1_n   <= M1_n_int    when state = idle else '1';
+
+    Addr   <= Addr_int    when state = idle else
+              x"0000"     when state = nop_t1 or state = nop_t2 else
+              rfsh_addr   when state = nop_t3 or state = nop_t4 else
+              memory_addr;
+
+    Data   <= memory_dout when state = wr_wa or state = wr_t2 or state = wr_t3 else
                      Dout when state = idle and Den = '1' else
-                     (others => 'Z');
+              (others => 'Z');
+
+    DOE_n  <= '0' when state = wr_wa or state = wr_t2 or state = wr_t3 else
+              '0' when state = idle and Den = '1' else
+              '1';
+
     Din    <= Data;
 
-
-    -- TODO: Add refresh generation into idle loop
-
-    men_access_machine : process(CLK_n)
+    men_access_machine_rising : process(CLK_n, RESET_n)
     begin
         if (RESET_n = '0') then
             state <= idle;
-        elsif falling_edge(CLK_n) then
-            case state IS
-            when idle =>
-                if (memory_wr = '1' or io_wr = '1') then
-                    state <= wr_init;
-                    io_not_mem <= io_wr;
-                elsif (memory_rd = '1' or io_rd = '1') then
-                    state <= rd_init;
-                    io_not_mem <= io_rd;
-                end if;
-            when rd_init =>
-                state <= rd_setup;
-            when rd_setup =>
-                if (WAIT_n = '1') then
-                    state <= rd;
-                end if;
-            when rd =>
-                state <= rd_hold;
-            when rd_hold =>
-                state <= idle;
-            when wr_init =>
-                state <= wr_setup;
-            when wr_setup =>
-                if (WAIT_n = '1') then
-                    state <= wr;
-                end if;
-            when wr =>
-                state <= wr_hold;
-            when wr_hold =>
-                state <= release;
-            when release =>
-                state <= idle;
+            memory_rd1 <= '0';
+            memory_wr1 <= '0';
+            io_rd1 <= '0';
+            io_wr1 <= '0';
+
+        elsif rising_edge(CLK_n) then
+
+            -- Extend the 1-cycle long request strobes from BusMonCore
+            -- until we are ready to generate a bus cycle
+            if memory_rd = '1' then
+                memory_rd1 <= '1';
+            elsif state = rd_t1 then
+                memory_rd1 <= '0';
+            end if;
+            if memory_wr = '1' then
+                memory_wr1 <= '1';
+            elsif state = wr_t1 then
+                memory_wr1 <= '0';
+            end if;
+            if io_rd = '1' then
+                io_rd1 <= '1';
+            elsif state = rd_t1 then
+                io_rd1 <= '0';
+            end if;
+            if io_wr = '1' then
+                io_wr1 <= '1';
+            elsif state = wr_t1 then
+                io_wr1 <= '0';
+            end if;
+
+            -- Main state machine, generating refresh, read and write cycles
+            -- (the timing should exactly match those of the Z80)
+            case state is
+                -- Idle is when T80 is running
+                when idle =>
+                    if SS_Running = '0' then
+                        -- If the T80 is stopped, start genering refresh cycles
+                        state <= nop_t1;
+                        -- Load the initial refresh address from I/R in the T80
+                        rfsh_addr <= Regs(199 downto 192) & Regs(207 downto 200);
+                    end if;
+
+                -- Refresh cycle
+                when nop_t1 =>
+                    state <= nop_t2;
+                    -- Increment the refresh address (7 bits, just like the Z80)
+                    rfsh_addr(6 downto 0) <= rfsh_addr(6 downto 0) + 1;
+                when nop_t2 =>
+                    state <= nop_t3;
+                when nop_t3 =>
+                    state <= nop_t4;
+                when nop_t4 =>
+                    if memory_wr1 = '1' or io_wr1 = '1' then
+                        state <= wr_t1;
+                        io_not_mem <= io_wr1;
+                    elsif memory_rd1 = '1' or io_rd1 = '1' then
+                        state <= rd_t1;
+                        io_not_mem <= io_rd1;
+                    elsif SS_Step_held = '1' or SS_Single = '0' then
+                        state <= idle;
+                    else
+                        state <= nop_t1;
+                    end if;
+
+                -- Read cycle
+                when rd_t1 =>
+                    if io_not_mem = '1' then
+                        state <= rd_wa;
+                    else
+                        state <= rd_t2;
+                    end if;
+                when rd_wa =>
+                    state <= rd_t2;
+                when rd_t2 =>
+                    if mon_wait_n = '1' then
+                        state <= rd_t3;
+                    end if;
+                when rd_t3 =>
+                    state <= nop_t1;
+
+                -- Write cycle
+                when wr_t1 =>
+                    if io_not_mem = '1' then
+                        state <= wr_wa;
+                    else
+                        state <= wr_t2;
+                    end if;
+                when wr_wa =>
+                    state <= wr_t2;
+                when wr_t2 =>
+                    if mon_wait_n = '1' then
+                        state <= wr_t3;
+                    end if;
+                when wr_t3 =>
+                    state <= nop_t1;
             end case;
         end if;
     end process;
+
+    men_access_machine_falling : process(RESET_n)
+    begin
+        if falling_edge(CLK_n) then
+            -- For memory access cycles, mreq/iorq/rd/wr all change in the middle of
+            -- the t state, so retime these on the falling edge of clock
+            if state = rd_t1 or state = rd_wa or state = rd_t2 or state = wr_t1 or state = wr_wa or state = wr_t2 then
+                if io_not_mem = '0' then
+                    -- Memory cycle
+                    mon_mreq_n <= '0';
+                    mon_iorq_n <= '1';
+                else
+                    -- IO cycle
+                    mon_mreq_n <= '1';
+                    mon_iorq_n <= '0';
+                end if;
+            elsif state = nop_t3 then
+                -- Refresh cycle
+                mon_mreq_n <= '0';
+                mon_iorq_n <= '1';
+            else
+                -- Idle cycle
+                mon_mreq_n <= '1';
+                mon_iorq_n <= '1';
+            end if;
+            -- Read strobe
+            if state = rd_t1 or state = rd_wa or state = rd_t2 then
+                mon_rd_n <= '0';
+            else
+                mon_rd_n <= '1';
+            end if;
+            -- Write strobe
+            if state = wr_wa or state = wr_t2 then
+                mon_wr_n <= '0';
+            else
+                mon_wr_n <= '1';
+            end if;
+            -- Sample wait on the falling edge of the clock
+            mon_wait_n <= WAIT_n;
+        end if;
+    end process;
+
 
     RESET_n_int <= RESET_n and sw_interrupt_n and nRST;
 
@@ -443,7 +585,5 @@ begin
     --test3 <= TState(2);
     --test4 <= CLK_n;
 
-    cpu_clk <= CLK_n;
-    busmon_clk <= CLK_n;
 
 end behavioral;

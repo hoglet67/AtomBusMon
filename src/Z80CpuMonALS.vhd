@@ -87,6 +87,7 @@ architecture behavioral of Z80CpuMonALS is
 
     signal BUSAK_n_int : std_logic;
     signal WR_n_int    : std_logic;
+    signal DOE_n       : std_logic;
 
 begin
 
@@ -97,8 +98,8 @@ begin
     OEA1_n  <= not BUSAK_n_int;
     OEA2_n  <= not BUSAK_n_int;
 
-    OED_n   <= not BUSAK_n_int; -- TODO: This needs to come from the Z80 core
-    DIRD    <= WR_n_int;        -- TODO: This needs to come from the Z80 core
+    OED_n   <= not BUSAK_n_int;
+    DIRD    <= DOE_n;
 
     wrapper : entity work.Z80CpuMon
         generic map (
@@ -130,6 +131,7 @@ begin
           BUSAK_n         => BUSAK_n_int,
           Addr            => Addr,
           Data            => Data,
+          DOE_n           => DOE_n,
 
           -- External trigger inputs
           trig            => trig,
