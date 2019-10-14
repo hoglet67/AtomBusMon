@@ -99,6 +99,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal WR_n_int       : std_logic;
     signal MREQ_n_int     : std_logic;
     signal IORQ_n_int     : std_logic;
+    signal RFSH_n_int     : std_logic;
     signal M1_n_int       : std_logic;
     signal WAIT_n_int     : std_logic;
     signal TState         : std_logic_vector(2 downto 0);
@@ -125,6 +126,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal memory_wr1     : std_logic;
     signal mon_mreq_n     : std_logic;
     signal mon_iorq_n     : std_logic;
+    signal mon_rfsh_n     : std_logic;
     signal mon_rd_n       : std_logic;
     signal mon_wr_n       : std_logic;
     signal mon_wait_n     : std_logic;
@@ -271,7 +273,7 @@ begin
             IORQ_n  => IORQ_n_int,
             RD_n    => RD_n_int,
             WR_n    => WR_n_int,
-            RFSH_n  => RFSH_n,
+            RFSH_n  => RFSH_n_int,
             HALT_n  => HALT_n,
             BUSAK_n => BUSAK_n,
             A       => Addr_int,
@@ -386,6 +388,7 @@ begin
 
     MREQ_n <= MREQ_n_int  when state = idle else mon_mreq_n;
     IORQ_n <= IORQ_n_int  when state = idle else mon_iorq_n;
+    RFSH_n <= RFSH_n_int  when state = idle else mon_rfsh_n;
     WR_n   <= WR_n_int    when state = idle else mon_wr_n;
     RD_n   <= RD_n_int    when state = idle else mon_rd_n;
     M1_n   <= M1_n_int    when state = idle else '1';
@@ -414,6 +417,7 @@ begin
             io_rd1 <= '0';
             io_wr1 <= '0';
             SS_Step_held <= '0';
+            mon_rfsh_n <= '1';
 
         elsif rising_edge(CLK_n) then
 
@@ -465,10 +469,12 @@ begin
                     -- Increment the refresh address (7 bits, just like the Z80)
                     rfsh_addr(6 downto 0) <= rfsh_addr(6 downto 0) + 1;
                 when nop_t2 =>
+                    mon_rfsh_n <= '0';
                     state <= nop_t3;
                 when nop_t3 =>
                     state <= nop_t4;
                 when nop_t4 =>
+                    mon_rfsh_n <= '1';
                     if memory_wr1 = '1' or io_wr1 = '1' then
                         state <= wr_t1;
                         io_not_mem <= io_wr1;
