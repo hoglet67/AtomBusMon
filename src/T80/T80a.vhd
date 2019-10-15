@@ -192,7 +192,7 @@ begin
     process (CLK_n)		-- 0247a
     begin
         if CLK_n'event and CLK_n = '1' then
-            IReq_Inhibit <= not IORQ;
+            -- IReq_Inhibit <= not IORQ;
         end if;
     end process;
 
