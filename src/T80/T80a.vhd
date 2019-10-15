@@ -176,8 +176,13 @@ begin
             MC => MCycle,
             TS => TState,
             IntCycle_n => IntCycle_n,
-            Regs => Regs
+            REG => Regs(211 downto 0),
+            DIRSet => '0',
+            DIR => (others => '0')
             );
+
+    Regs(255 downto 212) <= (others => '0');
+
 
     process (CLK_n)
     begin
