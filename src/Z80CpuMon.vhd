@@ -84,7 +84,7 @@ end Z80CpuMon;
 
 architecture behavioral of Z80CpuMon is
 
-type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, rd_t3, wr_t1, wr_wa, wr_t2, wr_t3);
+type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, rd_t3, wr_t1, wr_wa, wr_t2, wr_t3);
 
     signal state  : state_type;
 
@@ -386,14 +386,14 @@ begin
 
     -- TODO: Also need to take account of BUSRQ_n/BUSAK_n
 
-    MREQ_n <= MREQ_n_int  when state = idle else mon_mreq_n;
-    IORQ_n <= IORQ_n_int  when state = idle else mon_iorq_n;
-    RFSH_n <= RFSH_n_int  when state = idle else mon_rfsh_n;
-    WR_n   <= WR_n_int    when state = idle else mon_wr_n;
-    RD_n   <= RD_n_int    when state = idle else mon_rd_n;
-    M1_n   <= M1_n_int    when state = idle else '1';
+    MREQ_n <= MREQ_n_int  when state = idle or state = resume else mon_mreq_n;
+    IORQ_n <= IORQ_n_int  when state = idle or state = resume else mon_iorq_n;
+    RFSH_n <= RFSH_n_int  when state = idle or state = resume else mon_rfsh_n;
+    WR_n   <= WR_n_int    when state = idle or state = resume else mon_wr_n;
+    RD_n   <= RD_n_int    when state = idle or state = resume else mon_rd_n;
+    M1_n   <= M1_n_int    when state = idle or state = resume else '1';
 
-    Addr   <= Addr_int    when state = idle else
+    Addr   <= Addr_int    when state = idle or state = resume else
               x"0000"     when state = nop_t1 or state = nop_t2 else
               rfsh_addr   when state = nop_t3 or state = nop_t4 else
               memory_addr;
@@ -482,10 +482,14 @@ begin
                         state <= rd_t1;
                         io_not_mem <= io_rd1;
                     elsif SS_Step_held = '1' or SS_Single = '0' then
-                        state <= idle;
+                        state <= resume;
                     else
                         state <= nop_t1;
                     end if;
+
+                    -- Resume,
+                when resume =>
+                    state <= idle;
 
                 -- Read cycle
                 when rd_t1 =>
