@@ -4,7 +4,7 @@
 #include "status.h"
 #include "dis.h"
 
-#ifdef LCD
+#if defined(LCD)
 #include "hd44780.h"
 #endif
 
@@ -24,7 +24,7 @@
 unsigned int hwRead8(unsigned int offset);
 unsigned int hwRead16(unsigned int offset);
 
-#ifdef CPU_EMBEDDED
+#if defined(CPU_EMBEDDED)
 unsigned int disMem(unsigned int addr);
 void loadData(unsigned int data);
 void loadAddr(unsigned int addr);

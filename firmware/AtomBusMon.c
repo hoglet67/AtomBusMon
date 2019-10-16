@@ -38,7 +38,7 @@ char *cmdStrings[] = {
   "help",
   "continue",
   "step",
-#ifdef CPU_EMBEDDED
+#if defined(CPU_EMBEDDED)
   "regs",
   "dis",
   "fill",
@@ -81,7 +81,7 @@ void (*cmdFuncs[])(char *params) = {
   doCmdHelp,
   doCmdContinue,
   doCmdStep,
-#ifdef CPU_EMBEDDED
+#if defined(CPU_EMBEDDED)
   doCmdRegs,
   doCmdDis,
   doCmdFill,
@@ -493,7 +493,7 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int 
   shift(trigger, 4);
 }
 
-#ifdef LCD
+#if defined(LCD)
 //  LCD support code (will be depricated soon)
 void lcdAddr(unsigned int addr) {
   int i;
@@ -516,7 +516,7 @@ void lcdAddr(unsigned int addr) {
  * Host Memory/IO Access helpers
  ********************************************************/
 
-#ifdef CPU_EMBEDDED
+#if defined(CPU_EMBEDDED)
 void loadData(unsigned int data) {
   int i;
   for (i = 0; i <= 7; i++) {
@@ -697,7 +697,7 @@ int logDetails() {
   } else {
     log0("\n");
   }
-#ifdef CPU_EMBEDDED
+#if defined(CPU_EMBEDDED)
   if (mode & B_RDWR_MASK) {
     // It's only safe to do this for brkpts, as it makes memory accesses
     logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
@@ -710,12 +710,12 @@ int logDetails() {
 void logAddr() {
   memAddr = hwRead16(OFFSET_IAL);
   // Update the LCD display
-#ifdef LCD
+#if defined(LCD)
   lcdAddr(memAddr);
 #endif
   // Update the serial console
   logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
-#ifdef CPU_EMBEDDED
+#if defined(CPU_EMBEDDED)
   //log0("%04X\n", i_addr);
   disMem(memAddr);
 #else
@@ -725,7 +725,7 @@ void logAddr() {
 }
 
 void version() {
-#ifdef CPU_EMBEDDED
+#if defined(CPU_EMBEDDED)
   log0("%s In-Circuit Emulator version %s\n", NAME, VERSION);
 #else
   log0("%s Bus Monitor version %s\n", NAME, VERSION);
@@ -831,7 +831,7 @@ void genericBreakpoint(char *params, unsigned int mode) {
  * Test Helpers
  ********************************************************/
 
-#ifdef CPU_EMBEDDED
+#if defined(CPU_EMBEDDED)
 char *testNames[6] = {
   "Fixed",
   "Checkerboard",
@@ -965,7 +965,7 @@ void doCmdReset(char *params) {
   logAddr();
 }
 
-#ifdef CPU_EMBEDDED
+#if defined(CPU_EMBEDDED)
 
 // doCmdRegs is now in regs<cpu>.c
 
@@ -1290,7 +1290,7 @@ void doCmdTrigger(char *params) {
 void doCmdContinue(char *params) {
   int i;
   int status;
-#ifdef LCD
+#if defined(LCD)
   unsigned int i_addr;
 #endif
   int reset = 0;
@@ -1329,7 +1329,7 @@ void doCmdContinue(char *params) {
   int cont = 1;
   do {
     // Update the LCD display
-#ifdef LCD
+#if defined(LCD)
     i_addr = hwRead16(OFFSET_IAL);
     lcdAddr(i_addr);
 #endif
@@ -1368,7 +1368,7 @@ void initialize() {
   MUX_DDR = 0;
   CTRL_PORT = 0;
   Serial_Init(57600,57600);
-#ifdef LCD
+#if defined(LCD)
   lcd_init();
   lcd_puts("Addr: xxxx");
 #endif
