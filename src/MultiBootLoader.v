@@ -147,7 +147,7 @@ module MultiBootLoader
                  5'b11110: icap_din    = 16'h8000; // 6502
                  5'b11101: icap_din    = 16'hC000; // Z80 (mode = 1)
                  5'b01101: icap_din    = 16'hC000; // Z80 (mode = 0)
-                 // 5'b01110: icap_din    = 16'h0000; // 65C02
+                 5'b01110: icap_din    = 16'h0000; // 65C02
                  // 5'b11100: icap_din    = 16'h4000; // 6809 (mode = 1)
                  // 5'b01100: icap_din    = 16'h4000; // 6809 (mode = 0)
                  default:  icap_din    = 16'h4000; // Unknown Adapter
@@ -173,7 +173,7 @@ module MultiBootLoader
                  5'b11110: icap_din    = 16'h030A; // 6502
                  5'b11101: icap_din    = 16'h030F; // Z80 (mode = 1)
                  5'b01101: icap_din    = 16'h030F; // Z80 (mode = 0)
-                 // 5'b01110: icap_din    = 16'h0315; // 65C02
+                 5'b01110: icap_din    = 16'h0315; // 65C02
                  // 5'b11100: icap_din    = 16'h031A; // 6809 (mode = 1)
                  // 5'b01100: icap_din    = 16'h031A; // 6809 (mode = 0)
                  default:  icap_din    = 16'h0305; // Unknown Adapter

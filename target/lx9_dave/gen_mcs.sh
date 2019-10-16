@@ -3,7 +3,6 @@
 
 # The S25FL032P has space for ~12 designs if they are uncompressed
 #
-#-u 150000                                       \
 #-u 1A4000                                       \
 #-u 1F8000                                       \
 #-u 24C000                                       \
@@ -23,6 +22,7 @@ promgen                                          \
  -u  54000 unknown/working/UnknownAdapter.bit    \
  -u  A8000 ice6502/ice6502.bit                   \
  -u  FC000 icez80/icez80.bit                     \
+ -u 150000 ice65c02/ice65c02.bit                 \
  -o $NAME.mcs  -p mcs -w -spi -s 8192
 
 rm -f $NAME.cfi $NAME.prm

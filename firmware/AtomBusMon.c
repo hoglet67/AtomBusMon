@@ -13,9 +13,11 @@
 #define VERSION "0.80"
 
 #if (CPU == Z80)
-  #define NAME "ICE-T80"
+  #define NAME "ICE-Z80"
 #elif (CPU == 6502)
-  #define NAME "ICE-T65"
+  #define NAME "ICE-6502"
+#elif (CPU == C02)
+  #define NAME "ICE-65C02"
 #elif (CPU == 6809)
   #define NAME "ICE-6809"
 #else
@@ -943,7 +945,7 @@ void doCmdStep(char *params) {
 
 void doCmdReset(char *params) {
   log0("Resetting CPU\n");
-#if (CPU == 6502)
+#if (CPU == 6502 || CPU == C02)
   // For the 6502 cores, to get the single stepping to stop correctly
   // on the first instruction after reset, it helps to assert reset twice.
   // I haven't looked into why this is, as it doesn't seem very important.
@@ -957,7 +959,7 @@ void doCmdReset(char *params) {
    Delay_us(50);
    hwCmd(CMD_RESET, 0);
    Delay_us(50);
-#if (CPU == 6502)
+#if (CPU == 6502 || CPU == C02)
   }
 #endif
   logAddr();
