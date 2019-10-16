@@ -1,9 +1,10 @@
-SUB_DIRS = lx9_dave godil_250 godil_500 lx9_jason lx9_jason_flipped
+SUB_DIRS = $(wildcard ice*/.)
 
 build:
 	for dir in $(SUB_DIRS); do \
 	    $(MAKE) -C $$dir build; \
 	done;
+	./gen_mcs.sh
 
 clean:
 	for dir in $(SUB_DIRS); do \

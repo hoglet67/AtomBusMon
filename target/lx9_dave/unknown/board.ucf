@@ -1,0 +1,27 @@
+NET "clock" TNM_NET = clk_period_grp_50;
+TIMESPEC TS_clk_period_50 = PERIOD "clk_period_grp_50" 20.00ns HIGH;
+
+NET "clock"    LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
+
+# LEDs
+NET "led1"     LOC="P44"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # stopped at breakpoint
+NET "led2"     LOC="P41"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 0 active
+NET "led3"     LOC="P67"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # trigger 1 active
+
+# ID/Jumper
+NET "mode"    LOC="P140"  | IOSTANDARD = LVCMOS33 | PULLUP                  ; # mode jumper
+NET "id<0>"   LOC="P88 "  | IOSTANDARD = LVCMOS33 | PULLUP                  ; # id links
+NET "id<1>"   LOC="P87 "  | IOSTANDARD = LVCMOS33 | PULLUP                  ; # id links
+NET "id<2>"   LOC="P85"   | IOSTANDARD = LVCMOS33 | PULLUP                  ; # id links
+NET "id<3>"   LOC="P84"   | IOSTANDARD = LVCMOS33 | PULLUP                  ; # id links
+
+# LEDs on eepizza board
+
+NET "ld1"     LOC="P138"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "ld2"     LOC="P137"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "ld3"     LOC="P134"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "ld4"     LOC="P133"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "ld5"     LOC="P120"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "ld6"     LOC="P119"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "ld7"     LOC="P118"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "ld8"     LOC="P117"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
