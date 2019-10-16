@@ -12,13 +12,13 @@
 
 #define VERSION "0.80"
 
-#if (CPU == Z80)
+#if defined(CPU_Z80)
   #define NAME "ICE-Z80"
-#elif (CPU == 6502)
+#elif defined(CPU_6502)
   #define NAME "ICE-6502"
-#elif (CPU == C02)
+#elif defined(CPU_65C02)
   #define NAME "ICE-65C02"
-#elif (CPU == 6809)
+#elif defined(CPU_6809)
   #define NAME "ICE-6809"
 #else
   #error "Unsupported CPU type"
@@ -38,7 +38,7 @@ char *cmdStrings[] = {
   "help",
   "continue",
   "step",
-#ifdef CPUEMBEDDED
+#ifdef CPU_EMBEDDED
   "regs",
   "dis",
   "fill",
@@ -46,14 +46,14 @@ char *cmdStrings[] = {
   "mem",
   "rdm",
   "wrm",
-#if (CPU == Z80)
+#if defined(CPU_Z80)
   "io",
   "rdi",
   "wri",
 #endif
   "test",
   "srec",
-#if (CPU != Z80)
+#if !defined(CPU_Z80)
   "special",
 #endif
 #endif
@@ -66,7 +66,7 @@ char *cmdStrings[] = {
   "watchrm",
   "breakwm",
   "watchwm",
-#if (CPU == Z80)
+#if defined(CPU_Z80)
   "breakri",
   "watchri",
   "breakwi",
@@ -81,7 +81,7 @@ void (*cmdFuncs[])(char *params) = {
   doCmdHelp,
   doCmdContinue,
   doCmdStep,
-#ifdef CPUEMBEDDED
+#ifdef CPU_EMBEDDED
   doCmdRegs,
   doCmdDis,
   doCmdFill,
@@ -89,14 +89,14 @@ void (*cmdFuncs[])(char *params) = {
   doCmdMem,
   doCmdReadMem,
   doCmdWriteMem,
-#if (CPU == Z80)
+#if defined(CPU_Z80)
   doCmdIO,
   doCmdReadIO,
   doCmdWriteIO,
 #endif
   doCmdTest,
   doCmdSRec,
-#if (CPU != Z80)
+#if !defined(CPU_Z80)
   doCmdSpecial,
 #endif
 #endif
@@ -109,7 +109,7 @@ void (*cmdFuncs[])(char *params) = {
   doCmdWatchRdMem,
   doCmdBreakWrMem,
   doCmdWatchWrMem,
-#if (CPU == Z80)
+#if defined(CPU_Z80)
   doCmdBreakRdIO,
   doCmdWatchRdIO,
   doCmdBreakWrIO,
@@ -283,7 +283,7 @@ void (*cmdFuncs[])(char *params) = {
  ********************************************************/
 
 // The space available for address comparators depends on the size of the CPU core
-#if (CPU == Z80)
+#if defined(CPU_Z80)
 #define MAXBKPTS 4
 #else
 #define MAXBKPTS 8
@@ -516,7 +516,7 @@ void lcdAddr(unsigned int addr) {
  * Host Memory/IO Access helpers
  ********************************************************/
 
-#ifdef CPUEMBEDDED
+#ifdef CPU_EMBEDDED
 void loadData(unsigned int data) {
   int i;
   for (i = 0; i <= 7; i++) {
@@ -697,7 +697,7 @@ int logDetails() {
   } else {
     log0("\n");
   }
-#ifdef CPUEMBEDDED
+#ifdef CPU_EMBEDDED
   if (mode & B_RDWR_MASK) {
     // It's only safe to do this for brkpts, as it makes memory accesses
     logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
@@ -715,7 +715,7 @@ void logAddr() {
 #endif
   // Update the serial console
   logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
-#ifdef CPUEMBEDDED
+#ifdef CPU_EMBEDDED
   //log0("%04X\n", i_addr);
   disMem(memAddr);
 #else
@@ -725,7 +725,7 @@ void logAddr() {
 }
 
 void version() {
-#ifdef CPUEMBEDDED
+#ifdef CPU_EMBEDDED
   log0("%s In-Circuit Emulator version %s\n", NAME, VERSION);
 #else
   log0("%s Bus Monitor version %s\n", NAME, VERSION);
@@ -831,7 +831,7 @@ void genericBreakpoint(char *params, unsigned int mode) {
  * Test Helpers
  ********************************************************/
 
-#ifdef CPUEMBEDDED
+#ifdef CPU_EMBEDDED
 char *testNames[6] = {
   "Fixed",
   "Checkerboard",
@@ -904,7 +904,7 @@ void test(unsigned int start, unsigned int end, int data) {
     log0(": passed\n");
   }
 }
-#endif // CPUEMBEDDED
+#endif // CPU_EMBEDDED
 
 /*******************************************
  * User Commands
@@ -945,7 +945,7 @@ void doCmdStep(char *params) {
 
 void doCmdReset(char *params) {
   log0("Resetting CPU\n");
-#if (CPU == 6502 || CPU == C02)
+#if defined(CPU_6502) || defined(CPU_65C02)
   // For the 6502 cores, to get the single stepping to stop correctly
   // on the first instruction after reset, it helps to assert reset twice.
   // I haven't looked into why this is, as it doesn't seem very important.
@@ -959,13 +959,13 @@ void doCmdReset(char *params) {
    Delay_us(50);
    hwCmd(CMD_RESET, 0);
    Delay_us(50);
-#if (CPU == 6502 || CPU == C02)
+#if defined(CPU_6502) || defined(CPU_65C02)
   }
 #endif
   logAddr();
 }
 
-#ifdef CPUEMBEDDED
+#ifdef CPU_EMBEDDED
 
 // doCmdRegs is now in regs<cpu>.c
 
@@ -1026,7 +1026,7 @@ void doCmdWriteMem(char *params) {
   genericWrite(params, writeMemByte);
 }
 
-#if (CPU == Z80)
+#if defined(CPU_Z80)
 
 void doCmdIO(char *params) {
   genericDump(params, readIOByteInc);
@@ -1162,7 +1162,7 @@ void doCmdSRec(char *params) {
 
 }
 
-#if (CPU != Z80)
+#if !defined(CPU_Z80)
 void logSpecial(char *function, int value) {
    log0("%s", function);
    if (value) {
@@ -1184,7 +1184,7 @@ void doCmdSpecial(char *params) {
 }
 #endif
 
-#endif // CPUEMBEDDED
+#endif // CPU_EMBEDDED
 
 void doCmdTrace(char *params) {
   long i;
@@ -1231,7 +1231,7 @@ void doCmdWatchWrMem(char *params) {
   genericBreakpoint(params, 1 << WATCH_MEM_WRITE);
 }
 
-#if (CPU == Z80)
+#if defined(CPU_Z80)
 
 void doCmdBreakRdIO(char *params) {
   genericBreakpoint(params, 1 << BRKPT_IO_READ);

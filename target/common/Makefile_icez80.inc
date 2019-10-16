@@ -1,5 +1,5 @@
 # CPU specfic build flags
-CPU_CFLAGS = -DCPU=Z80 -DCPUEMBEDDED 
+CPU_CFLAGS = -DCPU_Z80 -DCPU_EMBEDDED
 
 # CPU specfic object files
-CPU_OBJECTS = disz80.o regsz80.o 
+CPU_OBJECTS = disz80.o regsz80.o

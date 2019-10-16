@@ -24,7 +24,7 @@
 unsigned int hwRead8(unsigned int offset);
 unsigned int hwRead16(unsigned int offset);
 
-#ifdef CPUEMBEDDED
+#ifdef CPU_EMBEDDED
 unsigned int disMem(unsigned int addr);
 void loadData(unsigned int data);
 void loadAddr(unsigned int addr);
