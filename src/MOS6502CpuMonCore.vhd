@@ -195,7 +195,7 @@ begin
     Regs1( 63 downto 48) <= last_PC;
     Regs1(255 downto 64) <= (others => '0');
 
-    cpu_clken_ss <= (not hold) and cpu_clken;
+    cpu_clken_ss <= Rdy and (not hold) and cpu_clken;
 
     -- Generate a short (~1ms @ 1MHz) power up reset pulse
     --

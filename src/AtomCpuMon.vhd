@@ -83,6 +83,8 @@ architecture behavioral of AtomCpuMon is
     signal Din           : std_logic_vector(7 downto 0);
     signal Dout          : std_logic_vector(7 downto 0);
 
+    signal Rdy_latched   : std_logic;
+
     signal IRQ_n_sync    : std_logic;
     signal NMI_n_sync    : std_logic;
 
@@ -147,7 +149,7 @@ begin
         SO_n         => SO_n,
         Res_n_in     => Res_n_in,
         Res_n_out    => Res_n_out,
-        Rdy          => Rdy,
+        Rdy          => Rdy_latched,
         trig         => trig,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
@@ -173,6 +175,27 @@ begin
         end if;
     end process;
 
+    -- 6502: Sample Rdy on the rising edge of Phi0
+    rdy_6502: if UseT65Core generate
+        process(Phi0)
+        begin
+            if rising_edge(Phi0) then
+                Rdy_latched <= Rdy;
+            end if;
+        end process;
+    end generate;
+
+    -- 65C02: Sample Rdy on the falling edge of Phi0
+    rdy_65c02: if UseAlanDCore generate
+        process(Phi0)
+        begin
+            if falling_edge(Phi0) then
+                Rdy_latched <= Rdy;
+            end if;
+        end process;
+    end generate;
+
+    -- Sample Data on the falling edge of Phi0_a
     data_latch : process(Phi0_a)
     begin
         if falling_edge(Phi0_a) then
