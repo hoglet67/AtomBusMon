@@ -84,8 +84,10 @@ architecture behavioral of MOS6502CpuMonCore is
     signal hold          : std_logic;
     signal Addr_int      : std_logic_vector(23 downto 0);
 
-    signal cpu_addr_us: unsigned (15 downto 0);
-    signal cpu_dout_us: unsigned (7 downto 0);
+    signal cpu_addr_us   : unsigned (15 downto 0);
+    signal cpu_dout_us   : unsigned (7 downto 0);
+    signal cpu_reset_n   : std_logic;
+    signal reset_counter : std_logic_vector(9 downto 0);
 
     signal Regs          : std_logic_vector(63 downto 0);
     signal Regs1         : std_logic_vector(255 downto 0);
@@ -195,12 +197,30 @@ begin
 
     cpu_clken_ss <= (not hold) and cpu_clken;
 
+    -- Generate a short (~1ms @ 1MHz) power up reset pulse
+    --
+    -- This is in case FPGA configuration takes longer than
+    -- the length of the host system reset pulse.
+    --
+    -- Some 6502 cores (particularly the AlanD core) needs
+    -- reset to be asserted to start.
+
+    process(cpu_clk)
+    begin
+        if rising_edge(cpu_clk) then
+            if (reset_counter(reset_counter'high) = '0') then
+                reset_counter <= reset_counter + 1;
+            end if;
+            cpu_reset_n <= Res_n_in and reset_counter(reset_counter'high);
+        end if;
+    end process;
+
     GenT65Core: if UseT65Core generate
         inst_t65: entity work.T65 port map (
             mode            => "00",
             Abort_n         => '1',
             SO_n            => SO_n,
-            Res_n           => Res_n_in,
+            Res_n           => cpu_reset_n,
             Enable          => cpu_clken_ss,
             Clk             => cpu_clk,
             Rdy             => '1',
@@ -217,7 +237,7 @@ begin
 
     GenAlanDCore: if UseAlanDCore generate
         inst_r65c02: entity work.r65c02 port map (
-            reset    => Res_n_in,
+            reset    => cpu_reset_n,
             clk      => cpu_clk,
             enable   => cpu_clken_ss,
             nmi_n    => NMI_n_masked,
@@ -233,7 +253,6 @@ begin
         Dout_int <= std_logic_vector(cpu_dout_us);
         Addr_int(15 downto 0) <= std_logic_vector(cpu_addr_us);
     end generate;
-
 
     -- This block generates a hold signal that acts as the inverse of a clock enable
     -- for the CPU. See comments above for why this is a cycle delayed a cycle.
