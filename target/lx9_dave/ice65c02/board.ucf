@@ -9,7 +9,7 @@ NET "PhiIn" CLOCK_DEDICATED_ROUTE = FALSE;
 NET "clock"    LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
 
 NET "VP_n"     LOC="P35"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 1
-#NET "Rdy"     LOC="P79"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 2
+NET "Rdy"      LOC="P79"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 2
 NET "Phi1Out"  LOC="P33"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 3
 NET "IRQ_n"    LOC="P81"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 4
 NET "ML_n"     LOC="P34"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 5
