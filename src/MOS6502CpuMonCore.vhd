@@ -1,4 +1,4 @@
---------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- Copyright (c) 2015 David Banks
 --
 --------------------------------------------------------------------------------
@@ -74,6 +74,10 @@ end MOS6502CpuMonCore;
 
 architecture behavioral of MOS6502CpuMonCore is
 
+    type state_type is (idle, nop0, nop1, rd, wr, done);
+
+    signal state  : state_type;
+
     signal cpu_clken_ss  : std_logic;
     signal Data          : std_logic_vector(7 downto 0);
     signal Dout_int      : std_logic_vector(7 downto 0);
@@ -81,7 +85,6 @@ architecture behavioral of MOS6502CpuMonCore is
     signal Rd_n_int      : std_logic;
     signal Wr_n_int      : std_logic;
     signal Sync_int      : std_logic;
-    signal hold          : std_logic;
     signal Addr_int      : std_logic_vector(23 downto 0);
 
     signal cpu_addr_us   : unsigned (15 downto 0);
@@ -94,6 +97,7 @@ architecture behavioral of MOS6502CpuMonCore is
     signal last_PC       : std_logic_vector(15 downto 0);
     signal SS_Single     : std_logic;
     signal SS_Step       : std_logic;
+    signal SS_Step_held  : std_logic;
     signal CountCycle    : std_logic;
     signal special       : std_logic_vector(1 downto 0);
 
@@ -102,7 +106,6 @@ architecture behavioral of MOS6502CpuMonCore is
     signal memory_wr     : std_logic;
     signal memory_wr1    : std_logic;
     signal memory_addr   : std_logic_vector(15 downto 0);
-    signal memory_addr1  : std_logic_vector(15 downto 0);
     signal memory_dout   : std_logic_vector(7 downto 0);
     signal memory_din    : std_logic_vector(7 downto 0);
     signal memory_done   : std_logic;
@@ -183,8 +186,8 @@ begin
     last_pc_gen : process(cpu_clk)
     begin
         if rising_edge(cpu_clk) then
-            if (cpu_clken = '1') then
-                if (hold = '0') then
+            if cpu_clken = '1' then
+                if state = idle then
                     last_PC <= Regs(63 downto 48);
                 end if;
             end if;
@@ -195,7 +198,7 @@ begin
     Regs1( 63 downto 48) <= last_PC;
     Regs1(255 downto 64) <= (others => '0');
 
-    cpu_clken_ss <= Rdy and (not hold) and cpu_clken;
+    cpu_clken_ss <= '1' when Rdy = '1' and (state = idle) and cpu_clken = '1' else '0';
 
     -- Generate a short (~1ms @ 1MHz) power up reset pulse
     --
@@ -208,7 +211,7 @@ begin
     process(cpu_clk)
     begin
         if rising_edge(cpu_clk) then
-            if (reset_counter(reset_counter'high) = '0') then
+            if reset_counter(reset_counter'high) = '0' then
                 reset_counter <= reset_counter + 1;
             end if;
             cpu_reset_n <= Res_n_in and reset_counter(reset_counter'high);
@@ -254,47 +257,83 @@ begin
         Addr_int(15 downto 0) <= std_logic_vector(cpu_addr_us);
     end generate;
 
-    -- This block generates a hold signal that acts as the inverse of a clock enable
-    -- for the CPU. See comments above for why this is a cycle delayed a cycle.
-    hold_gen : process(cpu_clk)
+    men_access_machine : process(cpu_clk, cpu_reset_n)
     begin
-        if rising_edge(cpu_clk) then
-            if (cpu_clken = '1') then
-                if (Sync_int = '1') then
-                    -- stop after the opcode has been fetched
-                    hold <= SS_Single;
-                elsif (SS_Step = '1') then
-                    -- start again when the single step command is issues
-                    hold <= '0';
-                end if;
+        if cpu_reset_n = '0' then
+            state <= idle;
+        elsif rising_edge(cpu_clk) then
+            -- Extend the control signals from BusMonitorCore which
+            -- only last one cycle.
+            if SS_Step = '1' then
+                SS_Step_held <= '1';
+            elsif state = idle then
+                SS_Step_held <= '0';
+            end if;
+            if memory_rd = '1' then
+                memory_rd1 <= '1';
+            elsif state = rd then
+                memory_rd1 <= '0';
+            end if;
+            if memory_wr = '1' then
+                memory_wr1 <= '1';
+            elsif state = wr then
+                memory_wr1 <= '0';
+            end if;
+            if cpu_clken = '1' and Rdy = '1' then
+                case state is
+                    -- idle is when the CPU is running normally
+                    when idle =>
+                        if Sync_int = '1' and SS_Single = '1' then
+                            state <= nop0;
+                        end if;
+                    -- nop0 is the first state entered when the CPU is paused
+                    when nop0 =>
+                        if memory_rd1 = '1' then
+                            state <= rd;
+                        elsif memory_wr1 = '1' then
+                            state <= wr;
+                        elsif SS_Step_held = '1' then
+                            state <= idle;
+                        else
+                            state <= nop1;
+                        end if;
+                    -- nop1 simulates a sync cycle
+                    when nop1 =>
+                        state <= nop0;
+                    -- rd is a monitor initiated read cycle
+                    when rd =>
+                        state <= done;
+                    -- rd is a monitor initiated read cycle
+                    when wr =>
+                        state <= done;
+                    -- done is a dead cycle, provides extra address hold time after a reas of write
+                    when done =>
+                        state <= nop0;
+                end case;
             end if;
         end if;
     end process;
 
-    -- Only count cycles when the 6809 is actually running
-    CountCycle <= not hold;
+    -- Only count cycles when the 6502 is actually running
+    -- TODO: Should this be qualified with cpu_clken and rdy?
+    CountCycle <= '1' when state = idle else '0';
 
-    -- this block delays memory_rd, memory_wr, memory_addr until the start of the next cpu clk cycle
-    -- necessary because the cpu mon block is clocked of the opposite edge of the clock
-    -- this allows a full cpu clk cycle for cpu mon reads and writes
-    mem_gen : process(cpu_clk)
-    begin
-        if rising_edge(cpu_clk) then
-            if (cpu_clken = '1') then
-                memory_rd1   <= memory_rd;
-                memory_wr1   <= memory_wr;
-                memory_addr1 <= memory_addr;
-            end if;
-        end if;
-    end process;
+    R_W_n <= R_W_n_int when state = idle else
+             '0'       when state = wr   else
+             '1';
 
-    R_W_n <= '1' when memory_rd1 = '1' else '0' when memory_wr1 = '1' else R_W_n_int;
-    Addr <= memory_addr1 when (memory_rd1 = '1' or memory_wr1 = '1') else Addr_int(15 downto 0);
-    Sync <= Sync_int;
+    Addr <= Addr_int(15 downto 0) when state = idle else
+            memory_addr when state = rd or state = wr or state = done else
+            (others => '0');
 
-    Dout   <= memory_dout when memory_wr1 = '1' else Dout_int;
+    Sync <= Sync_int when state = idle else
+            '1'      when state = nop1 else
+            '0';
 
-    memory_done <= memory_rd1 or memory_wr1;
+    Dout   <= Dout_int when state = idle else
+              memory_dout;
+
+    memory_done <= '1' when state = done else '0';
 
     memory_din <= Din;
 
