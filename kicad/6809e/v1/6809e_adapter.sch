@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:6809e_adapter-cache
 EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
@@ -615,7 +616,7 @@ U 1 1 5D7BB685
 P 9600 1700
 F 0 "D4" H 9600 1600 50  0000 C CNN
 F 1 "MBR130" H 9600 1800 50  0000 C CNN
-F 2 "Diode_SMD:D_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 9600 1700 50  0001 C CNN
+F 2 "Diode_SMD:D_SOD-323_HandSoldering" H 9600 1700 50  0001 C CNN
 F 3 "~" H 9600 1700 50  0001 C CNN
 	1    9600 1700
 	-1   0    0    1   
@@ -630,7 +631,7 @@ U 1 1 5D7DCB4D
 P 8050 1700
 F 0 "D5" H 8050 1600 50  0000 C CNN
 F 1 "MBR130" H 8050 1800 50  0000 C CNN
-F 2 "Diode_SMD:D_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 8050 1700 50  0001 C CNN
+F 2 "Diode_SMD:D_SOD-323_HandSoldering" H 8050 1700 50  0001 C CNN
 F 3 "~" H 8050 1700 50  0001 C CNN
 	1    8050 1700
 	-1   0    0    1   
@@ -1213,7 +1214,6 @@ Text Label 8500 2400 2    60   ~ 0
 ID1
 Text Label 8500 2500 2    60   ~ 0
 ID3
-NoConn ~ 9650 3250
 $Comp
 L Device:R_Small R14
 U 1 1 5D90172A
@@ -1410,4 +1410,120 @@ Wire Wire Line
 Connection ~ 5300 6350
 Wire Wire Line
 	5300 6350 5300 4700
+$Comp
+L Device:R_Small R17
+U 1 1 5DAF3EB5
+P 5250 800
+F 0 "R17" H 5280 820 50  0000 L CNN
+F 1 "22K" H 5280 760 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 5250 800 50  0001 C CNN
+F 3 "" H 5250 800 50  0000 C CNN
+	1    5250 800 
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R_Small R16
+U 1 1 5DAF42B0
+P 5250 2200
+F 0 "R16" H 5280 2220 50  0000 L CNN
+F 1 "22K" H 5280 2160 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 5250 2200 50  0001 C CNN
+F 3 "" H 5250 2200 50  0000 C CNN
+	1    5250 2200
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R_Small R19
+U 1 1 5DAF4773
+P 4750 800
+F 0 "R19" H 4780 820 50  0000 L CNN
+F 1 "22K" H 4780 760 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4750 800 50  0001 C CNN
+F 3 "" H 4750 800 50  0000 C CNN
+	1    4750 800 
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R_Small R15
+U 1 1 5DAF4ADB
+P 4500 800
+F 0 "R15" H 4530 820 50  0000 L CNN
+F 1 "22K" H 4530 760 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4500 800 50  0001 C CNN
+F 3 "" H 4500 800 50  0000 C CNN
+	1    4500 800 
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R_Small R20
+U 1 1 5DAF4E82
+P 4250 800
+F 0 "R20" H 4280 820 50  0000 L CNN
+F 1 "22K" H 4280 760 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 4250 800 50  0001 C CNN
+F 3 "" H 4250 800 50  0000 C CNN
+	1    4250 800 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5900 1400 5250 1400
+Wire Wire Line
+	5250 1400 5250 900 
+Wire Wire Line
+	5900 1500 5250 1500
+Wire Wire Line
+	5250 1500 5250 2100
+Wire Wire Line
+	5900 1600 5000 1600
+Wire Wire Line
+	5000 1600 5000 900 
+Wire Wire Line
+	5900 1700 4750 1700
+Wire Wire Line
+	4750 1700 4750 900 
+Wire Wire Line
+	5900 1800 4500 1800
+Wire Wire Line
+	4500 1800 4500 900 
+Wire Wire Line
+	5900 1900 4250 1900
+Wire Wire Line
+	4250 1900 4250 900 
+Wire Wire Line
+	4250 700  4250 600 
+Wire Wire Line
+	4250 600  4500 600 
+Wire Wire Line
+	5250 700  5250 600 
+Connection ~ 5250 600 
+Wire Wire Line
+	5250 600  5750 600 
+Wire Wire Line
+	5000 700  5000 600 
+Connection ~ 5000 600 
+Wire Wire Line
+	4750 700  4750 600 
+Connection ~ 4750 600 
+Wire Wire Line
+	4750 600  5000 600 
+Wire Wire Line
+	4500 700  4500 600 
+Connection ~ 4500 600 
+Wire Wire Line
+	4500 600  4750 600 
+Text Label 5250 2300 3    60   ~ 0
+GND
+Wire Wire Line
+	5000 600  5250 600 
+$Comp
+L Device:R_Small R18
+U 1 1 5DAF4507
+P 5000 800
+F 0 "R18" H 5030 820 50  0000 L CNN
+F 1 "22K" H 5030 760 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 5000 800 50  0001 C CNN
+F 3 "" H 5000 800 50  0000 C CNN
+	1    5000 800 
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
