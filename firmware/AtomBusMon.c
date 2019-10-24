@@ -614,30 +614,29 @@ void genericDump(char *params, unsigned int (*readFunc)()) {
 }
 
 void genericWrite(char *params, void (*writeFunc)()) {
-  unsigned int addr;
   unsigned int data;
   long count = 1;
-  sscanf(params, "%x %x %ld", &addr, &data, &count);
+  sscanf(params, "%x %x %ld", &memAddr, &data, &count);
   log0("Wr: ");
-  log_addr_data(addr, data);
+  log_addr_data(memAddr, data);
   log0("\n");
   loadData(data);
-  loadAddr(addr);
+  loadAddr(memAddr);
   while (count-- > 0) {
     (*writeFunc)();
   }
+  memAddr++;
 }
 
 void genericRead(char *params, unsigned int (*readFunc)()) {
-  unsigned int addr;
   unsigned int data;
   unsigned int data2;
   long count = 1;
-  sscanf(params, "%x %ld", &addr, &count);
-  loadAddr(addr);
+  sscanf(params, "%x %ld", &memAddr, &count);
+  loadAddr(memAddr);
   data = (*readFunc)();
   log0("Rd: ");
-  log_addr_data(addr, data);
+  log_addr_data(memAddr, data);
   log0("\n");
   while (count-- > 1) {
     data2 = (*readFunc)();
@@ -646,6 +645,7 @@ void genericRead(char *params, unsigned int (*readFunc)()) {
     }
     data = data2;
   }
+  memAddr++;
 }
 
 #endif
