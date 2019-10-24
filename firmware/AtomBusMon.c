@@ -1319,8 +1319,10 @@ void doCmdContinue(char *params) {
     shiftBreakpointRegister(0, 0, 0, 0);
   }
 
-  // Step the 6502, otherwise the breakpoint happends again immediately
+#if defined(CPU_6809)
+  // Step the 6809, otherwise the breakpoint happends again immediately
   hwCmd(CMD_STEP, 0);
+#endif
 
   // Enable breakpoints
   hwCmd(CMD_BRKPT_ENABLE, 1);
