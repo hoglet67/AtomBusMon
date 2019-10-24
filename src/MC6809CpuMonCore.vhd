@@ -1,5 +1,5 @@
---------------------------------------------------------------------------------
--- Copyright (c) 2015 David Banks
+-------------------------------------------------------------------------------
+-- Copyright (c) 2019 David Banks
 --
 --------------------------------------------------------------------------------
 --   ____  ____
@@ -7,12 +7,12 @@
 -- /___/  \  /
 -- \   \   \/
 --  \   \
---  /   /         Filename  : MC6808ECpuMon.vhd
--- /___/   /\     Timestamp : 02/07/2015
+--  /   /         Filename  : MC6808CpuMonCore.vhd
+-- /___/   /\     Timestamp : 24/010/2019
 -- \   \  /  \
 --  \___\/\___\
 --
---Design Name: MC6808ECpuMon
+--Design Name: MC6808CpuMonCore
 --Device: XC3S250E
 
 library ieee;
@@ -21,37 +21,31 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 use work.OhoPack.all ;
 
-entity MC6809ECpuMon is
+entity MC6809CpuMonCore is
     generic (
-       UseCPU09Core   : boolean := true;
-       LEDsActiveHigh : boolean := false;    -- default value correct for GODIL
-       SW1ActiveHigh  : boolean := true;     -- default value correct for GODIL
-       SW2ActiveHigh  : boolean := false;    -- default value correct for GODIL
-       ClkMult        : integer := 10;       -- default value correct for GODIL
-       ClkDiv         : integer := 31;       -- default value correct for GODIL
-       ClkPer         : real    := 20.345    -- default value correct for GODIL
+       UseCPU09Core      : boolean := true;
+       ClkMult           : integer := 10;       -- default value correct for GODIL
+       ClkDiv            : integer := 31;       -- default value correct for GODIL
+       ClkPer            : real    := 20.345;   -- default value correct for GODIL
+       num_comparators   : integer := 8;        -- default value correct for GODIL
+       avr_prog_mem_size : integer := 1024 * 9  -- default value correct for GODIL
        );
     port (
-        clock49         : in    std_logic;
+        -- Fast clock
+        clock           : in    std_logic;
 
-        -- A locally generated test clock
-        -- 1.8457 MHz in E     Mode (6809E) so it can drive E     (PIN34)
-        -- 7.3728 MHz in Normal Mode (6809) so it can drive EXTAL (PIN38)
-        clock_test      : out   std_logic;
-
-        -- 6809/6809E mode selection
-        -- Jumper is between pins B1 and D1
-        -- Jumper off is 6809 mode, where a 4x clock should be fed into EXTAL (PIN38)
-        -- Jumper on is 6909E mode, where a 1x clock should be fed into E (PIN34)
-        EMode_n         : in   std_logic;
+        -- Quadrature clocks
+        E               : in    std_logic;
+        Q               : in    std_logic;
 
         --6809 Signals
-        PIN33           : inout std_logic;
-        PIN34           : inout std_logic;
-        PIN35           : inout std_logic;
-        PIN36           : inout std_logic;
-        PIN38           : inout std_logic;
-        PIN39           : in    std_logic;
+        DMA_n_BREQ_n    : in   std_logic;
+
+        -- 6809E Sig
+        TSC             : in    std_logic;
+        LIC             : out   std_logic;
+        AVMA            : out   std_logic;
+        BUSY            : out   std_logic;
 
         -- Signals common to both 6809 and 6809E
         RES_n           : in    std_logic;
@@ -73,14 +67,14 @@ entity MC6809ECpuMon is
         avr_RxD         : in    std_logic;
         avr_TxD         : out   std_logic;
 
-        -- GODIL Switches
-        sw1             : in    std_logic;
-        sw2             : in    std_logic;
+        -- Switches
+        sw_interrupt    : in    std_logic;
+        sw_reset        : in    std_logic;
 
-        -- GODIL LEDs
-        led3            : out   std_logic;
-        led6            : out   std_logic;
-        led8            : out   std_logic;
+        -- LEDs
+        led_bkpt        : out   std_logic;
+        led_trig0       : out   std_logic;
+        led_trig1       : out   std_logic;
 
         -- OHO_DY1 connected to test connector
         tmosi           : out   std_logic;
@@ -92,9 +86,9 @@ entity MC6809ECpuMon is
         test2           : out   std_logic
 
     );
-end MC6809ECpuMon;
+end MC6809CpuMonCore;
 
-architecture behavioral of MC6809ECpuMon is
+architecture behavioral of MC6809CpuMonCore is
 
     signal clock_avr      : std_logic;
 
@@ -132,22 +126,9 @@ architecture behavioral of MC6809ECpuMon is
     signal SS_Single      : std_logic;
     signal SS_Step        : std_logic;
     signal CountCycle     : std_logic;
-    signal special       : std_logic_vector(1 downto 0);
+    signal special        : std_logic_vector(1 downto 0);
 
-    signal clk_count      : std_logic_vector(1 downto 0);
-    signal quadrature     : std_logic_vector(1 downto 0);
-    signal LIC            : std_logic;
-    signal AVMA           : std_logic;
-    signal XTAL           : std_logic;
-    signal EXTAL          : std_logic;
-    signal MRDY           : std_logic;
-    signal TSC            : std_logic;
-    signal BUSY           : std_logic;
-    signal Q              : std_logic;
-    signal E              : std_logic;
-    signal DMA_n_BREQ_n   : std_logic;
-
-    signal clock7_3728    : std_logic;
+    signal LIC_int        : std_logic;
 
     signal E_a            : std_logic; -- E delayed by 0..20ns
     signal E_b            : std_logic; -- E delayed by 20..40ns
@@ -161,24 +142,27 @@ architecture behavioral of MC6809ECpuMon is
     signal data_wr        : std_logic;
     signal nRSTout        : std_logic;
 
-    signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
-    signal led6_n         : std_logic;  -- led to indicate ext trig 1 is active
-    signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
-    signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
-    signal sw_reset_n     : std_logic;  -- switch to reset the CPU
-
     signal NMI_n_masked   : std_logic;
     signal IRQ_n_masked   : std_logic;
     signal FIRQ_n_masked  : std_logic;
 
+    signal led_trig0_n    : std_logic;
+    signal led_trig1_n    : std_logic;
+    signal led_bkpt_n     : std_logic;
+
 begin
 
-    -- Generics allows polarity of switches/LEDs to be tweaked from the project file
-    sw_interrupt_n <= not sw1 when SW1ActiveHigh else sw1;
-    sw_reset_n     <= not sw2 when SW2ActiveHigh else sw2;
-    led3           <= not led3_n when LEDsActiveHigh else led3_n;
-    led6           <= not led6_n when LEDsActiveHigh else led6_n;
-    led8           <= not led8_n when LEDsActiveHigh else led8_n;
+    LIC     <= LIC_int;
+    -- The following outputs are not implemented
+    -- BUSY          (6809E mode)
+    BUSY    <= '0';
+
+    -- The following inputs are not implemented
+    -- DMA_n_BREQ_n  (6809 mode)
+
+    led_trig0 <= not led_trig0_n;
+    led_trig1 <= not led_trig1_n;
+    led_bkpt <= not led_bkpt_n;
 
     inst_dcm0 : entity work.DCM0
       generic map (
@@ -187,14 +171,14 @@ begin
         ClkPer       => ClkPer
       )
       port map(
-        CLKIN_IN     => clock49,
+        CLKIN_IN     => clock,
         CLKFX_OUT    => clock_avr
       );
 
     mon : entity work.BusMonCore
       generic map (
-        num_comparators => 8,
-        avr_prog_mem_size => 1024 * 9
+        num_comparators => num_comparators,
+        avr_prog_mem_size => avr_prog_mem_size
       )
       port map (
         clock_avr    => clock_avr,
@@ -220,11 +204,11 @@ begin
         lcd_db       => open,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
-        sw1          => not sw_interrupt_n,
-        nsw2         => sw_reset_n,
-        led3         => led3_n,
-        led6         => led6_n,
-        led8         => led8_n,
+        sw1          => sw_interrupt,
+        nsw2         => not sw_reset,
+        led3         => led_trig0_n,
+        led6         => led_trig1_n,
+        led8         => led_bkpt_n,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk,
@@ -277,7 +261,7 @@ begin
             clk      => cpu_clk,
             rst      => not nRST_sync,
             vma      => AVMA,
-            lic_out  => LIC,
+            lic_out  => LIC_int,
             ifetch   => ifetch,
             opfetch  => open,
             ba       => BA,
@@ -315,7 +299,7 @@ begin
     begin
         if rising_edge(cpu_clk) then
             if (hold = '0') then
-                ifetch1 <= ifetch and not LIC;
+                ifetch1 <= ifetch and not LIC_int;
             end if;
         end if;
     end process;
@@ -375,41 +359,10 @@ begin
 
     memory_done <= memory_rd1 or memory_wr1;
 
-    -- The following outputs are not implemented
-    -- BUSY          (6809E mode)
-    BUSY    <= '0';
-
-    -- The following inputs are not implemented
-    -- DMA_n_BREQ_n  (6809 mode)
-
-    -- Pins whose functions are dependent on "E" mode
-    PIN33        <= BUSY  when EMode_n = '0' else 'Z';
-    DMA_n_BREQ_n <= '1'   when EMode_n = '0' else PIN33;
-
-    PIN34        <= 'Z'   when EMode_n = '0' else E;
-    E            <= PIN34 when EMode_n = '0' else quadrature(1);
-
-    PIN35        <= 'Z'   when EMode_n = '0' else Q;
-    Q            <= PIN35 when EMode_n = '0' else quadrature(0);
-
-    PIN36        <= AVMA  when EMode_n = '0' else 'Z';
-    MRDY         <= '1'   when EMode_n = '0' else PIN36;
-
-    PIN38        <= LIC   when EMode_n = '0' else 'Z';
-    EXTAL        <= '0'   when EMode_n = '0' else PIN38;
-
-    TSC          <= PIN39 when EMode_n = '0' else '0';
-    XTAL         <= '0'   when EMode_n = '0' else PIN39;
-
-    -- A locally generated test clock
-    -- 1.8457 MHz in E     Mode (6809E) so it can drive E     (PIN34)
-    -- 7.3728 MHz in Normal Mode (6809) so it can drive EXTAL (PIN38)
-    clock_test   <= clk_count(1) when EMode_n = '0' else clock7_3728;
-
     -- Delayed/Deglitched version of the E clock
-    e_gen : process(clock49)
+    e_gen : process(clock)
     begin
-        if rising_edge(clock49) then
+        if rising_edge(clock) then
             E_a <= E;
             E_b <= E_a;
             if E_b /= E_i then
@@ -440,42 +393,9 @@ begin
     -- Note: on the dragon this is not critical; setting to '1' seemed to work
     data_wr    <= Q or E;
 
-    -- Quadrature clock generator, unused in 6809E mode
-    quadrature_gen : process(EXTAL)
-    begin
-        if rising_edge(EXTAL) then
-            if (MRDY = '1') then
-                if (quadrature = "00") then
-                    quadrature <= "01";
-                elsif (quadrature = "01") then
-                    quadrature <= "11";
-                elsif (quadrature = "11") then
-                    quadrature <= "10";
-                else
-                    quadrature <= "00";
-                end if;
-            end if;
-        end if;
-    end process;
-
-    -- Seperate piece of circuitry that emits a 7.3728MHz clock
-
-    inst_dcm1 : entity work.DCM1 port map(
-        CLKIN_IN          => clock49,
-        CLK0_OUT          => clock7_3728,
-        CLK0_OUT1         => open,
-        CLK2X_OUT         => open
-    );
-
-    clk_gen : process(clock7_3728)
-    begin
-        if rising_edge(clock7_3728) then
-            clk_count <= clk_count + 1;
-        end if;
-    end process;
-
     -- Spare pins used for testing
     test1   <= E_a;
     test2   <= E_c;
+
 
 end behavioral;

@@ -5,7 +5,7 @@ ROOT       = ../../..
 COMMON     = ../../common
 
 # The project .bit file produced by the Xilinx .xise project
-PROJECT    = MC6809ECpuMon
+PROJECT    = MC6809CpuMonGODIL
 
 # The target .bit file to be generated including the monitor program
 TARGET     = ice6809
