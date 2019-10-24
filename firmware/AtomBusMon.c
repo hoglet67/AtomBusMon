@@ -10,7 +10,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.82"
+#define VERSION "0.83"
 
 #if defined(CPU_Z80)
   #define NAME "ICE-Z80"
@@ -578,6 +578,18 @@ unsigned int disMem(unsigned int addr) {
   return disassemble(addr);
 }
 
+void log_char(int c) {
+  if (c < 32 || c > 126) {
+    c = '.';
+  }
+  log0("%c", c);
+}
+
+void log_addr_data(int a, int d) {
+  log0(" %04X = %02X  ", a, d);
+  log_char(d);
+}
+
 void genericDump(char *params, unsigned int (*readFunc)()) {
   int i, j;
   unsigned int row[16];
@@ -594,10 +606,7 @@ void genericDump(char *params, unsigned int (*readFunc)()) {
     log0(" ");
     for (j = 0; j < 16; j++) {
       unsigned int c = row[j];
-      if (c < 32 || c > 126) {
-        c = '.';
-      }
-      log0("%c", c);
+      log_char(c);
     }
     log0("\n");
   }
@@ -609,7 +618,9 @@ void genericWrite(char *params, void (*writeFunc)()) {
   unsigned int data;
   long count = 1;
   sscanf(params, "%x %x %ld", &addr, &data, &count);
-  log0("Wr: %04X = %02X\n", addr, data);
+  log0("Wr: ");
+  log_addr_data(addr, data);
+  log0("\n");
   loadData(data);
   loadAddr(addr);
   while (count-- > 0) {
@@ -625,7 +636,9 @@ void genericRead(char *params, unsigned int (*readFunc)()) {
   sscanf(params, "%x %ld", &addr, &count);
   loadAddr(addr);
   data = (*readFunc)();
-  log0("Rd: %04X = %02X\n", addr, data);
+  log0("Rd: ");
+  log_addr_data(addr, data);
+  log0("\n");
   while (count-- > 1) {
     data2 = (*readFunc)();
     if (data2 != data) {
@@ -693,10 +706,9 @@ int logDetails() {
     } else {
       log0(" reading");
     }
-    log0(" %04X = %02X\n", b_addr, b_data);
-  } else {
-    log0("\n");
+    log_addr_data(b_addr, b_data);
   }
+  log0("\n");
 #if defined(CPU_EMBEDDED)
   if (mode & B_RDWR_MASK) {
     // It's only safe to do this for brkpts, as it makes memory accesses
