@@ -1,11 +1,11 @@
 /*  Z80 disassembler
-    
+
 *** Copyright:  1994-1996 Günter Woigk
 mailto:kio@little-bat.de
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 Permission to use, copy, modify, distribute, and sell this software and
 its documentation for any purpose is hereby granted without fee, provided
@@ -59,16 +59,16 @@ PERFORMANCE OF THIS SOFTWARE.
 // ---- opcode definitions ------------------------------------------------------------------
 
 enum {
-  NIX,    NOP,    LD,     INC,    DEC,    RLCA,   EX,     ADD,    
+  NIX,    NOP,    LD,     INC,    DEC,    RLCA,   EX,     ADD,
   RRCA,   DJNZ,   RLA,    JR,     RRA,    DAA,    CPL,    HALT,
-  SCF,    CCF,    RLC,    RRC,    RL,     RR,     SLA,    SRA,    
+  SCF,    CCF,    RLC,    RRC,    RL,     RR,     SLA,    SRA,
   SLL,    SRL,    IN,     OUT,    SBC,    NEG,    RETN,   IM,
-  ADC,    RETI,   RRD,    RLD,    SUB,    AND,    XOR,    
-  OR,     CP,     BIT,    RES,    SET,    LDI,    CPI,    INI,    
-  OUTI,   LDD,    CPD,    IND,    OUTD,   LDIR,   CPIR,   INIR,   
-  OTIR,   LDDR,   CPDR,   INDR,   OTDR,   RET,    POP,    JP, 
-  CALL,   PUSH,   RST,    PFX,    EXX,    DI,     EI, 
-  BC,     DE,     HL,     IX,     IY,     SP,     AF,     AF2,    
+  ADC,    RETI,   RRD,    RLD,    SUB,    AND,    XOR,
+  OR,     CP,     BIT,    RES,    SET,    LDI,    CPI,    INI,
+  OUTI,   LDD,    CPD,    IND,    OUTD,   LDIR,   CPIR,   INIR,
+  OTIR,   LDDR,   CPDR,   INDR,   OTDR,   RET,    POP,    JP,
+  CALL,   PUSH,   RST,    PFX,    EXX,    DI,     EI,
+  BC,     DE,     HL,     IX,     IY,     SP,     AF,     AF2,
   B,      C,      D,      E,      H,      L,      XHL,    A,      // <- KEEP THIS ORDER!
   XBC,    XDE,    R,      I,      XC,     XSP,    PC,     F,
   N0,     N1,     N2,     N3,     N4,     N5,     N6,     N7,
@@ -77,7 +77,7 @@ enum {
   XH,     XL,     YH,     YL,     XIX,    XIY
 };
 
-static const char word_NIX[] PROGMEM = "";    
+static const char word_NIX[] PROGMEM = "";
 static const char word_NOP[] PROGMEM = "NOP";
 static const char word_LD[] PROGMEM = "LD";
 static const char word_INC[] PROGMEM = "INC";
@@ -200,7 +200,7 @@ static const char word_YL[] PROGMEM = "YL";
 static const char word_XIX[] PROGMEM = "DIS(IX)";
 static const char word_XIY[] PROGMEM = "DIS(IY)";
 
-static const char * const word[] PROGMEM = 
+static const char * const word[] PROGMEM =
   {
     word_NIX,
     word_NOP,
@@ -325,209 +325,209 @@ static const char * const word[] PROGMEM =
     word_XIX,
     word_XIY
   };
-    
-static const unsigned char cmd_00[192] PROGMEM = 
+
+static const unsigned char cmd_00[192] PROGMEM =
   {
-    NOP,0,0,    
-    LD,BC,NN,   
-    LD,XBC,A,   
-    INC,BC,0,   
-    INC,B,0,    
-    DEC,B,0,    
-    LD,B,N,     
+    NOP,0,0,
+    LD,BC,NN,
+    LD,XBC,A,
+    INC,BC,0,
+    INC,B,0,
+    DEC,B,0,
+    LD,B,N,
     RLCA,0,0,
-    EX,AF,AF2,  
-    ADD,HL,BC,  
-    LD,A,XBC,   
-    DEC,BC,0,   
-    INC,C,0,    
-    DEC,C,0,    
-    LD,C,N,     
+    EX,AF,AF2,
+    ADD,HL,BC,
+    LD,A,XBC,
+    DEC,BC,0,
+    INC,C,0,
+    DEC,C,0,
+    LD,C,N,
     RRCA,0,0,
-    DJNZ,DIS,0, 
-    LD,DE,NN,   
-    LD,XDE,A,   
-    INC,DE,0,   
-    INC,D,0,    
-    DEC,D,0,    
-    LD,D,N,     
+    DJNZ,DIS,0,
+    LD,DE,NN,
+    LD,XDE,A,
+    INC,DE,0,
+    INC,D,0,
+    DEC,D,0,
+    LD,D,N,
     RLA,0,0,
-    JR,DIS,0,   
-    ADD,HL,DE,  
-    LD,A,XDE,   
-    DEC,DE,0,   
-    INC,E,0,    
-    DEC,E,0,    
-    LD,E,N,     
+    JR,DIS,0,
+    ADD,HL,DE,
+    LD,A,XDE,
+    DEC,DE,0,
+    INC,E,0,
+    DEC,E,0,
+    LD,E,N,
     RRA,0,0,
-    JR,NZ,DIS,  
-    LD,HL,NN,   
-    LD,XNN,HL,  
-    INC,HL,0,   
-    INC,H,0,    
-    DEC,H,0,    
-    LD,H,N,     
+    JR,NZ,DIS,
+    LD,HL,NN,
+    LD,XNN,HL,
+    INC,HL,0,
+    INC,H,0,
+    DEC,H,0,
+    LD,H,N,
     DAA,0,0,
-    JR,Z,DIS,   
-    ADD,HL,HL,  
-    LD,HL,XNN,  
-    DEC,HL,0,   
-    INC,L,0,    
-    DEC,L,0,    
-    LD,L,N,     
+    JR,Z,DIS,
+    ADD,HL,HL,
+    LD,HL,XNN,
+    DEC,HL,0,
+    INC,L,0,
+    DEC,L,0,
+    LD,L,N,
     CPL,0,0,
-    JR,NC,DIS,  
-    LD,SP,NN,   
-    LD,XNN,A,   
-    INC,SP,0,   
-    INC,XHL,0,  
-    DEC,XHL,0,  
-    LD,XHL,N,   
+    JR,NC,DIS,
+    LD,SP,NN,
+    LD,XNN,A,
+    INC,SP,0,
+    INC,XHL,0,
+    DEC,XHL,0,
+    LD,XHL,N,
     SCF,0,0,
-    JR,C,N,     
-    ADD,HL,SP,  
-    LD,A,XNN,   
-    DEC,SP,0,   
-    INC,A,0,    
-    DEC,A,0,    
-    LD,A,N,     
+    JR,C,N,
+    ADD,HL,SP,
+    LD,A,XNN,
+    DEC,SP,0,
+    INC,A,0,
+    DEC,A,0,
+    LD,A,N,
     CCF,0,0
   };
 
-static const unsigned char cmd_C0[192] PROGMEM = { 
-  
-    RET,NZ,0,   
-    POP,BC,0,   
-    JP,NZ,NN,   
-    JP,NN,0,    
-    CALL,NZ,NN, 
-    PUSH,BC,0,  
-    ADD,A,N,    
+static const unsigned char cmd_C0[192] PROGMEM = {
+
+    RET,NZ,0,
+    POP,BC,0,
+    JP,NZ,NN,
+    JP,NN,0,
+    CALL,NZ,NN,
+    PUSH,BC,0,
+    ADD,A,N,
     RST,N0,0,
-    RET,Z,0,    
-    RET,0,0,    
-    JP,Z,NN,    
-    PFX,CB,0,   
-    CALL,Z,NN,  
-    CALL,NN,0,  
-    ADC,A,N,    
+    RET,Z,0,
+    RET,0,0,
+    JP,Z,NN,
+    PFX,CB,0,
+    CALL,Z,NN,
+    CALL,NN,0,
+    ADC,A,N,
     RST,N1,0,
-    RET,NC,0,   
-    POP,DE,0,   
-    JP,NC,NN,   
-    OUT,XN,A,   
-    CALL,NC,NN, 
-    PUSH,DE,0,  
-    SUB,A,N,    
+    RET,NC,0,
+    POP,DE,0,
+    JP,NC,NN,
+    OUT,XN,A,
+    CALL,NC,NN,
+    PUSH,DE,0,
+    SUB,A,N,
     RST,N2,0,
-    RET,C,0,    
-    EXX,0,0,    
-    JP,C,NN,    
-    IN,A,XN,    
-    CALL,C,NN,  
-    PFX,IX,0,   
-    SBC,A,N,    
+    RET,C,0,
+    EXX,0,0,
+    JP,C,NN,
+    IN,A,XN,
+    CALL,C,NN,
+    PFX,IX,0,
+    SBC,A,N,
     RST,N3,0,
-    RET,PO,0,   
-    POP,HL,0,   
-    JP,PO,NN,   
-    EX,HL,XSP,  
-    CALL,PO,NN, 
-    PUSH,HL,0,  
-    AND,A,N,    
+    RET,PO,0,
+    POP,HL,0,
+    JP,PO,NN,
+    EX,HL,XSP,
+    CALL,PO,NN,
+    PUSH,HL,0,
+    AND,A,N,
     RST,N4,0,
-    RET,PE,0,   
-    LD,PC,HL,   
-    JP,PE,NN,   
-    EX,DE,HL,   
-    CALL,PE,NN, 
-    PFX,ED,0,   
-    XOR,A,N,    
+    RET,PE,0,
+    LD,PC,HL,
+    JP,PE,NN,
+    EX,DE,HL,
+    CALL,PE,NN,
+    PFX,ED,0,
+    XOR,A,N,
     RST,N5,0,
-    RET,P,0,    
-    POP,AF,0,   
-    JP,P,NN,    
-    DI,0,0,     
-    CALL,P,NN,  
-    PUSH,AF,0,  
-    OR,A,N,     
+    RET,P,0,
+    POP,AF,0,
+    JP,P,NN,
+    DI,0,0,
+    CALL,P,NN,
+    PUSH,AF,0,
+    OR,A,N,
     RST,N6,0,
-    RET,M,0,    
-    LD,SP,HL,   
-    JP,M,NN,    
-    EI,0,0,     
-    CALL,M,NN,  
-    PFX,IY,0,   
-    CP,A,N,     
+    RET,M,0,
+    LD,SP,HL,
+    JP,M,NN,
+    EI,0,0,
+    CALL,M,NN,
+    PFX,IY,0,
+    CP,A,N,
     RST,N7,0
 };
 
 static const unsigned char cmd_ED40[192] PROGMEM = {
-  
-    IN,B,XC,    
-    OUT,XC,B,   
-    SBC,HL,BC,  
-    LD,XNN,BC,  
-    NEG,0,0,    
-    RETN,0,0,   
-    IM,N0,0,    
+
+    IN,B,XC,
+    OUT,XC,B,
+    SBC,HL,BC,
+    LD,XNN,BC,
+    NEG,0,0,
+    RETN,0,0,
+    IM,N0,0,
     LD,I,A,
-    IN,C,XC,    
-    OUT,XC,C,   
-    ADC,HL,BC,  
-    LD,BC,XNN,  
-    NEG,0,0,    
-    RETI,0,0,   
-    IM,N0,0,    
+    IN,C,XC,
+    OUT,XC,C,
+    ADC,HL,BC,
+    LD,BC,XNN,
+    NEG,0,0,
+    RETI,0,0,
+    IM,N0,0,
     LD,R,A,
-    IN,D,XC,    
-    OUT,XC,D,   
-    SBC,HL,DE,  
-    LD,XNN,DE,  
-    NEG,0,0,    
-    RETN,0,0,   
-    IM,N1,0,    
+    IN,D,XC,
+    OUT,XC,D,
+    SBC,HL,DE,
+    LD,XNN,DE,
+    NEG,0,0,
+    RETN,0,0,
+    IM,N1,0,
     LD,A,I,
-    IN,E,XC,    
-    OUT,XC,E,   
-    ADC,HL,DE,  
-    LD,DE,XNN,  
-    NEG,0,0,    
-    RETI,0,0,   
-    IM,N2,0,    
+    IN,E,XC,
+    OUT,XC,E,
+    ADC,HL,DE,
+    LD,DE,XNN,
+    NEG,0,0,
+    RETI,0,0,
+    IM,N2,0,
     LD,A,R,
-    IN,H,XC,    
-    OUT,XC,H,   
-    SBC,HL,HL,  
-    LD,XNN,HL,  
-    NEG,0,0,    
-    RETN,0,0,   
-    IM,N0,0,    
+    IN,H,XC,
+    OUT,XC,H,
+    SBC,HL,HL,
+    LD,XNN,HL,
+    NEG,0,0,
+    RETN,0,0,
+    IM,N0,0,
     RRD,0,0,
-    IN,L,XC,    
-    OUT,XC,L,   
-    ADC,HL,HL,  
-    LD,HL,XNN,  
-    NEG,0,0,    
-    RETI,0,0,   
-    IM,N0,0,    
+    IN,L,XC,
+    OUT,XC,L,
+    ADC,HL,HL,
+    LD,HL,XNN,
+    NEG,0,0,
+    RETI,0,0,
+    IM,N0,0,
     RLD,0,0,
-    IN,F,XC,    
-    OUT,XC,N0,  
-    SBC,HL,SP,  
-    LD,XNN,SP,  
-    NEG,0,0,    
-    RETN,0,0,   
-    IM,N1,0,    
+    IN,F,XC,
+    OUT,XC,N0,
+    SBC,HL,SP,
+    LD,XNN,SP,
+    NEG,0,0,
+    RETN,0,0,
+    IM,N1,0,
     NOP,0,0,
-    IN,A,XC,    
-    OUT,XC,A,   
-    ADC,HL,SP,  
-    LD,SP,XNN,  
-    NEG,0,0,    
-    RETI,0,0,   
-    IM,N2,0,    
-    NOP,0,0 
+    IN,A,XC,
+    OUT,XC,A,
+    ADC,HL,SP,
+    LD,SP,XNN,
+    NEG,0,0,
+    RETI,0,0,
+    IM,N2,0,
+    NOP,0,0
   };
 
 unsigned char cmd_halt[] = { HALT,0,0 };
@@ -536,7 +536,7 @@ unsigned char cmd_nop[]  = { NOP,0,0 };
 unsigned char c_ari[]    = { ADD,ADC,SUB,SBC,AND,XOR,OR,CP };
 
 unsigned char c_blk[]    = { LDI,CPI,INI,OUTI,0,0,0,0,LDD,CPD,IND,OUTD,0,0,0,0,
-			     LDIR,CPIR,INIR,OTIR,0,0,0,0,LDDR,CPDR,INDR,OTDR };
+                             LDIR,CPIR,INIR,OTIR,0,0,0,0,LDDR,CPDR,INDR,OTDR };
 
 unsigned char c_sh[]     = { RLC,RRC,RL,RR,SLA,SRA,SLL,SRL };
 
@@ -570,11 +570,11 @@ const unsigned char* mnemo(unsigned char op) {
     {
     case 0: return copyFromPgmMem(cmd_00 + op * 3);
     case 1: if (op==0x76) return cmd_halt;
-      cl[1] = B + ((op>>3)&0x07); 
-      cl[2] = B + (op&0x07); 
+      cl[1] = B + ((op>>3)&0x07);
+      cl[2] = B + (op&0x07);
       return cl;
     case 2: ca[0] = c_ari[(op>>3)&0x07];
-      ca[2] = B + (op&0x07); 
+      ca[2] = B + (op&0x07);
       return ca;
     case 3: return copyFromPgmMem(cmd_C0 + (op&0x3f) * 3);
     }
@@ -598,7 +598,7 @@ unsigned char* mnemoCB(unsigned char op) {
     case 3: cmd[0] = SET; break;
     }
   cmd[1] = N0 + ((op>>3)&0x07);
-  cmd[2] = B + (op&0x07); 
+  cmd[2] = B + (op&0x07);
   return cmd;
 }
 
@@ -633,14 +633,14 @@ const unsigned char* mnemoED(unsigned char op) {
   static unsigned char cmd[3]={0,0,0};
 
   if (op<0x40) return cmd_nop;
-    
-  if (op>=0x080) 
+
+  if (op>=0x080)
     {   if ((op&0xE4)!=0xA0) return cmd_nop;
       cmd[0] = c_blk[op&0x1B];
       return cmd;
     };
-    
-  return copyFromPgmMem(cmd_ED40 + (op-0x40) * 3);   
+
+  return copyFromPgmMem(cmd_ED40 + (op-0x40) * 3);
 }
 
 
@@ -648,7 +648,7 @@ const unsigned char* mnemoED(unsigned char op) {
 //      note: for immediate use only!
 unsigned char*   mnemoIX (unsigned char op) {
   static unsigned char cmd[3];
-    
+
   memcpy (cmd, mnemo(op), 3);
 
   if (cmd[1]==XHL) { cmd[1]=XIX; return cmd; }
@@ -667,7 +667,7 @@ unsigned char*   mnemoIX (unsigned char op) {
 //      note: for immediate use only!
 unsigned char*   mnemoIY (unsigned char op) {
   static unsigned char cmd[3];
-    
+
   memcpy (cmd, mnemo(op), 3);
 
   if (cmd[1]==XHL) { cmd[1]=XIY; return cmd; }
@@ -693,13 +693,13 @@ int IllegalCB (unsigned char op) {
 //      instructions using IX are legal except: sll is illegal
 int IllegalXXCB (unsigned char op) {
   if ((op&0x07)!=6) return weird;
-  return op>=0x30 && op<0x38 ? illegal : legal;   
+  return op>=0x30 && op<0x38 ? illegal : legal;
 }
 
 
 // ---- get legal state of ED instruction --------------------------------------
 //      0x00-0x3F and 0x80-0xFF weird except block instructions
-//      0x40-0x7F legal or weird 
+//      0x40-0x7F legal or weird
 //      in f,(c) is legal; out (c),0 is weird
 int IllegalED (unsigned char op) {
   char *il = "1111111111110101111100111111001111110001111100011011000011110000";
@@ -715,7 +715,7 @@ int IllegalED (unsigned char op) {
 //      prefixes are legal
 int IllegalXX (unsigned char op) {
   const unsigned char *c;
-    
+
   c = mnemo(op);
 
   if (*c==PFX || c[1]==XHL || c[2]==XHL) return legal;
@@ -742,18 +742,18 @@ int OpcodeLength (unsigned char op1, unsigned char op2) {
     {
     case 0xcb:  return 2;
     case 0xed:  if (/* op2<0x40 || op2>=0x80 || ((op2&7)!=3) */ (op2&0xc7)!=0x43) return 2; else return 4;
-    case 0xdd:  
+    case 0xdd:
     case 0xfd:
-      switch (op2>>6)         
+      switch (op2>>6)
         {
         case 0: return len0[op2]-'0'+1 + (op2>=0x34&&op2<=0x36);    // inc(hl); dec(hl); ld(hl),N: add displacement
-        case 1: 
+        case 1:
         case 2: if (((op2&0x07)==6) == ((op2&0x0F8)==0x70)) return 2; else return 3;
         }
       if (op2==0xcb) return 4;
       return len3[op2&0x3F]-'0'+1;    // note: entries for prefixes are 0 giving a total of 1, just to skip the useless prefix
     }
-    
+
   return len3[op1&0x3F]-'0';          // 0xC0 - 0xFF: no prefix:  various length
 }
 
@@ -769,7 +769,7 @@ void xword (unsigned char n, unsigned int *ip) {
       n = Peek((*ip)++);
       log0("$%04X", *ip+(char)n,4);      // branch destination
       break;
-    case N: 
+    case N:
       n = Peek((*ip)++);
       log0("$%02X", n);
       break;
@@ -790,17 +790,17 @@ void xword (unsigned char n, unsigned int *ip) {
     case XIX:
       n = Peek((*ip)++);
       if (n&0x80) {
-	log0("(IX-$%02X)", 256-n);
+        log0("(IX-$%02X)", 256-n);
       } else {
-	log0("(IX+$%02X)", n);
+        log0("(IX+$%02X)", n);
       }
       break;
     case XIY:
       n = Peek((*ip)++);
       if (n&0x80) {
-	log0("(IY-$%02X)", 256-n);
+        log0("(IY-$%02X)", 256-n);
       } else {
-	log0("(IY+$%02X)", n);
+        log0("(IY+$%02X)", n);
       }
       break;
     default:
@@ -826,7 +826,7 @@ void disass (const unsigned char *m, unsigned int *ip) {
 
 void disassem (unsigned int *ip) {
   unsigned char op;
-    
+
   op = Peek((*ip)++);
   switch (op)
     {
@@ -839,19 +839,19 @@ void disassem (unsigned int *ip) {
     case 0xdd:
       op = Peek((*ip)++);
       if (op!=0xCB) {
-	disass (mnemoIX(op), ip);
+        disass (mnemoIX(op), ip);
       } else {
-	disass (mnemoIXCB(Peek((*ip)+1)), ip);
-	(*ip)++;
+        disass (mnemoIXCB(Peek((*ip)+1)), ip);
+        (*ip)++;
       }
       break;
     case 0xfd:
       op = Peek((*ip)++);
       if (op!=0xCB) {
-	disass (mnemoIY(op), ip);
+        disass (mnemoIY(op), ip);
       } else {
         disass (mnemoIYCB(Peek((*ip)+1)), ip);
-	(*ip)++;
+        (*ip)++;
       }
       break;
     default:
