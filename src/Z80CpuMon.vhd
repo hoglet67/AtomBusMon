@@ -22,13 +22,15 @@ use ieee.numeric_std.all;
 
 entity Z80CpuMon is
     generic (
-       UseT80Core     : boolean := true;
-       LEDsActiveHigh : boolean := false;    -- default value correct for GODIL
-       SW1ActiveHigh  : boolean := true;     -- default value correct for GODIL
-       SW2ActiveHigh  : boolean := false;    -- default value correct for GODIL
-       ClkMult        : integer := 10;       -- default value correct for GODIL
-       ClkDiv         : integer := 31;       -- default value correct for GODIL
-       ClkPer         : real    := 20.345    -- default value correct for GODIL
+       UseT80Core        : boolean := true;
+       LEDsActiveHigh    : boolean := false;    -- default value correct for GODIL
+       SW1ActiveHigh     : boolean := true;     -- default value correct for GODIL
+       SW2ActiveHigh     : boolean := false;    -- default value correct for GODIL
+       ClkMult           : integer := 10;       -- default value correct for GODIL
+       ClkDiv            : integer := 31;       -- default value correct for GODIL
+       ClkPer            : real    := 20.345;   -- default value correct for GODIL
+       num_comparators   : integer := 4;        -- default value correct for GODIL
+       avr_prog_mem_size : integer :=  1024 * 9 -- default value correct for GODIL
        );
     port (
         clock49         : in    std_logic;
@@ -206,8 +208,8 @@ begin
 
     mon : entity work.BusMonCore
       generic map (
-        num_comparators => 4,
-        avr_prog_mem_size => 1024 * 9
+        num_comparators => num_comparators,
+        avr_prog_mem_size => avr_prog_mem_size
       )
       port map (
         clock_avr    => clock_avr,

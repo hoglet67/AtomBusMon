@@ -103,13 +103,15 @@ begin
 
     wrapper : entity work.Z80CpuMon
         generic map (
-            UseT80Core     => true,
-            LEDsActiveHigh => true,
-            SW1ActiveHigh  => false,
-            SW2ActiveHigh  => false,
-            ClkMult        => 8,
-            ClkDiv         => 25,
-            ClkPer         => 20.000
+            UseT80Core        => true,
+            LEDsActiveHigh    => true,
+            SW1ActiveHigh     => false,
+            SW2ActiveHigh     => false,
+            ClkMult           => 8,
+            ClkDiv            => 25,
+            ClkPer            => 20.000,
+            num_comparators   => 4,
+            avr_prog_mem_size => 1024 * 16
             )
       port map (
           clock49         => clock,
