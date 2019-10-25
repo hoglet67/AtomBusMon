@@ -109,6 +109,7 @@ type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, 
     signal SS_Step        : std_logic;
     signal SS_Step_held   : std_logic;
     signal CountCycle     : std_logic;
+    signal special        : std_logic_vector(1 downto 0);
     signal skipNextOpcode : std_logic;
 
     signal Regs           : std_logic_vector(255 downto 0);
@@ -252,6 +253,7 @@ begin
         DataOut      => memory_dout,
         DataIn       => memory_din,
         Done         => memory_done,
+        Special      => special,
         SS_Single    => SS_Single,
         SS_Step      => SS_Step
     );
@@ -292,8 +294,8 @@ begin
     int_gen : process(CLK_n)
     begin
         if rising_edge(CLK_n) then
-            NMI_n_sync <= NMI_n;
-            INT_n_sync <= INT_n;
+            NMI_n_sync <= NMI_n or special(1);
+            INT_n_sync <= INT_n or special(0);
         end if;
     end process;
 
