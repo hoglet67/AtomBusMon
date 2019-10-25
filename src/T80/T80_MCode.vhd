@@ -643,28 +643,81 @@ begin
 					Set_Addr_To <= aSP;
 				when 2 =>
 					Read_To_Reg <= '1';
-					Set_BusA_To <= "0101";
-					Set_BusB_To <= "0101";
+					Set_BusA_To <= "0101"; -- L, target of Read_To_Reg
+					Set_BusB_To <= "0101"; -- L, input of ALU
 					Set_Addr_To <= aSP;
-					LDZ <= '1';
+					LDZ <= '1';            -- also load Z
 				when 3 =>
-					IncDec_16 <= "0111";
+					IncDec_16 <= "0111";   -- Increment SP
 					Set_Addr_To <= aSP;
 					TStates <= "100";
 					Write <= '1';
 				when 4 =>
 					Read_To_Reg <= '1';
-					Set_BusA_To <= "0100";
-					Set_BusB_To <= "0100";
+					Set_BusA_To <= "0100"; -- H, target of Read_To_Reg
+					Set_BusB_To <= "0100"; -- H, input of ALU
 					Set_Addr_To <= aSP;
-					LDW <= '1';
+					LDW <= '1';            -- also load Z
 				when 5 =>
-					IncDec_16 <= "1111";
+					IncDec_16 <= "1111";   -- Decrement SP
 					TStates <= "101";
 					Write <= '1';
 				when others => null;
 				end case;
-			end if;
+            end if;
+
+-- The T80 implementation does:
+--
+-- (4) M1 fetch
+-- (3) M2 Read (SP) -> L, Z
+--        L -> ALU
+-- (4) M3 Write ALU result -> (SP)
+--        SP++
+-- (3) M4 Read (SP) -> H, W
+--        H -> ALU
+-- (5) M5 Write ALU result -> (SP)
+--        SP--
+--
+-- The Z80 does
+-- (4) M1 fetch
+-- (3) M2 Read (SP) -> Z
+--     SP++
+-- (4) M3 Read (SP) -> W
+-- (3) M4 Write H -> (SP)
+--     SP--
+-- (5) M5 Write L -> (SP)
+--
+-- and somehow WZ -> HL at the end!
+--
+-- Attempt at a new version.
+--
+--				case to_integer(unsigned(MCycle)) is
+--				when 1 =>
+--					Set_Addr_To <= aSP;
+--				when 2 =>
+--					IncDec_16 <= "0111";
+--					Read_To_Reg <= '1';
+--					Set_BusA_To <= "0101";
+--					Set_BusB_To <= "0101";
+--					Set_Addr_To <= aSP;
+--					LDZ <= '1';
+--				when 3 =>
+--					Read_To_Reg <= '1';
+--					Set_BusA_To <= "0100";
+--					Set_BusB_To <= "0100";
+--					Set_Addr_To <= aSP;
+--					TStates <= "100";
+--					LDW <= '1';
+--				when 4 =>
+--					IncDec_16 <= "1111";
+--					Set_Addr_To <= aSP;
+--					Write <= '1';
+--				when 5 =>
+--					TStates <= "101";
+--					Write <= '1';
+--				when others => null;
+--				end case;
+--			end if;
 
 -- 8 BIT ARITHMETIC AND LOGICAL GROUP
 		when "10000000"|"10000001"|"10000010"|"10000011"|"10000100"|"10000101"|"10000111"
