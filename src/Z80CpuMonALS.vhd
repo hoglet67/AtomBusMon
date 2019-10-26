@@ -155,6 +155,9 @@ begin
           Data            => Data,
           DOE_n           => DOE_n,
 
+          -- Mode jumper, tie low to generate NOPs when paused
+          mode            => mode,
+
           -- External trigger inputs
           trig            => trig,
 

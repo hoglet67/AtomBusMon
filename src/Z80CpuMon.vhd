@@ -54,6 +54,9 @@ entity Z80CpuMon is
         Data            : inout std_logic_vector(7 downto 0);
         DOE_n           : out   std_logic;
 
+        -- Mode jumper, tie low to generate NOPs when paused
+        mode            : in    std_logic;
+
         -- External trigger inputs
         trig            : in    std_logic_vector(1 downto 0);
 
@@ -471,8 +474,8 @@ begin
                         if mon_wait_n = '1' then
                             state <= nop_t3;
                         else
-                            mon_m1_n <= '0';
-                            mon_xx_n <= '0';
+                            mon_m1_n <= mode;
+                            mon_xx_n <= mode;
                             state <= nop_t2;
                         end if;
                     end if;
@@ -482,7 +485,7 @@ begin
                     state <= nop_t2;
                     -- Increment the refresh address (7 bits, just like the Z80)
                     rfsh_addr(6 downto 0) <= rfsh_addr(6 downto 0) + 1;
-                    mon_xx_n <= '0';
+                    mon_xx_n <= mode;
                 when nop_t2 =>
                     if mon_wait_n = '1' then
                         mon_rfsh_n <= '0';
@@ -504,7 +507,7 @@ begin
                         state <= resume;
                     else
                         state <= nop_t1;
-                        mon_m1_n <= '0';
+                        mon_m1_n <= mode;
                     end if;
 
                     -- Resume,
