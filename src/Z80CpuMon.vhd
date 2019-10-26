@@ -104,6 +104,7 @@ type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, 
     signal RFSH_n_int     : std_logic;
     signal M1_n_int       : std_logic;
     signal WAIT_n_int     : std_logic;
+    signal WAIT_n_int1    : std_logic;
     signal TState         : std_logic_vector(2 downto 0);
     signal SS_Single      : std_logic;
     signal SS_Step        : std_logic;
@@ -127,6 +128,8 @@ type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, 
     signal io_wr1         : std_logic;
     signal memory_rd1     : std_logic;
     signal memory_wr1     : std_logic;
+    signal mon_m1_n       : std_logic;
+    signal mon_xx_n       : std_logic;
     signal mon_mreq_n     : std_logic;
     signal mon_iorq_n     : std_logic;
     signal mon_rfsh_n     : std_logic;
@@ -170,9 +173,6 @@ type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, 
     signal sw_reset_n     : std_logic;  -- switch to reset the CPU
 
     signal avr_TxD_int    : std_logic;
-
-    signal clock_49_ctr   : std_logic_vector(23 downto 0);
-    signal clock_avr_ctr  : std_logic_vector(23 downto 0);
 
     signal rfsh_addr      : std_logic_vector(15 downto 0);
 
@@ -318,7 +318,7 @@ begin
     skip_opcode_latch : process(CLK_n)
     begin
         if rising_edge(CLK_n) then
-            if (M1_n_int = '0' and WAIT_n_int = '1' and TState = "010") then
+            if (M1_n_int = '0' and WAIT_n_int1 = '1' and TState = "010") then
                 if (skipNextOpcode = '0' and (Data = x"CB" or Data = x"DD" or Data = x"ED" or Data = x"FD")) then
                     skipNextOpcode <= '1';
                 else
@@ -347,13 +347,15 @@ begin
     watch_gen : process(CLK_n)
     begin
         if falling_edge(CLK_n) then
-            Sync     <= Sync0;
-            Read_n1  <= Read_n0;
-            Read_n   <= Read_n1;
-            Write_n  <= Write_n0;
-            ReadIO_n1  <= ReadIO_n0;
-            ReadIO_n   <= ReadIO_n1;
-            WriteIO_n  <= WriteIO_n0;
+            Sync        <= Sync0;
+            Read_n1     <= Read_n0;
+            Read_n      <= Read_n1;
+            Write_n     <= Write_n0;
+            ReadIO_n1   <= ReadIO_n0;
+            ReadIO_n    <= ReadIO_n1;
+            WriteIO_n   <= WriteIO_n0;
+            -- Latch wait seen by T80 on the falling edge, for use on the next rising edge
+            WAIT_n_int1 <= WAIT_n_int;
         end if;
     end process;
 
@@ -390,12 +392,12 @@ begin
 
     -- TODO: Also need to take account of BUSRQ_n/BUSAK_n
 
-    MREQ_n <= MREQ_n_int  when state = idle or state = resume else mon_mreq_n;
+    MREQ_n <= MREQ_n_int  when state = idle or state = resume else mon_mreq_n and mon_xx_n;
     IORQ_n <= IORQ_n_int  when state = idle or state = resume else mon_iorq_n;
     RFSH_n <= RFSH_n_int  when state = idle or state = resume else mon_rfsh_n;
     WR_n   <= WR_n_int    when state = idle or state = resume else mon_wr_n;
-    RD_n   <= RD_n_int    when state = idle or state = resume else mon_rd_n;
-    M1_n   <= M1_n_int    when state = idle or state = resume else '1';
+    RD_n   <= RD_n_int    when state = idle or state = resume else mon_rd_n and mon_xx_n;
+    M1_n   <= M1_n_int    when state = idle or state = resume else mon_m1_n;
 
     Addr   <= Addr_int    when state = idle or state = resume else
               x"0000"     when state = nop_t1 or state = nop_t2 else
@@ -422,6 +424,8 @@ begin
             io_wr1 <= '0';
             SS_Step_held <= '0';
             mon_rfsh_n <= '1';
+            mon_m1_n <= '1';
+            mon_xx_n <= '1';
 
         elsif rising_edge(CLK_n) then
 
@@ -461,20 +465,31 @@ begin
                 -- Idle is when T80 is running
                 when idle =>
                     if SS_Single = '1' and Sync1 = '1' then
-                        -- If the T80 is stopped, start genering refresh cycles
-                        state <= nop_t1;
                         -- Load the initial refresh address from I/R in the T80
                         rfsh_addr <= Regs(199 downto 192) & Regs(207 downto 200);
+                        -- Start genering NOP cycles
+                        if mon_wait_n = '1' then
+                            state <= nop_t3;
+                        else
+                            mon_m1_n <= '0';
+                            mon_xx_n <= '0';
+                            state <= nop_t2;
+                        end if;
                     end if;
 
-                -- Refresh cycle
+                -- NOP cycle
                 when nop_t1 =>
                     state <= nop_t2;
                     -- Increment the refresh address (7 bits, just like the Z80)
                     rfsh_addr(6 downto 0) <= rfsh_addr(6 downto 0) + 1;
+                    mon_xx_n <= '0';
                 when nop_t2 =>
-                    mon_rfsh_n <= '0';
-                    state <= nop_t3;
+                    if mon_wait_n = '1' then
+                        mon_rfsh_n <= '0';
+                        state <= nop_t3;
+                        mon_m1_n <= '1';
+                        mon_xx_n <= '1';
+                    end if;
                 when nop_t3 =>
                     state <= nop_t4;
                 when nop_t4 =>
@@ -489,6 +504,7 @@ begin
                         state <= resume;
                     else
                         state <= nop_t1;
+                        mon_m1_n <= '0';
                     end if;
 
                     -- Resume,
@@ -545,8 +561,8 @@ begin
                     mon_mreq_n <= '1';
                     mon_iorq_n <= '0';
                 end if;
-            elsif state = nop_t3 then
-                -- Refresh cycle
+            elsif state = nop_t1 or state = nop_t3 then
+                -- M1 cycle
                 mon_mreq_n <= '0';
                 mon_iorq_n <= '1';
             else
@@ -555,7 +571,7 @@ begin
                 mon_iorq_n <= '1';
             end if;
             -- Read strobe
-            if state = rd_t1 or state = rd_wa or state = rd_t2 then
+            if state = nop_t1 or state = rd_t1 or state = rd_wa or state = rd_t2 then
                 mon_rd_n <= '0';
             else
                 mon_rd_n <= '1';
@@ -571,35 +587,13 @@ begin
         end if;
     end process;
 
-
     RESET_n_int <= RESET_n and sw_interrupt_n and nRST;
 
     avr_TxD <= avr_Txd_int;
 
-    test1 <= sw_interrupt_n and sw_reset_n;
-
-    process(clock_avr)
-    begin
-        if rising_edge(clock_avr) then
-            clock_avr_ctr <= clock_avr_ctr + 1;
-            test2 <= sw_interrupt_n or clock_avr_ctr(23);
-        end if;
-    end process;
-
-    process(clock49)
-    begin
-        if rising_edge(clock49) then
-            clock_49_ctr <= clock_49_ctr + 1;
-            test3 <= sw_reset_n or clock_49_ctr(23);
-        end if;
-    end process;
-
-    test4 <= not avr_TxD_int;
-
-    --test1 <= TState(0);
-    --test2 <= TState(1);
-    --test3 <= TState(2);
-    --test4 <= CLK_n;
-
+    test1 <= '1';
+    test2 <= '1';
+    test3 <= '1';
+    test4 <= '1';
 
 end behavioral;

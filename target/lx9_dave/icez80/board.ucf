@@ -77,13 +77,19 @@ NET "avr_RxD"  LOC="P55"  | IOSTANDARD = LVCMOS33                           ;
 NET "trig<0>"  LOC="P127" | IOSTANDARD = LVCMOS33                           ;
 NET "trig<1>"  LOC="P126" | IOSTANDARD = LVCMOS33                           ;
 
-# 7-segment LED (connect to J5 on FPGA board)
-NET "tmosi"    LOC="P58"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET "tdin"     LOC="P61"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET "tcclk"    LOC="P62"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+# 7-segment LED (connect to unused pins on adapter)
+NET "tmosi"    LOC="P8"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "tdin"     LOC="P9"   | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "tcclk"    LOC="P11"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 
 # Test outputs (connect to J5 on FPGA board)
-NET "test1"    LOC="P46"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET "test2"    LOC="P48"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET "test3"    LOC="P57"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET "test4"    LOC="P59"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<0>"  LOC="P46"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<1>"  LOC="P47"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<2>"  LOC="P48"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<3>"  LOC="P56"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<4>"  LOC="P57"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<5>"  LOC="P58"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<6>"  LOC="P59"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<7>"  LOC="P61"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<8>"  LOC="P144" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test<9>"  LOC="P62"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;

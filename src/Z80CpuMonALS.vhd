@@ -75,24 +75,44 @@ entity Z80CpuMonALS is
         tcclk           : out   std_logic;
 
         -- Optional Debugging signals
-        test1           : out   std_logic;
-        test2           : out   std_logic;
-        test3           : out   std_logic;
-        test4           : out   std_logic
+        test            : out   std_logic_vector(9 downto 0)
 
     );
 end Z80CpuMonALS;
 
 architecture behavioral of Z80CpuMonALS is
 
-    signal BUSAK_n_int : std_logic;
+    signal MREQ_n_int  : std_logic;
+    signal IORQ_n_int  : std_logic;
+    signal M1_n_int    : std_logic;
+    signal RD_n_int    : std_logic;
     signal WR_n_int    : std_logic;
+    signal RFSH_n_int  : std_logic;
+    signal HALT_n_int  : std_logic;
+    signal BUSAK_n_int : std_logic;
     signal DOE_n       : std_logic;
 
 begin
 
-    BUSAK_n <= BUSAK_n_int;
+    MREQ_n  <= MREQ_n_int;
+    IORQ_n  <= IORQ_n_int;
+    M1_n    <= M1_n_int;
+    RD_n    <= RD_n_int;
     WR_n    <= WR_n_int;
+    RFSH_n  <= RFSH_n_int;
+    HALT_n  <= HALT_n_int;
+    BUSAK_n <= BUSAK_n_int;
+
+    test(0) <= M1_n_int;
+    test(1) <= RD_n_int;
+    test(2) <= WR_n_int;
+    test(3) <= MREQ_n_int;
+    test(4) <= IORQ_n_int;
+    test(5) <= WAIT_n;
+    test(6) <= RESET_n;
+    test(7) <= CLK_n;
+    test(8) <= RFSH_n_int;
+    test(9) <= INT_n;
 
     OEC_n   <= not BUSAK_n_int;
     OEA1_n  <= not BUSAK_n_int;
@@ -123,13 +143,13 @@ begin
           INT_n           => INT_n,
           NMI_n           => NMI_n,
           BUSRQ_n         => BUSRQ_n,
-          M1_n            => M1_n,
-          MREQ_n          => MREQ_n,
-          IORQ_n          => IORQ_n,
-          RD_n            => RD_n,
+          M1_n            => M1_n_int,
+          MREQ_n          => MREQ_n_int,
+          IORQ_n          => IORQ_n_int,
+          RD_n            => RD_n_int,
           WR_n            => WR_n_int,
-          RFSH_n          => RFSH_n,
-          HALT_n          => HALT_n,
+          RFSH_n          => RFSH_n_int,
+          HALT_n          => HALT_n_int,
           BUSAK_n         => BUSAK_n_int,
           Addr            => Addr,
           Data            => Data,
@@ -157,10 +177,10 @@ begin
           tcclk           => tcclk,
 
           -- Debugging signals
-          test1           => test1,
-          test2           => test2,
-          test3           => test3,
-          test4           => test4
+          test1           => open,
+          test2           => open,
+          test3           => open,
+          test4           => open
           );
 
 end behavioral;
