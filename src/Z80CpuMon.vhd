@@ -109,6 +109,7 @@ type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, 
     signal WAIT_n_int     : std_logic;
     signal WAIT_n_int1    : std_logic;
     signal TState         : std_logic_vector(2 downto 0);
+    signal TState1        : std_logic_vector(2 downto 0);
     signal SS_Single      : std_logic;
     signal SS_Step        : std_logic;
     signal SS_Step_held   : std_logic;
@@ -167,6 +168,7 @@ type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, 
     signal Den            : std_logic;
     signal ex_data        : std_logic_vector(7 downto 0);
     signal rd_data        : std_logic_vector(7 downto 0);
+    signal wr_data        : std_logic_vector(7 downto 0);
     signal mon_data       : std_logic_vector(7 downto 0);
 
     signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
@@ -338,11 +340,14 @@ begin
 
     -- For memory reads/write breakpoints we make the monitoring decision in the middle of T2
     -- but only if WAIT_n is '1' so we catch the right data.
-    Read_n0  <= not (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1';
-    Write_n0 <= not (WAIT_n_int and (not WR_n_int) and (not MREQ_n_int) and     (M1_n_int)) when TState = "010" else '1';
+    Read_n0    <= not (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and (M1_n_int)) when TState = "010" else '1';
+    Write_n0   <= not (WAIT_n_int and (    RD_n_int) and (not MREQ_n_int) and (M1_n_int)) when TState = "010" else '1';
 
-    ReadIO_n0  <= not (WAIT_n_int and (not RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "010" else '1';
-    WriteIO_n0 <= not (               (    RD_n_int) and (not IORQ_n_int) and     (M1_n_int)) when TState = "011" else '1';
+    -- For IO reads/writes we make the monitoring decision in the middle of the second T2 cycle
+    -- but only if WAIT_n is '1' so we catch the right data.
+    -- This one cycle delay accounts for the forced wait state
+    ReadIO_n0  <= not (WAIT_n_int and (not RD_n_int) and (not IORQ_n_int) and (M1_n_int)) when TState1 = "010" else '1';
+    WriteIO_n0 <= not (WAIT_n_int and (    RD_n_int) and (not IORQ_n_int) and (M1_n_int)) when TState1 = "010" else '1';
 
     -- Hold the monitoring decision so it is valid on the rising edge of the clock
     -- For instruction fetches and writes, the monitor sees these at the start of T3
@@ -362,11 +367,12 @@ begin
         end if;
     end process;
 
-    -- Register the exec/write data on the rising at the end of T2
+    -- Register the exec data on the rising at the end of T2
     ex_data_latch : process(CLK_n)
     begin
         if rising_edge(CLK_n) then
-            if (Sync = '1' or Write_n = '0' or WriteIO_n = '0') then
+            TState1 <= TState;
+            if Sync = '1' then
                 ex_data <= Data;
             end if;
         end if;
@@ -376,15 +382,27 @@ begin
     rd_data_latch : process(CLK_n)
     begin
         if falling_edge(CLK_n) then
-            if (Read_n1 = '0' or ReadIO_n1 = '0') then
+            if Read_n1 = '0' or ReadIO_n1 = '0' then
                 rd_data <= Data;
             end if;
             memory_din <= Data;
         end if;
     end process;
 
+    -- Register the write data on the falling edge in the middle of T2
+    wr_data_latch : process(CLK_n)
+    begin
+        if falling_edge(CLK_n) then
+            if Write_n0 = '0' or WriteIO_n0 = '0' then
+                wr_data <= Data;
+            end if;
+        end if;
+    end process;
+
     -- Mux the data seen by the bus monitor appropriately
-    mon_data <= rd_data when Read_n <= '0' or ReadIO_n = '0' else ex_data;
+    mon_data <= rd_data when Read_n = '0'  or ReadIO_n = '0'  else
+                wr_data when Write_n = '0' or WriteIO_n = '0' else
+                ex_data;
 
     -- Mark the memory access as done when t3 is reached
     memory_done <= '1' when state = rd_t3 or state = wr_t3 else '0';
