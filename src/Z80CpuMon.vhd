@@ -97,6 +97,7 @@ type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, 
 
     signal RESET_n_int    : std_logic;
     signal cpu_clk        : std_logic;
+    signal cpu_clken      : std_logic;
     signal busmon_clk     : std_logic;
 
     signal Addr_int       : std_logic_vector(15 downto 0);
@@ -273,6 +274,7 @@ begin
             Regs    => Regs,
             RESET_n => RESET_n_int,
             CLK_n   => cpu_clk,
+            CEN     => cpu_clken,
             WAIT_n  => WAIT_n_int,
             INT_n   => INT_n_sync,
             NMI_n   => NMI_n_sync,
@@ -315,9 +317,11 @@ begin
     -- WAIT_n_int must be taken low before the falling edge in the middle of T2
     -- This implies a combinatorial path from SS_Single to WAIT_n_int
 
-    WAIT_n_int <= '0'    when state = idle and SS_Single = '1' and Sync1 = '1'            else
+    WAIT_n_int <= WAIT_n;
+
+    cpu_clken  <= '0'    when state = idle and SS_Single = '1' and Sync1 = '1'            else
                   '0'    when state /= idle                                               else
-                  WAIT_n;
+                  '1';
 
     -- Logic to ignore the second M1 in multi-byte opcodes
     skip_opcode_latch : process(CLK_n)
@@ -336,7 +340,7 @@ begin
     -- For instruction breakpoints, we make the monitoring decision as early as possibe
     -- to allow time to stop the current instruction, which is possible because we don't
     -- really care about the data (it's re-read from memory by the disassembler).
-    Sync0    <= '1' when M1_n_int = '0' and TState = "001" and skipNextOpcode = '0' else '0';
+    Sync0    <= '1' when WAIT_n_int = '1' and M1_n_int = '0' and TState = "010" and skipNextOpcode = '0' else '0';
 
     -- For memory reads/write breakpoints we make the monitoring decision in the middle of T2
     -- but only if WAIT_n is '1' so we catch the right data.
@@ -478,7 +482,7 @@ begin
                 SS_Step_held <= '0';
             end if;
 
-            Sync1 <= Sync0;
+            Sync1 <= Sync;
 
             -- Main state machine, generating refresh, read and write cycles
             -- (the timing should exactly match those of the Z80)
@@ -489,13 +493,8 @@ begin
                         -- Load the initial refresh address from I/R in the T80
                         rfsh_addr <= Regs(199 downto 192) & Regs(207 downto 200);
                         -- Start genering NOP cycles
-                        if mon_wait_n = '1' then
-                            state <= nop_t3;
-                        else
-                            mon_m1_n <= mode;
-                            mon_xx_n <= mode;
-                            state <= nop_t2;
-                        end if;
+                        mon_rfsh_n <= '0';
+                        state <= nop_t3;
                     end if;
 
                 -- NOP cycle
@@ -506,10 +505,14 @@ begin
                     mon_xx_n <= mode;
                 when nop_t2 =>
                     if mon_wait_n = '1' then
-                        mon_rfsh_n <= '0';
-                        state <= nop_t3;
                         mon_m1_n <= '1';
                         mon_xx_n <= '1';
+                        if SS_Step_held = '1' or SS_Single = '0' then
+                            state <= idle;
+                        else
+                            mon_rfsh_n <= '0';
+                            state <= nop_t3;
+                        end if;
                     end if;
                 when nop_t3 =>
                     state <= nop_t4;
@@ -521,8 +524,6 @@ begin
                     elsif memory_rd1 = '1' or io_rd1 = '1' then
                         state <= rd_t1;
                         io_not_mem <= io_rd1;
-                    elsif SS_Step_held = '1' or SS_Single = '0' then
-                        state <= resume;
                     else
                         state <= nop_t1;
                         mon_m1_n <= mode;
@@ -547,6 +548,7 @@ begin
                     end if;
                 when rd_t3 =>
                     state <= nop_t1;
+                    mon_m1_n <= mode;
 
                 -- Write cycle
                 when wr_t1 =>
@@ -563,6 +565,8 @@ begin
                     end if;
                 when wr_t3 =>
                     state <= nop_t1;
+                    mon_m1_n <= mode;
+
             end case;
         end if;
     end process;
@@ -582,7 +586,7 @@ begin
                     mon_mreq_n <= '1';
                     mon_iorq_n <= '0';
                 end if;
-            elsif state = nop_t1 or state = nop_t3 then
+            elsif (state = nop_t1 and mode = '0') or state = nop_t3 then
                 -- M1 cycle
                 mon_mreq_n <= '0';
                 mon_iorq_n <= '1';
@@ -612,9 +616,9 @@ begin
 
     avr_TxD <= avr_Txd_int;
 
-    test1 <= '1';
-    test2 <= '1';
-    test3 <= '1';
-    test4 <= '1';
+    test1 <= Sync1;
+    test2 <= TState(0);
+    test3 <= TState(1);
+    test4 <= TState(2);
 
 end behavioral;

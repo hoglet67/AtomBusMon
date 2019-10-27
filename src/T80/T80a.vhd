@@ -77,6 +77,7 @@ entity T80a is
         -- Original Signals
         RESET_n     : in std_logic;
         CLK_n       : in std_logic;
+        CEN         : in std_logic;
         WAIT_n      : in std_logic;
         INT_n       : in std_logic;
         NMI_n       : in std_logic;
@@ -98,7 +99,6 @@ end T80a;
 
 architecture rtl of T80a is
 
-    signal CEN          : std_logic;
     signal Reset_s      : std_logic;
     signal IntCycle_n   : std_logic;
     signal IORQ         : std_logic;
@@ -125,7 +125,6 @@ architecture rtl of T80a is
 
 begin
 
-    CEN <= '1';
 
     BUSAK_n <= BUSAK_n_i;
     MREQ_n_i <= not MREQ or (Req_Inhibit and MReq_Inhibit);
@@ -183,13 +182,14 @@ begin
 
     Regs(255 downto 212) <= (others => '0');
 
-
     process (CLK_n)
     begin
         if CLK_n'event and CLK_n = '0' then
-            Wait_s <= WAIT_n;
-            if TState = "011" and BUSAK_n_i = '1' then
-                DI_Reg <= to_x01(Din);
+            if CEN = '1' then
+                Wait_s <= WAIT_n;
+                if TState = "011" and BUSAK_n_i = '1' then
+                    DI_Reg <= to_x01(Din);
+                end if;
             end if;
         end if;
     end process;
@@ -197,7 +197,7 @@ begin
     process (CLK_n)		-- 0247a
     begin
         if CLK_n'event and CLK_n = '1' then
-            -- IReq_Inhibit <= not IORQ;
+        -- IReq_Inhibit <= not IORQ;
         end if;
     end process;
 
@@ -206,17 +206,19 @@ begin
         if Reset_s = '0' then
             WR_n_i <= '1';
         elsif CLK_n'event and CLK_n = '0' then
-            if (IORQ = '0') then
-                if TState = "010" then
-                    WR_n_i <= not Write;
-                elsif Tstate = "011" then
-                    WR_n_i <= '1';
-                end if;
-            else
-                if TState = "001" and IORQ_n_i = '0' then
-                    WR_n_i <= not Write;
-                elsif Tstate = "011" then
-                    WR_n_i <= '1';
+            if CEN = '1' then
+                if (IORQ = '0') then
+                    if TState = "010" then
+                        WR_n_i <= not Write;
+                    elsif Tstate = "011" then
+                        WR_n_i <= '1';
+                    end if;
+                else
+                    if TState = "001" and IORQ_n_i = '0' then
+                        WR_n_i <= not Write;
+                    elsif Tstate = "011" then
+                        WR_n_i <= '1';
+                    end if;
                 end if;
             end if;
         end if;
@@ -227,10 +229,12 @@ begin
         if Reset_s = '0' then
             Req_Inhibit <= '0';
         elsif CLK_n'event and CLK_n = '1' then
-            if MCycle = "001" and TState = "010" and wait_s = '1' then
-                Req_Inhibit <= '1';
-            else
-                Req_Inhibit <= '0';
+            if CEN = '1' then
+                if MCycle = "001" and TState = "010" and wait_s = '1' then
+                    Req_Inhibit <= '1';
+                else
+                    Req_Inhibit <= '0';
+                end if;
             end if;
         end if;
     end process;
@@ -240,10 +244,12 @@ begin
         if Reset_s = '0' then
             MReq_Inhibit <= '0';
         elsif CLK_n'event and CLK_n = '0' then
-            if MCycle = "001" and TState = "010" then
-                MReq_Inhibit <= '1';
-            else
-                MReq_Inhibit <= '0';
+            if CEN = '1' then
+                if MCycle = "001" and TState = "010" then
+                    MReq_Inhibit <= '1';
+                else
+                    MReq_Inhibit <= '0';
+                end if;
             end if;
         end if;
     end process;
@@ -255,35 +261,36 @@ begin
             IORQ_n_i <= '1';
             MREQ <= '0';
         elsif CLK_n'event and CLK_n = '0' then
-
-            if MCycle = "001" then
-                if TState = "001" then
-                    RD <= IntCycle_n;
-                    MREQ <= IntCycle_n;
-                    IORQ_n_i <= IntCycle_n;
-                end if;
-                if TState = "011" then
-                    RD <= '0';
-                    IORQ_n_i <= '1';
-                    MREQ <= '1';
-                end if;
-                if TState = "100" then
-                    MREQ <= '0';
-                end if;
-            else
-                if TState = "001" and NoRead = '0' then
-                    IORQ_n_i <= not IORQ;
-                    MREQ <= not IORQ;
-                    if IORQ = '0' then
-                      RD <= not Write;
-                    elsif IORQ_n_i = '0' then
-                      RD <= not Write;
+            if CEN = '1' then
+                if MCycle = "001" then
+                    if TState = "001" then
+                        RD <= IntCycle_n;
+                        MREQ <= IntCycle_n;
+                        IORQ_n_i <= IntCycle_n;
                     end if;
-                end if;
-                if TState = "011" then
-                    RD <= '0';
-                    IORQ_n_i <= '1';
-                    MREQ <= '0';
+                    if TState = "011" then
+                        RD <= '0';
+                        IORQ_n_i <= '1';
+                        MREQ <= '1';
+                    end if;
+                    if TState = "100" then
+                        MREQ <= '0';
+                    end if;
+                else
+                    if TState = "001" and NoRead = '0' then
+                        IORQ_n_i <= not IORQ;
+                        MREQ <= not IORQ;
+                        if IORQ = '0' then
+                            RD <= not Write;
+                        elsif IORQ_n_i = '0' then
+                            RD <= not Write;
+                        end if;
+                    end if;
+                    if TState = "011" then
+                        RD <= '0';
+                        IORQ_n_i <= '1';
+                        MREQ <= '0';
+                    end if;
                 end if;
             end if;
         end if;
