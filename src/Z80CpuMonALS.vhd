@@ -130,7 +130,7 @@ begin
             ClkMult           => 8,
             ClkDiv            => 25,
             ClkPer            => 20.000,
-            num_comparators   => 4,
+            num_comparators   => 8,
             avr_prog_mem_size => 1024 * 16
             )
       port map (

@@ -1,6 +1,6 @@
 ADDRESS_MAP avrmap PPC405 0
 
-    ADDRESS_SPACE rom_code RAMB16 [0x00000000:0x000047ff]
+    ADDRESS_SPACE rom_code RAMB16 [0x00000000:0x00007fff]
         BUS_BLOCK
 	    mon/Inst_AVR8/PM_Inst/RAM_Inst[0].Ram [15:0];
         END_BUS_BLOCK;
@@ -36,7 +36,35 @@ ADDRESS_MAP avrmap PPC405 0
         BUS_BLOCK
 	    mon/Inst_AVR8/PM_Inst/RAM_Inst[8].Ram [15:0];
         END_BUS_BLOCK;
-		  		  
+
+        BUS_BLOCK
+	    mon/Inst_AVR8/PM_Inst/RAM_Inst[9].Ram [15:0];
+        END_BUS_BLOCK;
+
+        BUS_BLOCK
+	    mon/Inst_AVR8/PM_Inst/RAM_Inst[10].Ram [15:0];
+        END_BUS_BLOCK;
+
+        BUS_BLOCK
+	    mon/Inst_AVR8/PM_Inst/RAM_Inst[11].Ram [15:0];
+        END_BUS_BLOCK;
+
+        BUS_BLOCK
+	    mon/Inst_AVR8/PM_Inst/RAM_Inst[12].Ram [15:0];
+        END_BUS_BLOCK;
+
+        BUS_BLOCK
+	    mon/Inst_AVR8/PM_Inst/RAM_Inst[13].Ram [15:0];
+        END_BUS_BLOCK;
+
+        BUS_BLOCK
+	    mon/Inst_AVR8/PM_Inst/RAM_Inst[14].Ram [15:0];
+        END_BUS_BLOCK;
+
+        BUS_BLOCK
+	    mon/Inst_AVR8/PM_Inst/RAM_Inst[15].Ram [15:0];
+        END_BUS_BLOCK;
+
     END_ADDRESS_SPACE;
 
 END_ADDRESS_MAP;

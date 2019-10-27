@@ -29,8 +29,8 @@ entity Z80CpuMon is
        ClkMult           : integer := 10;       -- default value correct for GODIL
        ClkDiv            : integer := 31;       -- default value correct for GODIL
        ClkPer            : real    := 20.345;   -- default value correct for GODIL
-       num_comparators   : integer := 4;        -- default value correct for GODIL
-       avr_prog_mem_size : integer :=  1024 * 9 -- default value correct for GODIL
+       num_comparators   : integer := 8;        -- default value correct for GODIL
+       avr_prog_mem_size : integer := 1024 * 16 -- default value correct for GODIL
        );
     port (
         clock49         : in    std_logic;

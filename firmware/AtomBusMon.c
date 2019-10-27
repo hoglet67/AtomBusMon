@@ -53,9 +53,7 @@ char *cmdStrings[] = {
 #endif
   "test",
   "srec",
-#if !defined(CPU_Z80)
   "special",
-#endif
 #endif
   "reset",
   "trace",
@@ -96,9 +94,7 @@ void (*cmdFuncs[])(char *params) = {
 #endif
   doCmdTest,
   doCmdSRec,
-#if !defined(CPU_Z80)
   doCmdSpecial,
-#endif
 #endif
   doCmdReset,
   doCmdTrace,
@@ -282,12 +278,7 @@ void (*cmdFuncs[])(char *params) = {
  * Watch/Breakpoint Definitions
  ********************************************************/
 
-// The space available for address comparators depends on the size of the CPU core
-#if defined(CPU_Z80)
-#define MAXBKPTS 4
-#else
 #define MAXBKPTS 8
-#endif
 
 // The current number of watches/breakpoints
 int numbkpts = 0;
@@ -1174,7 +1165,6 @@ void doCmdSRec(char *params) {
 
 }
 
-#if !defined(CPU_Z80)
 void logSpecial(char *function, int value) {
    log0("%s", function);
    if (value) {
@@ -1188,13 +1178,11 @@ void doCmdSpecial(char *params) {
    int special = -1;
    sscanf(params, "%x", &special);
    if (special >= 0 && special <= 3) {
-      CTRL_PORT &= ~SPECIAL_MASK;
       CTRL_PORT = (CTRL_PORT & ~SPECIAL_MASK) | (special << SPECIAL_0);
    }
    logSpecial("NMI", CTRL_PORT & (1 << SPECIAL_1));
    logSpecial("IRQ", CTRL_PORT & (1 << SPECIAL_0));
 }
-#endif
 
 #endif // CPU_EMBEDDED
 
