@@ -65,8 +65,11 @@ NET "avr_TxD"  LOC="P51"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 NET "avr_RxD"  LOC="P55"  | IOSTANDARD = LVCMOS33                           ;
 
 # External trigger inputs
-NET "trig<0>"  LOC="P126" | IOSTANDARD = LVCMOS33                           ;
-NET "trig<1>"  LOC="P127" | IOSTANDARD = LVCMOS33                           ;
+NET "trig<0>"  LOC="P126" | IOSTANDARD = LVCMOS33 | PULLUP ;
+NET "trig<1>"  LOC="P127" | IOSTANDARD = LVCMOS33 | PULLUP ;
+
+# This input controls whether the idle mode includes M1 cycles
+NET "mode"     LOC="P140" | IOSTANDARD = LVCMOS33 | PULLUP ;
 
 # Test outputs
 NET "test1"    LOC="P138" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # led1
