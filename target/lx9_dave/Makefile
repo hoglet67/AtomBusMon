@@ -1,4 +1,4 @@
-SUB_DIRS = $(wildcard ice*/.)
+SUB_DIRS = $(wildcard ice*/.) loader unknown
 
 build:
 	for dir in $(SUB_DIRS); do \
