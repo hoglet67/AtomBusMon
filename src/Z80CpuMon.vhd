@@ -89,7 +89,7 @@ end Z80CpuMon;
 
 architecture behavioral of Z80CpuMon is
 
-type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, rd_t3, wr_t1, wr_wa, wr_t2, wr_t3);
+type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, rd_t3, wr_t1, wr_wa, wr_t2, wr_t3);
 
     signal state  : state_type;
 
@@ -101,6 +101,8 @@ type state_type is (idle, resume, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, 
     signal busmon_clk     : std_logic;
 
     signal Addr_int       : std_logic_vector(15 downto 0);
+--  signal Addr1          : std_logic_vector(15 downto 0);
+--  signal Addr2          : std_logic_vector(15 downto 0);
     signal RD_n_int       : std_logic;
     signal WR_n_int       : std_logic;
     signal MREQ_n_int     : std_logic;
@@ -417,17 +419,36 @@ begin
 
     -- TODO: Also need to take account of BUSRQ_n/BUSAK_n
 
-    MREQ_n <= MREQ_n_int  when state = idle or state = resume else mon_mreq_n and mon_xx_n;
-    IORQ_n <= IORQ_n_int  when state = idle or state = resume else mon_iorq_n;
-    RFSH_n <= RFSH_n_int  when state = idle or state = resume else mon_rfsh_n;
-    WR_n   <= WR_n_int    when state = idle or state = resume else mon_wr_n;
-    RD_n   <= RD_n_int    when state = idle or state = resume else mon_rd_n and mon_xx_n;
-    M1_n   <= M1_n_int    when state = idle or state = resume else mon_m1_n;
+    MREQ_n <= MREQ_n_int  when state = idle else mon_mreq_n and mon_xx_n;
+    IORQ_n <= IORQ_n_int  when state = idle else mon_iorq_n;
+    RFSH_n <= RFSH_n_int  when state = idle else mon_rfsh_n;
+    WR_n   <= WR_n_int    when state = idle else mon_wr_n;
+    RD_n   <= RD_n_int    when state = idle else mon_rd_n and mon_xx_n;
+    M1_n   <= M1_n_int    when state = idle else mon_m1_n;
 
-    Addr   <= Addr_int    when state = idle or state = resume else
-              x"0000"     when state = nop_t1 or state = nop_t2 else
+    Addr   <= x"0000"     when state = nop_t1 or state = nop_t2 else
               rfsh_addr   when state = nop_t3 or state = nop_t4 else
-              memory_addr;
+              memory_addr when state /= idle                    else
+              Addr_int;
+
+-- The Acorn Z80 Second Processor needs ~10ns of address hold time following M1
+-- and MREQ being released at the start of T3. Otherwise, the ROM switching
+-- during NMI doesn't work reliably due to glitches. See:
+-- https://stardot.org.uk/forums/viewtopic.php?p=212096#p212096
+--
+-- Reordering the above Addr expression so Addr_int is last instead of
+-- first seems to fix the issue, but is clearly very dependent on how the Xilinx
+-- tools route the design.
+--
+-- If the problem recurs, we should switch to something like:
+--
+--    addr_delay : process(clock49)
+--    begin
+--        if rising_edge(clock49) then
+--            Addr2 <= Addr1;
+--            Addr <= Addr2;
+--        end if;
+--    end process;
 
     Data   <= memory_dout when state = wr_wa or state = wr_t2 or state = wr_t3 else
                      Dout when state = idle and Den = '1' else
@@ -528,10 +549,6 @@ begin
                         state <= nop_t1;
                         mon_m1_n <= mode;
                     end if;
-
-                    -- Resume,
-                when resume =>
-                    state <= idle;
 
                 -- Read cycle
                 when rd_t1 =>
