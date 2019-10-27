@@ -507,6 +507,18 @@ void lcdAddr(unsigned int addr) {
  * Host Memory/IO Access helpers
  ********************************************************/
 
+void log_char(int c) {
+  if (c < 32 || c > 126) {
+    c = '.';
+  }
+  log0("%c", c);
+}
+
+void log_addr_data(int a, int d) {
+  log0(" %04X = %02X  ", a, d);
+  log_char(d);
+}
+
 #if defined(CPU_EMBEDDED)
 void loadData(unsigned int data) {
   int i;
@@ -567,18 +579,6 @@ void writeIOByteInc() {
 unsigned int disMem(unsigned int addr) {
   loadAddr(addr);
   return disassemble(addr);
-}
-
-void log_char(int c) {
-  if (c < 32 || c > 126) {
-    c = '.';
-  }
-  log0("%c", c);
-}
-
-void log_addr_data(int a, int d) {
-  log0(" %04X = %02X  ", a, d);
-  log_char(d);
 }
 
 void genericDump(char *params, unsigned int (*readFunc)()) {
