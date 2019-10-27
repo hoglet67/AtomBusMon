@@ -592,7 +592,7 @@ begin
                 mon_iorq_n <= '1';
             end if;
             -- Read strobe
-            if state = nop_t1 or state = rd_t1 or state = rd_wa or state = rd_t2 then
+            if (state = nop_t1 and mode = '0') or state = rd_t1 or state = rd_wa or state = rd_t2 then
                 mon_rd_n <= '0';
             else
                 mon_rd_n <= '1';
