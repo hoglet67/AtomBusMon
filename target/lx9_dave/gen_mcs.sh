@@ -17,8 +17,8 @@ NAME=${DIR}/IceMulti_$(date +"%Y%m%d_%H%M")_$USER
 mkdir -p ${DIR}
 
 promgen                                          \
- -u      0 loader/working/MultiBootLoader.bit    \
- -u  54000 unknown/working/UnknownAdapter.bit    \
+ -u      0 loader/MultiBootLoader.bit            \
+ -u  54000 unknown/UnknownAdapter.bit            \
  -u  A8000 ice6502/ice6502.bit                   \
  -u  FC000 icez80/icez80.bit                     \
  -u 150000 ice65c02/ice65c02.bit                 \
