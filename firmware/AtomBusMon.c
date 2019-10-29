@@ -395,6 +395,9 @@ unsigned int memAddr = 0;
 // The address of the next instruction
 unsigned int nextAddr = 0;
 
+// The address of the transient breakpoint
+unsigned int transientAddr = 0xffff;
+
 // When single stepping, trace (i.e. log) event N instructions
 // Setting this to 0 will disable logging
 long trace;
@@ -724,10 +727,8 @@ void version() {
  ********************************************************/
 
 // Return the index of a breakpoint from the user specified address
-int lookupBreakpoint(char *params) {
+int lookupBreakpointN(int n) {
   int i;
-  int n = -1;
-  sscanf(params, "%x", &n);
   // First, look assume n is an address, and try to map to an index
   for (i = 0; i < numbkpts; i++) {
     if (breakpoints[i] == n) {
@@ -740,6 +741,12 @@ int lookupBreakpoint(char *params) {
   }
   log0("Breakpoint/watch not set at %04X\n", n);
   return -1;
+}
+
+int lookupBreakpoint(char *params) {
+  int n = -1;
+  sscanf(params, "%x", &n);
+  return lookupBreakpointN(n);
 }
 
 // Enable/Disable single stepping
@@ -1296,9 +1303,9 @@ void doCmdNext(char *params) {
     logTooManyBreakpoints();
     return;
   }
+  transientAddr = nextAddr;
   setBreakpoint(numbkpts++, nextAddr, 0xffff, 1 << BRKPT_EXEC, TRIGGER_ALWAYS);
   doCmdContinue(params);
-  clearBreakpoint(numbkpts - 1);
 }
 
 void doCmdContinue(char *params) {
@@ -1367,6 +1374,16 @@ void doCmdContinue(char *params) {
 
   // Show current instruction
   logAddr();
+
+  // Check if we have hit the transient breakpoint
+  if (memAddr == transientAddr) {
+    // Attempt to remove the transient breakpoint
+    int n = lookupBreakpointN(transientAddr);
+    if (n >= 0) {
+      clearBreakpoint(n);
+    }
+    transientAddr = 0xFFFF;
+  }
 }
 
 void initialize() {
