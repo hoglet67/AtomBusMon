@@ -46,6 +46,7 @@ void doCmdHelp(char *params);
 void doCmdIO(char *params);
 void doCmdList(char *params);
 void doCmdMem(char *params);
+void doCmdNext(char *params);
 void doCmdReadIO(char *params);
 void doCmdReadMem(char *params);
 void doCmdRegs(char *params);

@@ -121,6 +121,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal skipNextOpcode : std_logic;
 
     signal Regs           : std_logic_vector(255 downto 0);
+    signal PdcData        : std_logic_vector(7 downto 0);
     signal io_not_mem     : std_logic;
     signal io_rd          : std_logic;
     signal io_wr          : std_logic;
@@ -249,6 +250,7 @@ begin
         tdin         => tdin,
         tcclk        => tcclk,
         Regs         => Regs,
+        PdcData      => PdcData,
         RdMemOut     => memory_rd,
         WrMemOut     => memory_wr,
         RdIOOut      => io_rd,
@@ -270,6 +272,7 @@ begin
         inst_t80: entity work.T80a port map (
             TS      => TState,
             Regs    => Regs,
+            PdcData => PdcData,
             RESET_n => RESET_n_int,
             CLK_n   => cpu_clk,
             CEN     => cpu_clken,

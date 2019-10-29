@@ -56,6 +56,9 @@ entity BusMonCore is
         -- unused in pure bus monitor mode
         Regs             : in    std_logic_vector(255 downto 0);
 
+        -- CPI Specific data
+        PdcData          : in    std_logic_vector(7 downto 0) := x"00";
+
         -- CPU Memory Read/Write
         -- unused in pure bus monitor mode
         RdMemOut         : out std_logic;
@@ -182,15 +185,7 @@ begin
         clk16M               => clock_avr,
         nrst                 => nrst_avr,
 
-        portain(0)           => '0',
-        portain(1)           => '0',
-        portain(2)           => '0',
-        portain(3)           => '0',
-        portain(4)           => '0',
-        portain(5)           => '0',
-        portain(6)           => '0',
-        portain(7)           => '0',
-
+        portain              => PdcData,
         portaout             => open,
 
         -- Command Port

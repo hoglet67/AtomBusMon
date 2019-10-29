@@ -103,6 +103,7 @@ package T80_Pack is
 		MC                      : out std_logic_vector(2 downto 0);
 		TS                      : out std_logic_vector(2 downto 0);
 		IntCycle_n      : out std_logic;
+		NMICycle_n      : out std_logic;
 		IntE            : out std_logic;
 		Stop            : out std_logic;
 		REG             : out std_logic_vector(211 downto 0); -- IFF2, IFF1, IM, IY, HL', DE', BC', IX, HL, DE, BC, PC, SP, R, I, F', A', F, A

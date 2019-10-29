@@ -1333,6 +1333,7 @@ void doCmdContinue(char *params) {
 }
 
 void initialize() {
+  PDC_DDR = 0;
   CTRL_DDR = 255;
   STATUS_DDR = MUXSEL_MASK;
   MUX_DDR = 0;

@@ -72,8 +72,9 @@ entity T80a is
     );
     port(
         -- Additions
-        TS              : out std_logic_vector(2 downto 0);
-        Regs            : out std_logic_vector(255 downto 0);
+        TS          : out std_logic_vector(2 downto 0);
+        Regs        : out std_logic_vector(255 downto 0);
+        PdcData     : out std_logic_vector(7 downto 0);
         -- Original Signals
         RESET_n     : in std_logic;
         CLK_n       : in std_logic;
@@ -101,6 +102,7 @@ architecture rtl of T80a is
 
     signal Reset_s      : std_logic;
     signal IntCycle_n   : std_logic;
+    signal NMICycle_n   : std_logic;
     signal IORQ         : std_logic;
     signal NoRead       : std_logic;
     signal Write        : std_logic;
@@ -175,6 +177,7 @@ begin
             MC => MCycle,
             TS => TState,
             IntCycle_n => IntCycle_n,
+            NMICycle_n => NMICycle_n,
             REG => Regs(211 downto 0),
             DIRSet => '0',
             DIR => (others => '0')
@@ -297,4 +300,7 @@ begin
     end process;
 
     TS <= TState;
+
+    PdcData <= (not NMICycle_n) & (not IntCycle_n) & "000000";
+
 end;
