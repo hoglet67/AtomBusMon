@@ -37,6 +37,7 @@
 char *cmdStrings[] = {
   "help",
   "continue",
+  "next",
   "step",
 #if defined(CPU_EMBEDDED)
   "regs",
@@ -78,6 +79,7 @@ char *cmdStrings[] = {
 void (*cmdFuncs[])(char *params) = {
   doCmdHelp,
   doCmdContinue,
+  doCmdNext,
   doCmdStep,
 #if defined(CPU_EMBEDDED)
   doCmdRegs,
@@ -390,6 +392,9 @@ char * triggerStrings[NUM_TRIGGERS] = {
 // The current memory address (e.g. used when disassembling)
 unsigned int memAddr = 0;
 
+// The address of the next instruction
+unsigned int nextAddr = 0;
+
 // When single stepping, trace (i.e. log) event N instructions
 // Setting this to 0 will disable logging
 long trace;
@@ -697,7 +702,7 @@ void logAddr() {
   logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
 #if defined(CPU_EMBEDDED)
   //log0("%04X\n", i_addr);
-  disMem(memAddr);
+  nextAddr = disMem(memAddr);
 #else
   log0("%04X\n", memAddr);
 #endif
@@ -753,13 +758,32 @@ void setTrace(long i) {
 }
 
 // Set the breakpoint state variables
-void setBreakpoint(int i, unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
+
+void logBreakpoint(unsigned int addr, unsigned int mode) {
   logMode(mode);
   log0(" set at %04X\n", addr);
-  breakpoints[i] = addr & mask;
-  masks[i] = mask;
-  modes[i] = mode;
-  triggers[i] = trigger;
+}
+
+void logTooManyBreakpoints() {
+  log0("All %d breakpoints are already set\n", numbkpts);
+}
+
+void setBreakpoint(int n, unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
+  breakpoints[n] = addr & mask;
+  masks[n] = mask;
+  modes[n] = mode;
+  triggers[n] = trigger;
+}
+
+void clearBreakpoint(int n) {
+  int i;
+  for (i = n; i < numbkpts; i++) {
+    breakpoints[i] = breakpoints[i + 1];
+    masks[i] = masks[i + 1];
+    modes[i] = modes[i + 1];
+    triggers[i] = triggers[i + 1];
+  }
+  numbkpts--;
 }
 
 // A generic helper that does most of the work of the watch/breakpoint commands
@@ -779,13 +803,14 @@ void genericBreakpoint(char *params, unsigned int mode) {
         if (trigger == -1) {
           trigger = triggers[i];
         }
+        logBreakpoint(addr, mode);
         setBreakpoint(i, addr, mask, modes[i] | mode, trigger);
       }
       return;
     }
   }
   if (numbkpts == MAXBKPTS) {
-    log0("All %d breakpoints are already set\n", numbkpts);
+    logTooManyBreakpoints();
     return;
   }
   numbkpts++;
@@ -795,6 +820,7 @@ void genericBreakpoint(char *params, unsigned int mode) {
   }
   for (i = numbkpts - 2; i >= -1; i--) {
     if (i == -1 || breakpoints[i] < addr) {
+      logBreakpoint(addr, mode);
       setBreakpoint(i + 1, addr, mask, mode, trigger);
       return;
     } else {
@@ -1229,7 +1255,6 @@ void doCmdWatchWrIO(char *params) {
 #endif
 
 void doCmdClear(char *params) {
-  int i;
   int n = lookupBreakpoint(params);
   if (n < 0) {
     return;
@@ -1237,13 +1262,7 @@ void doCmdClear(char *params) {
   log0("Removing ");
   logMode(modes[n]);
   log0(" at %04X\n", breakpoints[n]);
-  for (i = n; i < numbkpts; i++) {
-    breakpoints[i] = breakpoints[i + 1];
-    masks[i] = masks[i + 1];
-    modes[i] = modes[i + 1];
-    triggers[i] = triggers[i + 1];
-  }
-  numbkpts--;
+  clearBreakpoint(n);
 }
 
 void doCmdTrigger(char *params) {
@@ -1262,6 +1281,24 @@ void doCmdTrigger(char *params) {
   } else {
     log0("Illegal trigger code (see help for trigger codes)\n");
   }
+}
+
+// Set transient breakpoint on the next instruction
+//
+// This allows you to single step over a subroutine call, or
+// continue exeuting until a loop exits.
+//
+// Note: the implemention is quite simplistic, and the transient breakpoint
+// will be removed when continue exits, regardless of whether the transient
+// breakpoint was hit.
+void doCmdNext(char *params) {
+  if (numbkpts == MAXBKPTS) {
+    logTooManyBreakpoints();
+    return;
+  }
+  setBreakpoint(numbkpts++, nextAddr, 0xffff, 1 << BRKPT_EXEC, TRIGGER_ALWAYS);
+  doCmdContinue(params);
+  clearBreakpoint(numbkpts - 1);
 }
 
 void doCmdContinue(char *params) {
