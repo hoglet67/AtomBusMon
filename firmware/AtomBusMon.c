@@ -1295,9 +1295,6 @@ void doCmdTrigger(char *params) {
 // This allows you to single step over a subroutine call, or
 // continue exeuting until a loop exits.
 //
-// Note: the implemention is quite simplistic, and the transient breakpoint
-// will be removed when continue exits, regardless of whether the transient
-// breakpoint was hit.
 void doCmdNext(char *params) {
   if (numbkpts == MAXBKPTS) {
     logTooManyBreakpoints();
