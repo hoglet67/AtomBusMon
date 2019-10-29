@@ -4,10 +4,6 @@
 #include "status.h"
 #include "dis.h"
 
-#if defined(LCD)
-#include "hd44780.h"
-#endif
-
 // The Atom CRC Polynomial
 #define CRC_POLY          0x002d
 

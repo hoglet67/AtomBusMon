@@ -484,25 +484,6 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int 
   shift(trigger, 4);
 }
 
-#if defined(LCD)
-//  LCD support code (will be depricated soon)
-void lcdAddr(unsigned int addr) {
-  int i;
-  int nibble;
-  lcd_goto(6);
-  // Avoid using sprintf, as it adds quite a lot of code
-  for (i = 3; i >= 0; i--) {
-    nibble = addr >> (i * 4);
-    nibble &= 0x0F;
-    nibble += '0';
-    if (nibble > '9') {
-      nibble += 'A' - '9' - 1;
-    }
-    lcd_putc(nibble);
-  }
-}
-#endif
-
 /********************************************************
  * Host Memory/IO Access helpers
  ********************************************************/
@@ -712,10 +693,6 @@ int logDetails() {
 
 void logAddr() {
   memAddr = hwRead16(OFFSET_IAL);
-  // Update the LCD display
-#if defined(LCD)
-  lcdAddr(memAddr);
-#endif
   // Update the serial console
   logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
 #if defined(CPU_EMBEDDED)
@@ -1290,9 +1267,6 @@ void doCmdTrigger(char *params) {
 void doCmdContinue(char *params) {
   int i;
   int status;
-#if defined(LCD)
-  unsigned int i_addr;
-#endif
   int reset = 0;
   sscanf(params, "%d", &reset);
 
@@ -1330,12 +1304,6 @@ void doCmdContinue(char *params) {
   log0("CPU free running...\n");
   int cont = 1;
   do {
-    // Update the LCD display
-#if defined(LCD)
-    i_addr = hwRead16(OFFSET_IAL);
-    lcdAddr(i_addr);
-#endif
-
     status = STATUS_DIN;
     if (status & BW_ACTIVE_MASK) {
       cont = logDetails();
@@ -1370,10 +1338,6 @@ void initialize() {
   MUX_DDR = 0;
   CTRL_PORT = 0;
   Serial_Init(57600,57600);
-#if defined(LCD)
-  lcd_init();
-  lcd_puts("Addr: xxxx");
-#endif
   version();
   hwCmd(CMD_RESET, 0);
   hwCmd(CMD_FIFO_RST, 0);

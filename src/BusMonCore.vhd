@@ -77,12 +77,6 @@ entity BusMonCore is
         -- External trigger inputs
         trig             : in    std_logic_vector(1 downto 0);
 
-        -- HD44780 LCD
-        lcd_rs           : out   std_logic;
-        lcd_rw           : out   std_logic;
-        lcd_e            : out   std_logic;
-        lcd_db           : inout std_logic_vector(7 downto 4);
-
         -- AVR Serial Port
         avr_RxD          : in    std_logic;
         avr_TxD          : out   std_logic;
@@ -107,9 +101,6 @@ architecture behavioral of BusMonCore is
 
     signal nrst_avr        : std_logic;
 
-    signal lcd_rw_int      : std_logic;
-    signal lcd_db_in       : std_logic_vector(7 downto 4);
-    signal lcd_db_out      : std_logic_vector(7 downto 4);
     signal dy_counter      : std_logic_vector(31 downto 0);
     signal dy_data         : y2d_type ;
 
@@ -162,9 +153,6 @@ architecture behavioral of BusMonCore is
 
     signal Rdy_int         : std_logic;
 
-    signal unused_a3       : std_logic;
-    signal unused_b6       : std_logic;
-    signal unused_b7       : std_logic;
     signal unused_d6       : std_logic;
     signal unused_d7       : std_logic;
 
@@ -198,19 +186,12 @@ begin
         portain(1)           => '0',
         portain(2)           => '0',
         portain(3)           => '0',
-        portain(4)           => lcd_db_in(4),
-        portain(5)           => lcd_db_in(5),
-        portain(6)           => lcd_db_in(6),
-        portain(7)           => lcd_db_in(7),
+        portain(4)           => '0',
+        portain(5)           => '0',
+        portain(6)           => '0',
+        portain(7)           => '0',
 
-        portaout(0)          => lcd_rs,
-        portaout(1)          => lcd_rw_int,
-        portaout(2)          => lcd_e,
-        portaout(3)          => unused_a3,
-        portaout(4)          => lcd_db_out(4),
-        portaout(5)          => lcd_db_out(5),
-        portaout(6)          => lcd_db_out(6),
-        portaout(7)          => lcd_db_out(7),
+        portaout             => open,
 
         -- Command Port
         portbin(0)           => '0',
@@ -281,10 +262,6 @@ begin
     -- DataRd is the data being read, that is already one cycle late
     -- bw_state1(1) is 1 for writes, and 0 for reads
     fifo_din <= cycleCount_inst & "0000" & bw_status1 & Data1 & Addr1 & addr_inst;
-
-    lcd_rw    <= lcd_rw_int;
-    lcd_db    <= lcd_db_out when lcd_rw_int = '0' else (others => 'Z');
-    lcd_db_in <= lcd_db;
 
     led3 <= not trig(0);       -- red
     led6 <= not trig(1);       -- red

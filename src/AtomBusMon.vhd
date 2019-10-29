@@ -43,12 +43,6 @@ entity AtomBusMon is
         -- External trigger inputs
         trig             : in    std_logic_vector(1 downto 0);
 
-        -- HD44780 LCD
-        --lcd_rs           : out   std_logic;
-        --lcd_rw           : out   std_logic;
-        --lcd_e            : out   std_logic;
-        --lcd_db           : inout std_logic_vector(7 downto 4);
-
         -- AVR Serial Port
         avr_RxD          : in    std_logic;
         avr_TxD          : out   std_logic;
@@ -133,10 +127,6 @@ begin
         DataIn       => (others => '0'),
         Done         => '1',
         trig         => trig,
-        lcd_rs       => open,
-        lcd_rw       => open,
-        lcd_e        => open,
-        lcd_db       => open,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
         sw1          => not sw_interrupt_n,
@@ -157,5 +147,3 @@ begin
     nRST <= '0' when nRSTout <= '0' else 'Z';
 
 end behavioral;
-
-
