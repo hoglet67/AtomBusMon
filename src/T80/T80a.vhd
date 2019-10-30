@@ -124,6 +124,7 @@ architecture rtl of T80a is
     signal Wait_s       : std_logic;
     signal MCycle       : std_logic_vector(2 downto 0);
     signal TState       : std_logic_vector(2 downto 0);
+    signal HALT_n_int   : std_logic;
 
 begin
 
@@ -132,6 +133,7 @@ begin
     MREQ_n_i <= not MREQ or (Req_Inhibit and MReq_Inhibit);
     RD_n_i <= not RD or Req_Inhibit;
     WR_n_j <= WR_n_i;					    		-- 0247a
+    HALT_n <= HALT_n_int;
 
     MREQ_n <= MREQ_n_i when BUSAK_n_i = '1' else 'Z';
     IORQ_n <= IORQ_n_i or IReq_Inhibit when BUSAK_n_i = '1' else 'Z';	-- 0247a
@@ -162,7 +164,7 @@ begin
             NoRead => NoRead,
             Write => Write,
             RFSH_n => RFSH_n_i,
-            HALT_n => HALT_n,
+            HALT_n => HALT_n_int,
             WAIT_n => Wait_s,
             INT_n => INT_n,
             NMI_n => NMI_n,
@@ -301,6 +303,6 @@ begin
 
     TS <= TState;
 
-    PdcData <= (not NMICycle_n) & (not IntCycle_n) & "000000";
+    PdcData <= (not HALT_n_int) & (not NMICycle_n) & (not IntCycle_n) & "00000";
 
 end;

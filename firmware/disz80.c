@@ -863,8 +863,10 @@ void disassem (unsigned int *ip) {
 unsigned int disassemble(unsigned int addr) {
   log0("%04X : ", addr);
   if (PDC_DIN & 0x80) {
-    log0("**NMI**");
+    log0("**HALT**");
   } else if (PDC_DIN & 0x40) {
+    log0("**NMI**");
+  } else if (PDC_DIN & 0x20) {
     log0("**INT**");
   } else {
     disassem(&addr);
