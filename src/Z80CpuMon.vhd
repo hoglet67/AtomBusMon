@@ -109,8 +109,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal IORQ_n_int     : std_logic;
     signal RFSH_n_int     : std_logic;
     signal M1_n_int       : std_logic;
-    signal WAIT_n_int     : std_logic;
-    signal WAIT_n_int1    : std_logic;
+    signal WAIT_n_latched : std_logic;
     signal TState         : std_logic_vector(2 downto 0);
     signal TState1        : std_logic_vector(2 downto 0);
     signal SS_Single      : std_logic;
@@ -143,7 +142,6 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal mon_rfsh_n     : std_logic;
     signal mon_rd_n       : std_logic;
     signal mon_wr_n       : std_logic;
-    signal mon_wait_n     : std_logic;
 
     signal INT_n_sync     : std_logic;
     signal NMI_n_sync     : std_logic;
@@ -276,7 +274,7 @@ begin
             RESET_n => RESET_n_int,
             CLK_n   => cpu_clk,
             CEN     => cpu_clken,
-            WAIT_n  => WAIT_n_int,
+            WAIT_n  => WAIT_n,
             INT_n   => INT_n_sync,
             NMI_n   => NMI_n_sync,
             BUSRQ_n => BUSRQ_n,
@@ -313,13 +311,7 @@ begin
 
     CountCycle <= '1' when state = idle else '0';
 
-    -- For the break point logic to work, the following must happen
-    -- SS_Single taken high by BusMonCore on the rising edge at the start of T2
-    -- WAIT_n_int must be taken low before the falling edge in the middle of T2
-    -- This implies a combinatorial path from SS_Single to WAIT_n_int
-
-    WAIT_n_int <= WAIT_n;
-
+    -- The breakpoint logic stops the Z80 in M1/T3 using cpu_clken
     cpu_clken  <= '0'    when state = idle and SS_Single = '1' and Sync1 = '1'            else
                   '0'    when state /= idle                                               else
                   '1';
@@ -328,7 +320,7 @@ begin
     skip_opcode_latch : process(CLK_n)
     begin
         if rising_edge(CLK_n) then
-            if (M1_n_int = '0' and WAIT_n_int1 = '1' and TState = "010") then
+            if (M1_n_int = '0' and WAIT_n_latched = '1' and TState = "010") then
                 if (skipNextOpcode = '0' and (Data = x"CB" or Data = x"DD" or Data = x"ED" or Data = x"FD")) then
                     skipNextOpcode <= '1';
                 else
@@ -341,18 +333,18 @@ begin
     -- For instruction breakpoints, we make the monitoring decision as early as possibe
     -- to allow time to stop the current instruction, which is possible because we don't
     -- really care about the data (it's re-read from memory by the disassembler).
-    Sync0    <= '1' when WAIT_n_int = '1' and M1_n_int = '0' and TState = "010" and skipNextOpcode = '0' else '0';
+    Sync0    <= '1' when WAIT_n = '1' and M1_n_int = '0' and TState = "010" and skipNextOpcode = '0' else '0';
 
     -- For memory reads/write breakpoints we make the monitoring decision in the middle of T2
     -- but only if WAIT_n is '1' so we catch the right data.
-    Read_n0    <= not (WAIT_n_int and (not RD_n_int) and (not MREQ_n_int) and (M1_n_int)) when TState = "010" else '1';
-    Write_n0   <= not (WAIT_n_int and (    RD_n_int) and (not MREQ_n_int) and (M1_n_int)) when TState = "010" else '1';
+    Read_n0    <= not (WAIT_n and (not RD_n_int) and (not MREQ_n_int) and (M1_n_int)) when TState = "010" else '1';
+    Write_n0   <= not (WAIT_n and (    RD_n_int) and (not MREQ_n_int) and (M1_n_int)) when TState = "010" else '1';
 
     -- For IO reads/writes we make the monitoring decision in the middle of the second T2 cycle
     -- but only if WAIT_n is '1' so we catch the right data.
     -- This one cycle delay accounts for the forced wait state
-    ReadIO_n0  <= not (WAIT_n_int and (not RD_n_int) and (not IORQ_n_int) and (M1_n_int)) when TState1 = "010" else '1';
-    WriteIO_n0 <= not (WAIT_n_int and (    RD_n_int) and (not IORQ_n_int) and (M1_n_int)) when TState1 = "010" else '1';
+    ReadIO_n0  <= not (WAIT_n and (not RD_n_int) and (not IORQ_n_int) and (M1_n_int)) when TState1 = "010" else '1';
+    WriteIO_n0 <= not (WAIT_n and (    RD_n_int) and (not IORQ_n_int) and (M1_n_int)) when TState1 = "010" else '1';
 
     -- Hold the monitoring decision so it is valid on the rising edge of the clock
     -- For instruction fetches and writes, the monitor sees these at the start of T3
@@ -368,7 +360,7 @@ begin
             ReadIO_n    <= ReadIO_n1;
             WriteIO_n   <= WriteIO_n0;
             -- Latch wait seen by T80 on the falling edge, for use on the next rising edge
-            WAIT_n_int1 <= WAIT_n_int;
+            WAIT_n_latched <= WAIT_n;
         end if;
     end process;
 
@@ -524,7 +516,7 @@ begin
                     rfsh_addr(6 downto 0) <= rfsh_addr(6 downto 0) + 1;
                     mon_xx_n <= mode;
                 when nop_t2 =>
-                    if mon_wait_n = '1' then
+                    if WAIT_n_latched = '1' then
                         mon_m1_n <= '1';
                         mon_xx_n <= '1';
                         if SS_Step_held = '1' or SS_Single = '0' then
@@ -559,7 +551,7 @@ begin
                 when rd_wa =>
                     state <= rd_t2;
                 when rd_t2 =>
-                    if mon_wait_n = '1' then
+                    if WAIT_n_latched = '1' then
                         state <= rd_t3;
                     end if;
                 when rd_t3 =>
@@ -576,7 +568,7 @@ begin
                 when wr_wa =>
                     state <= wr_t2;
                 when wr_t2 =>
-                    if mon_wait_n = '1' then
+                    if WAIT_n_latched = '1' then
                         state <= wr_t3;
                     end if;
                 when wr_t3 =>
@@ -623,8 +615,6 @@ begin
             else
                 mon_wr_n <= '1';
             end if;
-            -- Sample wait on the falling edge of the clock
-            mon_wait_n <= WAIT_n;
         end if;
     end process;
 
