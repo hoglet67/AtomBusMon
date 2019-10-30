@@ -75,7 +75,7 @@ NET "test4" LOC="P91" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;
 NET "DOE_n" LOC="P99"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;
 
 # This input controls whether the idle mode includes M1 cycles
-NET "mode" LOC="P88" | IOSTANDARD = LVCMOS33 ;
+NET "mode" LOC="P88" | IOSTANDARD = LVCMOS33 | PULLUP;
 
 # NET ""  LOC="P48" | IOSTANDARD = LVCMOS33 ; # connector pin E2
 # NET ""  LOC="P49" | IOSTANDARD = LVCMOS33 ; # connector pin E3
