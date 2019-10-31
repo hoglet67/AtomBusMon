@@ -736,15 +736,19 @@ int lookupBreakpointN(int n) {
   }
   if (n < numbkpts) {
     return n;
+  } else {
+    return -1;
   }
-  log0("Breakpoint/watch not set at %04X\n", n);
-  return -1;
 }
 
 int lookupBreakpoint(char *params) {
   int n = -1;
   sscanf(params, "%x", &n);
-  return lookupBreakpointN(n);
+  n = lookupBreakpointN(n);
+  if (n < 0) {
+    log0("Breakpoint/watch not set at %04X\n", n);
+  }
+  return n;
 }
 
 // Enable/Disable single stepping
