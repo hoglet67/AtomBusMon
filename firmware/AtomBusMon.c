@@ -362,7 +362,7 @@ char *modeStrings[NUM_MODES] = {
 
 // A boolean function of the external trigger inputs that
 // is used to gate the watch/breakpoint.
-int             triggers[MAXBKPTS];
+unsigned char triggers[MAXBKPTS];
 
 #define NUM_TRIGGERS 16
 
@@ -386,6 +386,8 @@ char * triggerStrings[NUM_TRIGGERS] = {
 };
 
 #define TRIGGER_ALWAYS 15
+
+#define TRIGGER_UNDEFINED 31
 
 /********************************************************
  * Other global variables
@@ -483,7 +485,7 @@ void shift(unsigned int value, int numbits) {
   }
 }
 
-void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
+void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int mode, unsigned char trigger) {
   shift(addr, 16);
   shift(mask, 16);
   shift(mode, 10);
@@ -654,8 +656,8 @@ void logMode(unsigned int mode) {
   }
 }
 
-void logTrigger(int trigger) {
-  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
+void logTrigger(unsigned char trigger) {
+  if (trigger < NUM_TRIGGERS) {
     log0("trigger: %s", triggerStrings[trigger]);
   } else {
     log0("trigger: ILLEGAL");
@@ -793,7 +795,7 @@ void uploadBreakpoints() {
   hwCmd(CMD_BRKPT_ENABLE, 1);
 }
 
-void setBreakpoint(int n, unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
+void setBreakpoint(int n, unsigned int addr, unsigned int mask, unsigned int mode, unsigned char trigger) {
   breakpoints[n] = addr & mask;
   masks[n] = mask;
   modes[n] = mode;
@@ -813,7 +815,6 @@ void clearBreakpoint(int n) {
   numbkpts--;
   // Update the hardware copy of the breakpoints
   uploadBreakpoints();
-
 }
 
 // A generic helper that does most of the work of the watch/breakpoint commands
@@ -821,8 +822,8 @@ void genericBreakpoint(char *params, unsigned int mode) {
   int i;
   unsigned int addr;
   unsigned int mask = 0xFFFF;
-  int trigger = -1;
-  sscanf(params, "%x %x %x", &addr, &mask, &trigger);
+  unsigned char trigger = TRIGGER_UNDEFINED;
+  sscanf(params, "%x %x %hhx", &addr, &mask, &trigger);
   // First, see if a breakpoint with this address already exists
   for (i = 0; i < numbkpts; i++) {
     if (breakpoints[i] == addr) {
@@ -832,7 +833,7 @@ void genericBreakpoint(char *params, unsigned int mode) {
         return;
       } else {
         // Preserve the existing trigger, unless it is overridden
-        if (trigger == -1) {
+        if (trigger == TRIGGER_UNDEFINED) {
           trigger = triggers[i];
         }
         // Preserve the existing modes
@@ -848,7 +849,7 @@ void genericBreakpoint(char *params, unsigned int mode) {
       return;
     }
     // New breakpoint, so if trigger not specified, set to ALWAYS
-    if (trigger == -1) {
+    if (trigger == TRIGGER_UNDEFINED) {
       trigger = TRIGGER_ALWAYS;
     }
     // Maintain the breakpoints in order of address
@@ -1323,21 +1324,24 @@ void doCmdClear(char *params) {
 }
 
 void doCmdTrigger(char *params) {
-  int trigger = -1;
-  int n = lookupBreakpoint(params);
-  if (n < 0) {
+  unsigned char trigger = TRIGGER_UNDEFINED;
+  sscanf(params, "%*x %hhx", &trigger);
+  if (trigger >= NUM_TRIGGERS) {
     log0("Trigger Codes:\n");
     for (trigger = 0; trigger < NUM_TRIGGERS; trigger++) {
       log0("    %X = %s\n", trigger, triggerStrings[trigger]);
     }
     return;
   }
-  sscanf(params, "%*x %x", &trigger);
-  if (trigger >= 0 && trigger < NUM_TRIGGERS) {
-    triggers[n] = trigger;
-  } else {
-    log0("Illegal trigger code (see help for trigger codes)\n");
+  // Lookup the breakpoint
+  int n = lookupBreakpoint(params);
+  if (n < 0) {
+    return;
   }
+  // Update the trigger value
+  triggers[n] = trigger;
+  // Update the hardware copy of the breakpoints
+  uploadBreakpoints();
 }
 
 // Set transient breakpoint on the next instruction
