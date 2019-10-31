@@ -20,7 +20,7 @@ PROG = avr_progmem
 
 CFLAGS=$(CPU_CFLAGS) -DF_CPU=${F_CPU}UL -DSERIAL_STATUS -DCOOKED_SERIAL -DNOUSART1 -mmcu=$(MCU) -Wall -Os -mcall-prologues
 
-OBJECTS=AtomBusMon.o status.o $(CPU_OBJECTS) 
+OBJECTS=AtomBusMon.o status.o $(CPU_OBJECTS)
 
 build: $(TARGET).mcs
 
@@ -37,25 +37,23 @@ working/$(PROJECT).bit:
 $(TARGET).bit: $(PROG).mem working/$(PROJECT).bit
 	data2mem -bm $(BMM_FILE) -bd $(PROG).mem -bt working/$(PROJECT).bit -o b $(TARGET).bit
 
-$(PROG).mem: $(PROG).hex
-	srec_cat  $< -Intel -Byte_Swap 2  -Data_Only -o tmp.mem -vmem 8
-	gawk ' BEGIN{FS=" ";} { $$1= ""; print}' tmp.mem > $@
-	rm tmp.mem
+$(PROG).mem: $(PROG).bin
+	od -An -tx1 -w16 -v <$(PROG).bin >$(PROG).mem
 
-$(PROG).hex : $(PROG).out 
-	$(OBJCOPY) -R .eeprom -O ihex $(PROG).out $(PROG).hex 
+$(PROG).bin : $(PROG).out
+	$(OBJCOPY) -R .comment --reverse-bytes=2 -O binary $(PROG).out $(PROG).bin
 
 $(PROG).out : $(OBJECTS)
 	$(CC) $(CFLAGS) -o $(PROG).out -Wl,-Map,$(PROG).map $^
 
-%.o : %.c 
+%.o : %.c
 	$(CC) $(CFLAGS) -Os -c $<
 
 %.o : %.S
 	$(CC) $(CFLAGS) -Os -c $<
 
 clean:
-	rm -f $(TARGET).bit $(TARGET).mcs $(PROG).mem $(PROG).hex $(PROG).out $(PROG).map *.o
+	rm -f $(TARGET).bit $(TARGET).mcs $(PROG).mem $(PROG).bin $(PROG).out $(PROG).map *.o
 
 clobber: clean
 	rm -rf $(BMM_FILE) working/ iceconfig/
