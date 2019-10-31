@@ -742,11 +742,11 @@ int lookupBreakpointN(int n) {
 }
 
 int lookupBreakpoint(char *params) {
-  int n = -1;
-  sscanf(params, "%x", &n);
-  n = lookupBreakpointN(n);
+  int addr = -1;
+  sscanf(params, "%x", &addr);
+  int n = lookupBreakpointN(addr);
   if (n < 0) {
-    log0("Breakpoint/watch not set at %04X\n", n);
+    log0("Breakpoint/watch not set at %04X\n", addr);
   }
   return n;
 }
@@ -777,11 +777,29 @@ void logTooManyBreakpoints() {
   log0("All %d breakpoints are already set\n", numbkpts);
 }
 
+void uploadBreakpoints() {
+  int i;
+  // Disable breakpoints to allow loading
+  hwCmd(CMD_BRKPT_ENABLE, 0);
+
+  // Load breakpoints into comparators
+  for (i = 0; i < numbkpts; i++) {
+    shiftBreakpointRegister(breakpoints[i], masks[i], modes[i], triggers[i]);
+  }
+  for (i = numbkpts; i < MAXBKPTS; i++) {
+    shiftBreakpointRegister(0, 0, 0, 0);
+  }
+  // Enable breakpoints
+  hwCmd(CMD_BRKPT_ENABLE, 1);
+}
+
 void setBreakpoint(int n, unsigned int addr, unsigned int mask, unsigned int mode, int trigger) {
   breakpoints[n] = addr & mask;
   masks[n] = mask;
   modes[n] = mode;
   triggers[n] = trigger;
+  // Update the hardware copy of the breakpoints
+  uploadBreakpoints();
 }
 
 void clearBreakpoint(int n) {
@@ -793,6 +811,9 @@ void clearBreakpoint(int n) {
     triggers[i] = triggers[i + 1];
   }
   numbkpts--;
+  // Update the hardware copy of the breakpoints
+  uploadBreakpoints();
+
 }
 
 // A generic helper that does most of the work of the watch/breakpoint commands
@@ -802,45 +823,48 @@ void genericBreakpoint(char *params, unsigned int mode) {
   unsigned int mask = 0xFFFF;
   int trigger = -1;
   sscanf(params, "%x %x %x", &addr, &mask, &trigger);
+  // First, see if a breakpoint with this address already exists
   for (i = 0; i < numbkpts; i++) {
     if (breakpoints[i] == addr) {
       if (modes[i] & mode) {
         logMode(mode);
         log0(" already set at %04X\n", addr);
+        return;
       } else {
         // Preserve the existing trigger, unless it is overridden
         if (trigger == -1) {
           trigger = triggers[i];
         }
-        logBreakpoint(addr, mode);
-        setBreakpoint(i, addr, mask, modes[i] | mode, trigger);
+        // Preserve the existing modes
+        mode |= modes[i];
+        break;
       }
-      return;
     }
   }
-  if (numbkpts == MAXBKPTS) {
-    logTooManyBreakpoints();
-    return;
-  }
-  numbkpts++;
-  // New breakpoint, so if trigger not specified, set to ALWAYS
-  if (trigger == -1) {
-    trigger = TRIGGER_ALWAYS;
-  }
-  for (i = numbkpts - 2; i >= -1; i--) {
-    if (i == -1 || breakpoints[i] < addr) {
-      logBreakpoint(addr, mode);
-      setBreakpoint(i + 1, addr, mask, mode, trigger);
+  // If existing breakpoint not find, then create a new one
+  if (i == numbkpts) {
+    if (numbkpts == MAXBKPTS) {
+      logTooManyBreakpoints();
       return;
-    } else {
-      breakpoints[i + 1] = breakpoints[i];
-      masks[i + 1] = masks[i];
-      modes[i + 1] = modes[i];
-      triggers[i + 1] = triggers[i];
     }
+    // New breakpoint, so if trigger not specified, set to ALWAYS
+    if (trigger == -1) {
+      trigger = TRIGGER_ALWAYS;
+    }
+    // Maintain the breakpoints in order of address
+    while (i > 0 && breakpoints[i - 1] > addr) {
+        breakpoints[i] = breakpoints[i - 1];
+        masks[i] = masks[i - 1];
+        modes[i] = modes[i - 1];
+        triggers[i] = triggers[i - 1];
+        i--;
+    }
+    numbkpts++;
   }
+  // At this point, i contains the index of the new breakpoint
+  logBreakpoint(addr, mode);
+  setBreakpoint(i, addr, mask, mode, trigger);
 }
-
 
 /********************************************************
  * Test Helpers
@@ -921,6 +945,25 @@ void test(unsigned int start, unsigned int end, int data) {
 }
 #endif // CPU_EMBEDDED
 
+int pollForEvents() {
+  int cont = 1;
+  while (STATUS_DIN & BW_ACTIVE_MASK) {
+    cont = logDetails();
+    hwCmd(CMD_WATCH_READ, 0);
+    Delay_us(10);
+  }
+  if (STATUS_DIN & INTERRUPTED_MASK) {
+    cont = 0;
+  }
+  if (Serial_ByteRecieved0()) {
+    // Interrupt on a return, ignore other characters
+    if (Serial_RxByte0() == 13) {
+      cont = 0;
+    }
+  }
+  return cont;
+}
+
 /*******************************************
  * User Commands
  *******************************************/
@@ -935,7 +978,7 @@ void doCmdHelp(char *params) {
 }
 
 void doCmdStep(char *params) {
-  static long instructions = 1;
+  long instructions = 1;
   long i;
   long j;
   sscanf(params, "%ld", &instructions);
@@ -950,6 +993,11 @@ void doCmdStep(char *params) {
   for (i = 1; i <= instructions; i++) {
     // Step the CPU
     hwCmd(CMD_STEP, 0);
+    // Output any watch/breakpoint messages
+    if (!pollForEvents()) {
+      log0("Interrupted after %ld instructions\n", i);
+      i = instructions;
+    }
     if (i == instructions || (trace && (--j == 0))) {
       Delay_us(10);
       logAddr();
@@ -1302,34 +1350,19 @@ void doCmdNext(char *params) {
     logTooManyBreakpoints();
     return;
   }
-  setBreakpoint(numbkpts++, nextAddr, 0xffff, (1 << BRKPT_EXEC) | (1 << TRANSIENT), TRIGGER_ALWAYS);
+  numbkpts++;
+  setBreakpoint(numbkpts - 1, nextAddr, 0xffff, (1 << BRKPT_EXEC) | (1 << TRANSIENT), TRIGGER_ALWAYS);
   doCmdContinue(params);
 }
 
 void doCmdContinue(char *params) {
-  int i;
-  int status;
   int reset = 0;
   sscanf(params, "%d", &reset);
-
-  // Disable breakpoints to allow loading
-  hwCmd(CMD_BRKPT_ENABLE, 0);
-
-  // Load breakpoints into comparators
-  for (i = 0; i < numbkpts; i++) {
-    shiftBreakpointRegister(breakpoints[i], masks[i], modes[i], triggers[i]);
-  }
-  for (i = numbkpts; i < MAXBKPTS; i++) {
-    shiftBreakpointRegister(0, 0, 0, 0);
-  }
 
 #if defined(CPU_6809)
   // Step the 6809, otherwise the breakpoint happends again immediately
   hwCmd(CMD_STEP, 0);
 #endif
-
-  // Enable breakpoints
-  hwCmd(CMD_BRKPT_ENABLE, 1);
 
   // Disable single stepping
   setSingle(0);
@@ -1344,31 +1377,11 @@ void doCmdContinue(char *params) {
 
   // Wait for breakpoint to become active
   log0("CPU free running...\n");
-  int cont = 1;
-  do {
-    status = STATUS_DIN;
-    if (status & BW_ACTIVE_MASK) {
-      cont = logDetails();
-      hwCmd(CMD_WATCH_READ, 0);
-    }
-    if (status & INTERRUPTED_MASK) {
-      cont = 0;
-    }
-    if (Serial_ByteRecieved0()) {
-       // Interrupt on a return, ignore other characters
-       if (Serial_RxByte0() == 13) {
-          cont = 0;
-       }
-    }
-    Delay_us(10);
-  } while (cont);
+  while (pollForEvents());
   log0("Interrupted\n");
 
   // Enable single stepping
   setSingle(1);
-
-  // Disable breakpoints
-  hwCmd(CMD_BRKPT_ENABLE, 0);
 
   // Show current instruction
   logAddr();
