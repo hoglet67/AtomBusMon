@@ -306,7 +306,7 @@ unsigned int       masks[MAXBKPTS];
 unsigned int       modes[MAXBKPTS];
 
 // The number of different watch/breakpoint modes
-#define NUM_MODES   10
+#define NUM_MODES   11
 
 // The following watch/breakpoint modes are defined
 #define BRKPT_MEM_READ  0
@@ -319,6 +319,7 @@ unsigned int       modes[MAXBKPTS];
 #define WATCH_IO_WRITE  7
 #define BRKPT_EXEC      8
 #define WATCH_EXEC      9
+#define TRANSIENT      10
 
 // Breakpoint Mode Strings, should match the modes above
 char *modeStrings[NUM_MODES] = {
@@ -331,7 +332,8 @@ char *modeStrings[NUM_MODES] = {
   "IO Wr Brkpt",
   "IO Wr Watch",
   "Ex Brkpt",
-  "Ex Watch"
+  "Ex Watch",
+  "Transient"
 };
 
 // For convenience, several masks are defined that group similar types of breakpoint/watch
@@ -395,13 +397,9 @@ unsigned int memAddr = 0;
 // The address of the next instruction
 unsigned int nextAddr = 0;
 
-// The address of the transient breakpoint
-unsigned int transientAddr = 0xffff;
-
 // When single stepping, trace (i.e. log) event N instructions
 // Setting this to 0 will disable logging
 long trace;
-
 
 /********************************************************
  * User Command Processor
@@ -1300,8 +1298,7 @@ void doCmdNext(char *params) {
     logTooManyBreakpoints();
     return;
   }
-  transientAddr = nextAddr;
-  setBreakpoint(numbkpts++, nextAddr, 0xffff, 1 << BRKPT_EXEC, TRIGGER_ALWAYS);
+  setBreakpoint(numbkpts++, nextAddr, 0xffff, (1 << BRKPT_EXEC) | (1 << TRANSIENT), TRIGGER_ALWAYS);
   doCmdContinue(params);
 }
 
@@ -1372,14 +1369,10 @@ void doCmdContinue(char *params) {
   // Show current instruction
   logAddr();
 
-  // Check if we have hit the transient breakpoint
-  if (memAddr == transientAddr) {
-    // Attempt to remove the transient breakpoint
-    int n = lookupBreakpointN(transientAddr);
-    if (n >= 0) {
-      clearBreakpoint(n);
-    }
-    transientAddr = 0xFFFF;
+  // If we have hit the transient breakpoint, clear it
+  int n = lookupBreakpointN(memAddr);
+  if ((n >= 0)  && (modes[n] & (1 << TRANSIENT))) {
+    clearBreakpoint(n);
   }
 }
 
