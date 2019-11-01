@@ -135,12 +135,22 @@ begin
     WR_n_j <= WR_n_i;					    		-- 0247a
     HALT_n <= HALT_n_int;
 
-    MREQ_n <= MREQ_n_i when BUSAK_n_i = '1' else 'Z';
-    IORQ_n <= IORQ_n_i or IReq_Inhibit when BUSAK_n_i = '1' else 'Z';	-- 0247a
-    RD_n <= RD_n_i when BUSAK_n_i = '1' else 'Z';
-    WR_n <= WR_n_j when BUSAK_n_i = '1' else 'Z';			-- 0247a
-    RFSH_n <= RFSH_n_i when BUSAK_n_i = '1' else 'Z';
-    A <= A_i when BUSAK_n_i = '1' else (others => 'Z');
+
+    --Remove tristate as in ICE-Z80 this is implmeneted in Z80CpuMon
+    --MREQ_n <= MREQ_n_i; when BUSAK_n_i = '1' else 'Z';
+    --IORQ_n <= IORQ_n_i or IReq_Inhibit when BUSAK_n_i = '1' else 'Z';	-- 0247a
+    --RD_n <= RD_n_i when BUSAK_n_i = '1' else 'Z';
+    --WR_n <= WR_n_j when BUSAK_n_i = '1' else 'Z';			-- 0247a
+    --RFSH_n <= RFSH_n_i when BUSAK_n_i = '1' else 'Z';
+    --A <= A_i when BUSAK_n_i = '1' else (others => 'Z');
+
+    MREQ_n <= MREQ_n_i;
+    IORQ_n <= IORQ_n_i or IReq_Inhibit;	-- 0247a
+    RD_n <= RD_n_i;
+    WR_n <= WR_n_j;			-- 0247a
+    RFSH_n <= RFSH_n_i;
+    A <= A_i;
+
     Dout <= DO;
     Den  <= Write and BUSAK_n_i;
 

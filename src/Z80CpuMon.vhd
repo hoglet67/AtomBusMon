@@ -110,6 +110,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal RFSH_n_int     : std_logic;
     signal M1_n_int       : std_logic;
     signal BUSAK_n_int    : std_logic;
+    signal BUSAK_n_comb   : std_logic;
     signal WAIT_n_latched : std_logic;
     signal TState         : std_logic_vector(2 downto 0);
     signal TState1        : std_logic_vector(2 downto 0);
@@ -416,18 +417,34 @@ begin
 
     -- TODO: Also need to take account of BUSRQ_n/BUSAK_n
 
-    MREQ_n  <= MREQ_n_int  when state = idle else mon_mreq_n and mon_xx_n;
-    IORQ_n  <= IORQ_n_int  when state = idle else mon_iorq_n;
-    RFSH_n  <= RFSH_n_int  when state = idle else mon_rfsh_n;
-    WR_n    <= WR_n_int    when state = idle else mon_wr_n;
-    RD_n    <= RD_n_int    when state = idle else mon_rd_n and mon_xx_n;
-    M1_n    <= M1_n_int    when state = idle else mon_m1_n;
-    BUSAK_n <= BUSAK_n_int when state = idle else mon_busak_n;
+    MREQ_n  <= 'Z'         when BUSAK_n_comb = '0' else
+               MREQ_n_int  when state = idle       else
+               mon_mreq_n and mon_xx_n;
 
-    Addr    <= x"0000"     when state = nop_t1 or state = nop_t2 else
-               rfsh_addr   when state = nop_t3 or state = nop_t4 else
-               memory_addr when state /= idle                    else
+    IORQ_n  <= 'Z'         when BUSAK_n_comb = '0' else
+               IORQ_n_int  when state = idle       else
+               mon_iorq_n;
+
+    WR_n    <= 'Z'         when BUSAK_n_comb = '0' else
+               WR_n_int    when state = idle       else
+               mon_wr_n;
+
+    RD_n    <= 'Z'         when BUSAK_n_comb = '0' else
+               RD_n_int    when state = idle       else
+               mon_rd_n and mon_xx_n;
+
+    RFSH_n  <= RFSH_n_int  when state = idle else mon_rfsh_n;
+
+    M1_n    <= M1_n_int    when state = idle else mon_m1_n;
+
+    Addr    <= (others => 'Z') when BUSAK_n_comb = '0'               else
+               x"0000"         when state = nop_t1 or state = nop_t2 else
+               rfsh_addr       when state = nop_t3 or state = nop_t4 else
+               memory_addr     when state /= idle                    else
                Addr_int;
+
+    BUSAK_n_comb <= BUSAK_n_int when state = idle else mon_busak_n;
+    BUSAK_n      <= BUSAK_n_comb;
 
 -- The Acorn Z80 Second Processor needs ~10ns of address hold time following M1
 -- and MREQ being released at the start of T3. Otherwise, the ROM switching
@@ -448,11 +465,13 @@ begin
 --        end if;
 --    end process;
 
-    Data   <= memory_dout when state = wr_wa or state = wr_t2 or state = wr_t3 else
-                     Dout when state = idle and Den = '1' else
+    Data   <= (others => 'Z') when BUSAK_n_comb = '0' else
+              memory_dout     when state = wr_wa or state = wr_t2 or state = wr_t3 else
+                     Dout     when state = idle and Den = '1' else
               (others => 'Z');
 
-    DOE_n  <= '0' when state = wr_wa or state = wr_t2 or state = wr_t3 else
+    DOE_n  <= '1' when BUSAK_n_comb = '0' else
+              '0' when state = wr_wa or state = wr_t2 or state = wr_t3 else
               '0' when state = idle and Den = '1' else
               '1';
 
