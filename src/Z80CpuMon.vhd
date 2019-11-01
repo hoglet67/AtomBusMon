@@ -89,9 +89,9 @@ end Z80CpuMon;
 
 architecture behavioral of Z80CpuMon is
 
-type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, rd_t3, wr_t1, wr_wa, wr_t2, wr_t3);
+type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, rd_t3, wr_t1, wr_wa, wr_t2, wr_t3, busack);
 
-    signal state  : state_type;
+    signal state          : state_type;
 
     signal clock_avr      : std_logic;
 
@@ -109,6 +109,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal IORQ_n_int     : std_logic;
     signal RFSH_n_int     : std_logic;
     signal M1_n_int       : std_logic;
+    signal BUSAK_n_int    : std_logic;
     signal WAIT_n_latched : std_logic;
     signal TState         : std_logic_vector(2 downto 0);
     signal TState1        : std_logic_vector(2 downto 0);
@@ -142,7 +143,11 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal mon_rfsh_n     : std_logic;
     signal mon_rd_n       : std_logic;
     signal mon_wr_n       : std_logic;
+    signal mon_busak_n1   : std_logic;
+    signal mon_busak_n2   : std_logic;
+    signal mon_busak_n    : std_logic;
 
+    signal BUSRQ_n_sync   : std_logic;
     signal INT_n_sync     : std_logic;
     signal NMI_n_sync     : std_logic;
 
@@ -232,7 +237,7 @@ begin
         RdIO_n       => ReadIO_n,
         WrIO_n       => WriteIO_n,
         Sync         => Sync,
-        Rdy          => Rdy,
+        Rdy          => open,
         nRSTin       => RESET_n_int,
         nRSTout      => nRST,
         CountCycle   => CountCycle,
@@ -285,7 +290,7 @@ begin
             WR_n    => WR_n_int,
             RFSH_n  => RFSH_n_int,
             HALT_n  => HALT_n,
-            BUSAK_n => BUSAK_n,
+            BUSAK_n => BUSAK_n_int,
             A       => Addr_int,
             Din     => Din,
             Dout    => Dout,
@@ -300,8 +305,9 @@ begin
     int_gen : process(CLK_n)
     begin
         if rising_edge(CLK_n) then
-            NMI_n_sync <= NMI_n or special(1);
-            INT_n_sync <= INT_n or special(0);
+            BUSRQ_n_sync <= BUSRQ_n;
+            NMI_n_sync   <= NMI_n or special(1);
+            INT_n_sync   <= INT_n or special(0);
         end if;
     end process;
 
@@ -410,17 +416,18 @@ begin
 
     -- TODO: Also need to take account of BUSRQ_n/BUSAK_n
 
-    MREQ_n <= MREQ_n_int  when state = idle else mon_mreq_n and mon_xx_n;
-    IORQ_n <= IORQ_n_int  when state = idle else mon_iorq_n;
-    RFSH_n <= RFSH_n_int  when state = idle else mon_rfsh_n;
-    WR_n   <= WR_n_int    when state = idle else mon_wr_n;
-    RD_n   <= RD_n_int    when state = idle else mon_rd_n and mon_xx_n;
-    M1_n   <= M1_n_int    when state = idle else mon_m1_n;
+    MREQ_n  <= MREQ_n_int  when state = idle else mon_mreq_n and mon_xx_n;
+    IORQ_n  <= IORQ_n_int  when state = idle else mon_iorq_n;
+    RFSH_n  <= RFSH_n_int  when state = idle else mon_rfsh_n;
+    WR_n    <= WR_n_int    when state = idle else mon_wr_n;
+    RD_n    <= RD_n_int    when state = idle else mon_rd_n and mon_xx_n;
+    M1_n    <= M1_n_int    when state = idle else mon_m1_n;
+    BUSAK_n <= BUSAK_n_int when state = idle else mon_busak_n;
 
-    Addr   <= x"0000"     when state = nop_t1 or state = nop_t2 else
-              rfsh_addr   when state = nop_t3 or state = nop_t4 else
-              memory_addr when state /= idle                    else
-              Addr_int;
+    Addr    <= x"0000"     when state = nop_t1 or state = nop_t2 else
+               rfsh_addr   when state = nop_t3 or state = nop_t4 else
+               memory_addr when state /= idle                    else
+               Addr_int;
 
 -- The Acorn Z80 Second Processor needs ~10ns of address hold time following M1
 -- and MREQ being released at the start of T3. Otherwise, the ROM switching
@@ -463,6 +470,7 @@ begin
             mon_rfsh_n <= '1';
             mon_m1_n <= '1';
             mon_xx_n <= '1';
+            mon_busak_n1 <= '1';
 
         elsif rising_edge(CLK_n) then
 
@@ -530,7 +538,12 @@ begin
                     state <= nop_t4;
                 when nop_t4 =>
                     mon_rfsh_n <= '1';
-                    if memory_wr1 = '1' or io_wr1 = '1' then
+                    -- Sample BUSRQ_n at the *start* of the final T-state
+                    -- (hence using BUSRQ_n_sync)
+                    if BUSRQ_n_sync = '0' then
+                        state <= busack;
+                        mon_busak_n1 <= '0';
+                    elsif memory_wr1 = '1' or io_wr1 = '1' then
                         state <= wr_t1;
                         io_not_mem <= io_wr1;
                     elsif memory_rd1 = '1' or io_rd1 = '1' then
@@ -555,8 +568,15 @@ begin
                         state <= rd_t3;
                     end if;
                 when rd_t3 =>
-                    state <= nop_t1;
-                    mon_m1_n <= mode;
+                    -- Sample BUSRQ_n at the *start* of the final T-state
+                    -- (hence using BUSRQ_n_sync)
+                    if BUSRQ_n_sync = '0' then
+                        state <= busack;
+                        mon_busak_n1 <= '0';
+                    else
+                        state <= nop_t1;
+                        mon_m1_n <= mode;
+                    end if;
 
                 -- Write cycle
                 when wr_t1 =>
@@ -572,9 +592,25 @@ begin
                         state <= wr_t3;
                     end if;
                 when wr_t3 =>
-                    state <= nop_t1;
-                    mon_m1_n <= mode;
+                    -- Sample BUSRQ_n at the *start* of the final T-state
+                    -- (hence using BUSRQ_n_sync)
+                    if BUSRQ_n_sync = '0' then
+                        state <= busack;
+                        mon_busak_n1 <= '0';
+                    else
+                        state <= nop_t1;
+                        mon_m1_n <= mode;
+                    end if;
 
+                -- Bus Request/Ack cycle
+                when busack =>
+                    -- Release BUSAK_n on the next rising edge after BUSRQ_n seen
+                    -- (hence using BUSRQ_n)
+                    if BUSRQ_n_sync = '1' then
+                        state <= nop_t1;
+                        mon_m1_n <= mode;
+                        mon_busak_n1 <= '1';
+                    end if;
             end case;
         end if;
     end process;
@@ -615,8 +651,12 @@ begin
             else
                 mon_wr_n <= '1';
             end if;
+            -- Half-cycle delayed version of BUSRQ_n_sync
+            mon_busak_n2 <= BUSRQ_n_sync;
         end if;
     end process;
+
+    mon_busak_n <= mon_busak_n1 or mon_busak_n2;
 
     RESET_n_int <= RESET_n and sw_interrupt_n and nRST;
 

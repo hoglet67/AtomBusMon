@@ -104,7 +104,6 @@ architecture behavioral of MC6809CpuMonCore is
     signal Din            : std_logic_vector(7 downto 0);
     signal Dout           : std_logic_vector(7 downto 0);
     signal Sync_int       : std_logic;
-    signal Rdy_int        : std_logic;
     signal hold           : std_logic;
 
     signal memory_rd      : std_logic;
@@ -193,7 +192,7 @@ begin
         RdIO_n       => '1',
         WrIO_n       => '1',
         Sync         => Sync_int,
-        Rdy          => Rdy_int,
+        Rdy          => open,
         nRSTin       => nRST_sync,
         nRSTout      => nRSTout,
         CountCycle   => CountCycle,
