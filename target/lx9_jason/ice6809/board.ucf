@@ -4,7 +4,7 @@ NET "E" CLOCK_DEDICATED_ROUTE = FALSE;
 # This is only needed because of the the clock_test output
 PIN "inst_dcm1/CLKFX_BUFG_INST.O" CLOCK_DEDICATED_ROUTE = FALSE;
 
-NET "clock49"  LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
+NET "clock"      LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
 
 #NET "VSS"       LOC="P94"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 1
 NET "NMI_n"      LOC="P95"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 2
@@ -76,7 +76,7 @@ NET "test2"    LOC="P137" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # 
 #NET "test4"   LOC="P120" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # led5
 #NET "test5"   LOC="P118" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # led7
 
-# A clock generated from the 50.000MHz clock 
+# A clock generated from the 50.000MHz clock
 NET "clock_test" LOC="P141" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 
 # A jumper to enable 6809E mode

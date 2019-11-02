@@ -26,7 +26,7 @@ entity MC6809CpuMonLX9 is
        avr_prog_mem_size : integer := 1024 * 9  -- default value correct for LX9
        );
     port (
-        clock49         : in    std_logic;
+        clock           : in    std_logic;
 
         -- A locally generated test clock
         -- 1.8457 MHz in E     Mode (6809E) so it can drive E     (PIN34)
@@ -132,7 +132,7 @@ begin
       port map (
 
         -- Fast clock
-        clock           => clock49,
+        clock           => clock,
 
         -- Quadrature clocks
         E               => E,

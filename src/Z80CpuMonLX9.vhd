@@ -26,7 +26,7 @@ entity Z80CpuMonLX9 is
         avr_prog_mem_size : integer := 1024 * 16 -- default value correct for LX9
         );
     port (
-        clock49         : in    std_logic;
+        clock           : in    std_logic;
 
         -- Z80 Signals
         RESET_n         : in    std_logic;
@@ -119,7 +119,7 @@ begin
             avr_prog_mem_size => avr_prog_mem_size
             )
         port map(
-            clock49         =>  clock49,
+            clock           =>  clock,
 
             -- Z80 Signals
             RESET_n         =>  RESET_n,

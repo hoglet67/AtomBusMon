@@ -133,7 +133,7 @@ begin
             avr_prog_mem_size => avr_prog_mem_size
             )
         port map (
-            clock49           => clock,
+            clock             => clock,
 
             -- Z80 Signals
             RESET_n           => RESET_n,

@@ -29,7 +29,7 @@ entity Z80CpuMon is
        avr_prog_mem_size : integer
        );
     port (
-        clock49         : in    std_logic;
+        clock           : in    std_logic;
 
         -- Z80 Signals
         RESET_n         : in    std_logic;
@@ -204,7 +204,7 @@ begin
         ClkPer       => ClkPer
       )
       port map(
-        CLKIN_IN     => clock49,
+        CLKIN_IN     => clock,
         CLKFX_OUT    => clock_avr
       );
 
@@ -435,9 +435,9 @@ begin
 --
 -- If the problem recurs, we should switch to something like:
 --
---    addr_delay : process(clock49)
+--    addr_delay : process(clock)
 --    begin
---        if rising_edge(clock49) then
+--        if rising_edge(clock) then
 --            Addr2 <= Addr1;
 --            Addr <= Addr2;
 --        end if;
