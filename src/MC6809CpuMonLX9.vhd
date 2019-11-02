@@ -230,7 +230,7 @@ begin
 
     -- Seperate piece of circuitry that emits a 7.3728MHz clock
     inst_dcm1 : entity work.DCM1 port map(
-        CLKIN_IN          => clock49,
+        CLKIN_IN          => clock,
         CLK0_OUT          => clock7_3728,
         CLK0_OUT1         => open,
         CLK2X_OUT         => open
