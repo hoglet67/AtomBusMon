@@ -144,10 +144,6 @@ architecture behavioral of MC6809CpuMon is
     signal IRQ_n_masked   : std_logic;
     signal FIRQ_n_masked  : std_logic;
 
-    signal led_trig0_n    : std_logic;
-    signal led_trig1_n    : std_logic;
-    signal led_bkpt_n     : std_logic;
-
 begin
 
     LIC     <= LIC_int;
@@ -157,10 +153,6 @@ begin
 
     -- The following inputs are not implemented
     -- DMA_n_BREQ_n  (6809 mode)
-
-    led_trig0 <= not led_trig0_n;
-    led_trig1 <= not led_trig1_n;
-    led_bkpt <= not led_bkpt_n;
 
     inst_dcm0 : entity work.DCM0
       generic map (
@@ -198,11 +190,11 @@ begin
         trig         => trig,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
-        sw1          => sw_interrupt,
-        nsw2         => not sw_reset,
-        led3         => led_trig0_n,
-        led6         => led_trig1_n,
-        led8         => led_bkpt_n,
+        sw_interrupt => sw_interrupt,
+        sw_reset     => sw_reset,
+        led_bkpt     => led_bkpt,
+        led_trig0    => led_trig0,
+        led_trig1    => led_trig1,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk,

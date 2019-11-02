@@ -84,14 +84,14 @@ entity BusMonCore is
         avr_RxD          : in    std_logic;
         avr_TxD          : out   std_logic;
 
-        -- GODIL Switches
-        sw1              : in    std_logic;
-        nsw2             : in    std_logic;
+        -- Switches
+        sw_interrupt    : in    std_logic;
+        sw_reset        : in    std_logic;
 
-        -- GODIL LEDs
-        led3             : out   std_logic;
-        led6             : out   std_logic;
-        led8             : out   std_logic;
+        -- LEDs
+        led_bkpt        : out   std_logic;
+        led_trig0       : out   std_logic;
+        led_trig1       : out   std_logic;
 
         -- OHO_DY1 connected to test connector
         tmosi            : out   std_logic;
@@ -213,7 +213,7 @@ begin
         portdin(3)           => '0',
         portdin(4)           => '0',
         portdin(5)           => '0',
-        portdin(6)           => sw1,
+        portdin(6)           => sw_interrupt,
         portdin(7)           => fifo_empty_n,
 
         portdout(0)           => muxsel(0),
@@ -258,16 +258,16 @@ begin
     -- bw_state1(1) is 1 for writes, and 0 for reads
     fifo_din <= cycleCount_inst & "0000" & bw_status1 & Data1 & Addr1 & addr_inst;
 
-    led3 <= not trig(0);       -- red
-    led6 <= not trig(1);       -- red
-    led8 <= not brkpt_active;  -- green
+    led_trig0 <= trig(0);
+    led_trig1 <= trig(1);
+    led_bkpt  <= brkpt_active;
 
-    nrst_avr <= nsw2;
+    nrst_avr <= not sw_reset;
 
     -- OHO DY1 Display for Testing
     dy_data(0) <= hex & "0000" & Addr(3 downto 0);
     dy_data(1) <= hex & "0000" & Addr(7 downto 4);
-    dy_data(2) <= hex & "0000" & "00" & (not nsw2) & sw1;
+    dy_data(2) <= hex & "0000" & "00" & sw_reset & sw_interrupt;
 
     mux <= addr_inst(7 downto 0)            when muxsel = 0 else
            addr_inst(15 downto 8)           when muxsel = 1 else

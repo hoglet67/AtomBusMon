@@ -182,16 +182,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
 
     signal rfsh_addr      : std_logic_vector(15 downto 0);
 
-    signal led_trig0_n    : std_logic;
-    signal led_trig1_n    : std_logic;
-    signal led_bkpt_n     : std_logic;
-
 begin
-
-    led_trig0 <= not led_trig0_n;
-    led_trig1 <= not led_trig1_n;
-    led_bkpt <= not led_bkpt_n;
-
 
     --------------------------------------------------------
     -- Clocking
@@ -240,11 +231,11 @@ begin
         trig         => trig,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD_int,
-        sw1          => '0',
-        nsw2         => not sw_reset,
-        led3         => led_trig0_n,
-        led6         => led_trig1_n,
-        led8         => led_bkpt_n,
+        sw_interrupt => '0',
+        sw_reset     => sw_reset,
+        led_bkpt     => led_bkpt,
+        led_trig0    => led_trig0,
+        led_trig1    => led_trig1,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk,
