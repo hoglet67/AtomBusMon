@@ -10,9 +10,9 @@
 #-u 348000                                       \
 #-u 39C000                                       \
 
-DIR=releases
+DIR=icemulti
 
-NAME=${DIR}/IceMulti_$(date +"%Y%m%d_%H%M")_$USER
+NAME=${DIR}/icemulti
 
 mkdir -p ${DIR}
 

@@ -10,6 +10,7 @@ clean:
 	for dir in $(SUB_DIRS); do \
 	    $(MAKE) -C $$dir clean; \
 	done;
+	rm -rf icemulti
 
 clobber:
 	for dir in $(SUB_DIRS); do \
