@@ -56,4 +56,4 @@ clean:
 	rm -f $(TARGET).bit $(TARGET).mcs $(PROG).mem $(PROG).bin $(PROG).out $(PROG).map *.o
 
 clobber: clean
-	rm -rf $(BMM_FILE) working/ iceconfig/
+	rm -rf $(BMM_FILE) working/ iseconfig/

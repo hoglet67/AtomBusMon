@@ -21,14 +21,13 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 use work.OhoPack.all ;
 
-entity MC6809CpuMonCore is
+entity MC6809CpuMon is
     generic (
-       UseCPU09Core      : boolean := true;
-       ClkMult           : integer := 10;       -- default value correct for GODIL
-       ClkDiv            : integer := 31;       -- default value correct for GODIL
-       ClkPer            : real    := 20.345;   -- default value correct for GODIL
-       num_comparators   : integer := 8;        -- default value correct for GODIL
-       avr_prog_mem_size : integer := 1024 * 9  -- default value correct for GODIL
+       ClkMult           : integer;
+       ClkDiv            : integer;
+       ClkPer            : real;
+       num_comparators   : integer;
+       avr_prog_mem_size : integer
        );
     port (
         -- Fast clock
@@ -86,9 +85,9 @@ entity MC6809CpuMonCore is
         test2           : out   std_logic
 
     );
-end MC6809CpuMonCore;
+end MC6809CpuMon;
 
-architecture behavioral of MC6809CpuMonCore is
+architecture behavioral of MC6809CpuMon is
 
     signal clock_avr      : std_logic;
 
@@ -251,28 +250,26 @@ begin
     Regs1(111 downto  96) <= Regs(111 downto  96);
     Regs1(255 downto 112) <= (others => '0');
 
-    GenCPU09Core: if UseCPU09Core generate
-        inst_cpu09: entity work.cpu09 port map (
-            clk      => cpu_clk,
-            rst      => not nRST_sync,
-            vma      => AVMA,
-            lic_out  => LIC_int,
-            ifetch   => ifetch,
-            opfetch  => open,
-            ba       => BA,
-            bs       => BS,
-            addr     => Addr_int,
-            rw       => R_W_n_int,
-            data_out => Dout,
-            data_in  => Din,
-            irq      => IRQ_sync,
-            firq     => FIRQ_sync,
-            nmi      => NMI_sync,
-            halt     => HALT_sync,
-            hold     => hold,
-            Regs     => Regs
+    inst_cpu09: entity work.cpu09 port map (
+        clk      => cpu_clk,
+        rst      => not nRST_sync,
+        vma      => AVMA,
+        lic_out  => LIC_int,
+        ifetch   => ifetch,
+        opfetch  => open,
+        ba       => BA,
+        bs       => BS,
+        addr     => Addr_int,
+        rw       => R_W_n_int,
+        data_out => Dout,
+        data_in  => Din,
+        irq      => IRQ_sync,
+        firq     => FIRQ_sync,
+        nmi      => NMI_sync,
+        halt     => HALT_sync,
+        hold     => hold,
+        Regs     => Regs
         );
-    end generate;
 
 
     -- Synchronize all external inputs, to avoid subtle bugs like missed interrupts

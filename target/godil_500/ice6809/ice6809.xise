@@ -237,7 +237,7 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="70"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="27"/>
     </file>
-    <file xil_pn:name="../../../src/MC6809CpuMonCore.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../../src/MC6809CpuMon.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="61"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="54"/>
     </file>

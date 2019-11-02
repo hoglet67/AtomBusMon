@@ -7,12 +7,12 @@
 -- /___/  \  /
 -- \   \   \/
 --  \   \
---  /   /         Filename  : MC6808CpuMonGODIL.vhd
+--  /   /         Filename  : MC6808CpuMonLX9.vhd
 -- /___/   /\     Timestamp : 24/10/2019
 -- \   \  /  \
 --  \___\/\___\
 --
---Design Name: MC6808CpuMonGODIL
+--Design Name: MC6808CpuMonLX9
 --Device: XC3S250E/XC3S500E
 
 library ieee;
@@ -20,10 +20,10 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
-entity MC6809CpuMonGODIL is
+entity MC6809CpuMonLX9 is
     generic (
-       num_comparators   : integer := 8;        -- default value correct for GODIL
-       avr_prog_mem_size : integer := 1024 * 9  -- default value correct for GODIL
+       num_comparators   : integer := 8;        -- default value correct for LX9
+       avr_prog_mem_size : integer := 1024 * 9  -- default value correct for LX9
        );
     port (
         clock49         : in    std_logic;
@@ -67,11 +67,11 @@ entity MC6809CpuMonGODIL is
         avr_RxD         : in    std_logic;
         avr_TxD         : out   std_logic;
 
-        -- GODIL Switches
+        -- LX9 Switches
         sw1             : in    std_logic;
         sw2             : in    std_logic;
 
-        -- GODIL LEDs
+        -- LX9 LEDs
         led3            : out   std_logic;
         led6            : out   std_logic;
         led8            : out   std_logic;
@@ -86,9 +86,9 @@ entity MC6809CpuMonGODIL is
         test2           : out   std_logic
 
     );
-end MC6809CpuMonGODIL;
+end MC6809CpuMonLX9;
 
-architecture behavioral of MC6809CpuMonGODIL is
+architecture behavioral of MC6809CpuMonLX9 is
 
     signal clk_count      : std_logic_vector(1 downto 0);
     signal quadrature     : std_logic_vector(1 downto 0);
@@ -115,18 +115,17 @@ architecture behavioral of MC6809CpuMonGODIL is
 
 begin
 
-    -- Generics allows polarity of switches/LEDs to be tweaked from the project file
     sw_interrupt <= sw1;
-    sw_reset     <= not sw2;
-    led3         <= not led_trig0;
-    led6         <= not led_trig1;
-    led8         <= not led_bkpt;
+    sw_reset     <= sw2;
+    led3         <= led_trig0;
+    led6         <= led_trig1;
+    led8         <= led_bkpt;
 
     wrapper : entity work.MC6809CpuMon
       generic map (
-          ClkMult           => 10,
-          ClkDiv            => 31,
-          ClkPer            => 20.345,
+          ClkMult           => 8,
+          ClkDiv            => 25,
+          ClkPer            => 20.000,
           num_comparators   => num_comparators,
           avr_prog_mem_size => avr_prog_mem_size
       )

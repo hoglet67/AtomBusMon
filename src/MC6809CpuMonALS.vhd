@@ -22,9 +22,6 @@ use ieee.numeric_std.all;
 
 entity MC6809CpuMonALS is
     generic (
-       ClkMult           : integer := 8;        -- default value correct for ALS
-       ClkDiv            : integer := 25;       -- default value correct for ALS
-       ClkPer            : real    := 20.0;     -- default value correct for ALS
        num_comparators   : integer := 8;        -- default value correct for ALS
        avr_prog_mem_size : integer := 1024 * 9  -- default value correct for ALS
        );
@@ -93,12 +90,11 @@ begin
     sw_reset <= not sw_reset_n;
     sw_interrupt <= not sw_interrupt_n;
 
-    wrapper : entity work.MC6809CpuMonCore
+    wrapper : entity work.MC6809CpuMon
       generic map (
-          UseCPU09Core      => true,
-          ClkMult           => ClkMult,
-          ClkDiv            => ClkDiv,
-          ClkPer            => ClkPer,
+          ClkMult           => 8,
+          ClkDiv            => 25,
+          ClkPer            => 20.000,
           num_comparators   => num_comparators,
           avr_prog_mem_size => avr_prog_mem_size
       )
