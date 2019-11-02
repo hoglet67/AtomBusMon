@@ -39,7 +39,6 @@ char *cmdStrings[] = {
   "continue",
   "next",
   "step",
-#if defined(CPU_EMBEDDED)
   "regs",
   "dis",
   "fill",
@@ -55,7 +54,6 @@ char *cmdStrings[] = {
   "test",
   "srec",
   "special",
-#endif
   "reset",
   "trace",
   "blist",
@@ -81,7 +79,6 @@ void (*cmdFuncs[])(char *params) = {
   doCmdContinue,
   doCmdNext,
   doCmdStep,
-#if defined(CPU_EMBEDDED)
   doCmdRegs,
   doCmdDis,
   doCmdFill,
@@ -97,7 +94,6 @@ void (*cmdFuncs[])(char *params) = {
   doCmdTest,
   doCmdSRec,
   doCmdSpecial,
-#endif
   doCmdReset,
   doCmdTrace,
   doCmdList,
@@ -508,7 +504,6 @@ void log_addr_data(int a, int d) {
   log_char(d);
 }
 
-#if defined(CPU_EMBEDDED)
 void loadData(unsigned int data) {
   int i;
   for (i = 0; i <= 7; i++) {
@@ -628,8 +623,6 @@ void genericRead(char *params, unsigned int (*readFunc)()) {
   memAddr++;
 }
 
-#endif
-
 /********************************************************
  * Logging Helpers
  ********************************************************/
@@ -689,13 +682,11 @@ int logDetails() {
     log_addr_data(b_addr, b_data);
   }
   log0("\n");
-#if defined(CPU_EMBEDDED)
   if (mode & B_RDWR_MASK) {
     // It's only safe to do this for brkpts, as it makes memory accesses
     logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
     disMem(i_addr);
   }
-#endif
   return watch;
 }
 
@@ -703,21 +694,13 @@ void logAddr() {
   memAddr = hwRead16(OFFSET_IAL);
   // Update the serial console
   logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
-#if defined(CPU_EMBEDDED)
   //log0("%04X\n", i_addr);
   nextAddr = disMem(memAddr);
-#else
-  log0("%04X\n", memAddr);
-#endif
   return;
 }
 
 void version() {
-#if defined(CPU_EMBEDDED)
   log0("%s In-Circuit Emulator version %s\n", NAME, VERSION);
-#else
-  log0("%s Bus Monitor version %s\n", NAME, VERSION);
-#endif
   log0("Compiled at %s on %s\n",__TIME__,__DATE__);
   log0("%d watches/breakpoints implemented\n",MAXBKPTS);
 }
@@ -871,7 +854,6 @@ void genericBreakpoint(char *params, unsigned int mode) {
  * Test Helpers
  ********************************************************/
 
-#if defined(CPU_EMBEDDED)
 char *testNames[6] = {
   "Fixed",
   "Checkerboard",
@@ -944,7 +926,6 @@ void test(unsigned int start, unsigned int end, int data) {
     log0(": passed\n");
   }
 }
-#endif // CPU_EMBEDDED
 
 int pollForEvents() {
   int cont = 1;
@@ -1028,8 +1009,6 @@ void doCmdReset(char *params) {
 #endif
   logAddr();
 }
-
-#if defined(CPU_EMBEDDED)
 
 // doCmdRegs is now in regs<cpu>.c
 
@@ -1244,8 +1223,6 @@ void doCmdSpecial(char *params) {
    logSpecial("NMI", CTRL_PORT & (1 << SPECIAL_1));
    logSpecial("IRQ", CTRL_PORT & (1 << SPECIAL_0));
 }
-
-#endif // CPU_EMBEDDED
 
 void doCmdTrace(char *params) {
   long i;
