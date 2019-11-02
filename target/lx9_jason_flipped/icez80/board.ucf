@@ -77,7 +77,3 @@ NET "test2"    LOC="P137" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # 
 NET "test3"    LOC="P133" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # led4
 NET "test4"    LOC="P120" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # led5
 #NET "test5"   LOC="P118" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # led7
-
-# This output is only used in the lx9_dave builds
-# so we connect it to an unused pin
-NET "DOE_n"   LOC="P118"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 4 ;

@@ -22,15 +22,11 @@ use ieee.numeric_std.all;
 
 entity Z80CpuMon is
     generic (
-       UseT80Core        : boolean := true;
-       LEDsActiveHigh    : boolean := false;    -- default value correct for GODIL
-       SW1ActiveHigh     : boolean := true;     -- default value correct for GODIL
-       SW2ActiveHigh     : boolean := false;    -- default value correct for GODIL
-       ClkMult           : integer := 10;       -- default value correct for GODIL
-       ClkDiv            : integer := 31;       -- default value correct for GODIL
-       ClkPer            : real    := 20.345;   -- default value correct for GODIL
-       num_comparators   : integer := 8;        -- default value correct for GODIL
-       avr_prog_mem_size : integer := 1024 * 16 -- default value correct for GODIL
+       ClkMult           : integer;
+       ClkDiv            : integer;
+       ClkPer            : real;
+       num_comparators   : integer;
+       avr_prog_mem_size : integer
        );
     port (
         clock49         : in    std_logic;
@@ -52,7 +48,10 @@ entity Z80CpuMon is
         BUSAK_n         : out   std_logic;
         Addr            : out   std_logic_vector(15 downto 0);
         Data            : inout std_logic_vector(7 downto 0);
-        DOE_n           : out   std_logic;
+
+        -- Buffer Control Signals
+        DIRD            : out   std_logic;
+        tristate_n      : out   std_logic;
 
         -- Mode jumper, tie low to generate NOPs when paused
         mode            : in    std_logic;
@@ -64,14 +63,14 @@ entity Z80CpuMon is
         avr_RxD         : in    std_logic;
         avr_TxD         : out   std_logic;
 
-        -- GODIL Switches
-        sw1             : in    std_logic;
-        sw2             : in    std_logic;
+        -- Switches
+        sw_interrupt    : in    std_logic;
+        sw_reset        : in    std_logic;
 
-        -- GODIL LEDs
-        led3            : out   std_logic;
-        led6            : out   std_logic;
-        led8            : out   std_logic;
+        -- LEDs
+        led_bkpt        : out   std_logic;
+        led_trig0       : out   std_logic;
+        led_trig1       : out   std_logic;
 
         -- OHO_DY1 connected to test connector
         tmosi           : out   std_logic;
@@ -179,24 +178,20 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal wr_data        : std_logic_vector(7 downto 0);
     signal mon_data       : std_logic_vector(7 downto 0);
 
-    signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
-    signal led6_n         : std_logic;  -- led to indicate ext trig 1 is active
-    signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
-    signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
-    signal sw_reset_n     : std_logic;  -- switch to reset the CPU
-
     signal avr_TxD_int    : std_logic;
 
     signal rfsh_addr      : std_logic_vector(15 downto 0);
 
+    signal led_trig0_n    : std_logic;
+    signal led_trig1_n    : std_logic;
+    signal led_bkpt_n     : std_logic;
+
 begin
 
-    -- Generics allows polarity of switches/LEDs to be tweaked from the project file
-    sw_interrupt_n <= not sw1 when SW1ActiveHigh else sw1;
-    sw_reset_n     <= not sw2 when SW2ActiveHigh else sw2;
-    led3           <= not led3_n when LEDsActiveHigh else led3_n;
-    led6           <= not led6_n when LEDsActiveHigh else led6_n;
-    led8           <= not led8_n when LEDsActiveHigh else led8_n;
+    led_trig0 <= not led_trig0_n;
+    led_trig1 <= not led_trig1_n;
+    led_bkpt <= not led_bkpt_n;
+
 
     --------------------------------------------------------
     -- Clocking
@@ -246,10 +241,10 @@ begin
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD_int,
         sw1          => '0',
-        nsw2         => sw_reset_n,
-        led3         => led3_n,
-        led6         => led6_n,
-        led8         => led8_n,
+        nsw2         => not sw_reset,
+        led3         => led_trig0_n,
+        led6         => led_trig1_n,
+        led8         => led_bkpt_n,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk,
@@ -272,32 +267,30 @@ begin
     -- T80
     --------------------------------------------------------
 
-    GenT80Core: if UseT80Core generate
-        inst_t80: entity work.T80a port map (
-            TS      => TState,
-            Regs    => Regs,
-            PdcData => PdcData,
-            RESET_n => RESET_n_int,
-            CLK_n   => cpu_clk,
-            CEN     => cpu_clken,
-            WAIT_n  => WAIT_n,
-            INT_n   => INT_n_sync,
-            NMI_n   => NMI_n_sync,
-            BUSRQ_n => BUSRQ_n,
-            M1_n    => M1_n_int,
-            MREQ_n  => MREQ_n_int,
-            IORQ_n  => IORQ_n_int,
-            RD_n    => RD_n_int,
-            WR_n    => WR_n_int,
-            RFSH_n  => RFSH_n_int,
-            HALT_n  => HALT_n,
-            BUSAK_n => BUSAK_n_int,
-            A       => Addr_int,
-            Din     => Din,
-            Dout    => Dout,
-            DEn     => Den
+    inst_t80: entity work.T80a port map (
+        TS      => TState,
+        Regs    => Regs,
+        PdcData => PdcData,
+        RESET_n => RESET_n_int,
+        CLK_n   => cpu_clk,
+        CEN     => cpu_clken,
+        WAIT_n  => WAIT_n,
+        INT_n   => INT_n_sync,
+        NMI_n   => NMI_n_sync,
+        BUSRQ_n => BUSRQ_n,
+        M1_n    => M1_n_int,
+        MREQ_n  => MREQ_n_int,
+        IORQ_n  => IORQ_n_int,
+        RD_n    => RD_n_int,
+        WR_n    => WR_n_int,
+        RFSH_n  => RFSH_n_int,
+        HALT_n  => HALT_n,
+        BUSAK_n => BUSAK_n_int,
+        A       => Addr_int,
+        Din     => Din,
+        Dout    => Dout,
+        DEn     => Den
         );
-    end generate;
 
     --------------------------------------------------------
     -- Synchronise external interrupts
@@ -415,36 +408,21 @@ begin
     -- The _int versions come from the T80
     -- The mon_ versions come from the state machine below
 
-    -- TODO: Also need to take account of BUSRQ_n/BUSAK_n
-
-    MREQ_n  <= 'Z'         when BUSAK_n_comb = '0' else
-               MREQ_n_int  when state = idle       else
-               mon_mreq_n and mon_xx_n;
-
-    IORQ_n  <= 'Z'         when BUSAK_n_comb = '0' else
-               IORQ_n_int  when state = idle       else
-               mon_iorq_n;
-
-    WR_n    <= 'Z'         when BUSAK_n_comb = '0' else
-               WR_n_int    when state = idle       else
-               mon_wr_n;
-
-    RD_n    <= 'Z'         when BUSAK_n_comb = '0' else
-               RD_n_int    when state = idle       else
-               mon_rd_n and mon_xx_n;
-
+    MREQ_n  <= MREQ_n_int  when state = idle else mon_mreq_n and mon_xx_n;
+    IORQ_n  <= IORQ_n_int  when state = idle else mon_iorq_n;
+    WR_n    <= WR_n_int    when state = idle else mon_wr_n;
+    RD_n    <= RD_n_int    when state = idle else mon_rd_n and mon_xx_n;
     RFSH_n  <= RFSH_n_int  when state = idle else mon_rfsh_n;
-
     M1_n    <= M1_n_int    when state = idle else mon_m1_n;
 
-    Addr    <= (others => 'Z') when BUSAK_n_comb = '0'               else
-               x"0000"         when state = nop_t1 or state = nop_t2 else
-               rfsh_addr       when state = nop_t3 or state = nop_t4 else
-               memory_addr     when state /= idle                    else
+    Addr    <= x"0000"     when state = nop_t1 or state = nop_t2 else
+               rfsh_addr   when state = nop_t3 or state = nop_t4 else
+               memory_addr when state /= idle                    else
                Addr_int;
 
-    BUSAK_n_comb <= BUSAK_n_int when state = idle else mon_busak_n;
-    BUSAK_n      <= BUSAK_n_comb;
+    tristate_n <= BUSAK_n_int when state = idle else mon_busak_n1;
+
+    BUSAK_n    <= BUSAK_n_int when state = idle else mon_busak_n;
 
 -- The Acorn Z80 Second Processor needs ~10ns of address hold time following M1
 -- and MREQ being released at the start of T3. Otherwise, the ROM switching
@@ -465,17 +443,15 @@ begin
 --        end if;
 --    end process;
 
-    Data   <= (others => 'Z') when BUSAK_n_comb = '0' else
-              memory_dout     when state = wr_wa or state = wr_t2 or state = wr_t3 else
-                     Dout     when state = idle and Den = '1' else
+    Data   <= memory_dout when state = wr_wa or state = wr_t2 or state = wr_t3 else
+              Dout        when state = idle and Den = '1' else
               (others => 'Z');
 
-    DOE_n  <= '1' when BUSAK_n_comb = '0' else
-              '0' when state = wr_wa or state = wr_t2 or state = wr_t3 else
+    DIRD   <= '0' when state = wr_wa or state = wr_t2 or state = wr_t3 else
               '0' when state = idle and Den = '1' else
               '1';
 
-    Din    <= Data;
+    Din <= Data;
 
     men_access_machine_rising : process(CLK_n, RESET_n)
     begin
@@ -634,7 +610,7 @@ begin
         end if;
     end process;
 
-    men_access_machine_falling : process(RESET_n)
+    men_access_machine_falling : process(CLK_n)
     begin
         if falling_edge(CLK_n) then
             -- For memory access cycles, mreq/iorq/rd/wr all change in the middle of
@@ -677,7 +653,7 @@ begin
 
     mon_busak_n <= mon_busak_n1 or mon_busak_n2;
 
-    RESET_n_int <= RESET_n and sw_interrupt_n and nRST;
+    RESET_n_int <= RESET_n and (not sw_interrupt) and nRST;
 
     avr_TxD <= avr_Txd_int;
 
