@@ -7,23 +7,23 @@
 -- /___/  \  /
 -- \   \   \/
 --  \   \
---  /   /         Filename  : Z80CpuMonGODIL.vhd
+--  /   /         Filename  : Z80CpuMonLX9.vhd
 -- /___/   /\     Timestamp : 14/10/2018
 -- \   \  /  \
 --  \___\/\___\
 --
---Design Name: Z80CpuMonGODIL
---Device: XC3S500E
+--Design Name: Z80CpuMonLX9
+--Device: XC6SLX9
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
-entity Z80CpuMonGODIL is
+entity Z80CpuMonLX9 is
     generic (
-        num_comparators   : integer := 8;        -- default value correct for GODIL
-        avr_prog_mem_size : integer := 1024 * 16 -- default value correct for GODIL
+        num_comparators   : integer := 8;        -- default value correct for LX9
+        avr_prog_mem_size : integer := 1024 * 16 -- default value correct for LX9
         );
     port (
         clock49         : in    std_logic;
@@ -56,11 +56,11 @@ entity Z80CpuMonGODIL is
         avr_RxD         : in    std_logic;
         avr_TxD         : out   std_logic;
 
-        -- GODIL Switches
+        -- LX9 Switches
         sw1             : in    std_logic;
         sw2             : in    std_logic;
 
-        -- GODIL LEDs
+        -- LX9 LEDs
         led3            : out   std_logic;
         led6            : out   std_logic;
         led8            : out   std_logic;
@@ -77,9 +77,9 @@ entity Z80CpuMonGODIL is
         test4           : out   std_logic
 
         );
-end Z80CpuMonGODIL;
+end Z80CpuMonLX9;
 
-architecture behavioral of Z80CpuMonGODIL is
+architecture behavioral of Z80CpuMonLX9 is
 
     signal sw_reset     : std_logic;
     signal sw_interrupt : std_logic;
@@ -96,11 +96,12 @@ architecture behavioral of Z80CpuMonGODIL is
     signal tristate_n   : std_logic;
 
 begin
+
     sw_interrupt <= sw1;
-    sw_reset     <= not sw2;
-    led3         <= not led_trig0;
-    led6         <= not led_trig1;
-    led8         <= not led_bkpt;
+    sw_reset     <= sw2;
+    led3         <= led_trig0;
+    led6         <= led_trig1;
+    led8         <= led_bkpt;
 
     -- Tristateable output drivers
     MREQ_n <= 'Z'             when tristate_n = '0' else MREQ_n_int;
@@ -111,9 +112,9 @@ begin
 
     wrapper : entity work.Z80CpuMon
         generic map (
-            ClkMult           => 10,
-            ClkDiv            => 31,
-            ClkPer            => 20.345,
+            ClkMult           => 8,
+            ClkDiv            => 25,
+            ClkPer            => 20.000,
             num_comparators   => num_comparators,
             avr_prog_mem_size => avr_prog_mem_size
             )

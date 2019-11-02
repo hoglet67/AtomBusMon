@@ -22,9 +22,6 @@ use ieee.numeric_std.all;
 
 entity Z80CpuMonALS is
     generic (
-        Clkmult           : integer := 8;        -- default value for lx9core board
-        ClkDiv            : integer := 25;       -- default value for lx9core board
-        ClkPer            : real    := 20.000;   -- default value for lx9core board
         num_comparators   : integer := 8;        -- default value for lx9core board
         avr_prog_mem_size : integer := 1024 * 16 -- default value for lx9core board
         );
@@ -89,17 +86,29 @@ end Z80CpuMonALS;
 
 architecture behavioral of Z80CpuMonALS is
 
-    signal MREQ_n_int  : std_logic;
-    signal IORQ_n_int  : std_logic;
-    signal M1_n_int    : std_logic;
-    signal RD_n_int    : std_logic;
-    signal WR_n_int    : std_logic;
-    signal RFSH_n_int  : std_logic;
-    signal HALT_n_int  : std_logic;
-    signal BUSAK_n_int : std_logic;
-    signal tristate_n  : std_logic;
+    signal MREQ_n_int   : std_logic;
+    signal IORQ_n_int   : std_logic;
+    signal M1_n_int     : std_logic;
+    signal RD_n_int     : std_logic;
+    signal WR_n_int     : std_logic;
+    signal RFSH_n_int   : std_logic;
+    signal HALT_n_int   : std_logic;
+    signal BUSAK_n_int  : std_logic;
+    signal tristate_n   : std_logic;
+
+    signal sw_interrupt : std_logic;
+    signal sw_reset     : std_logic;
+    signal led_bkpt     : std_logic;
+    signal led_trig0    : std_logic;
+    signal led_trig1    : std_logic;
 
 begin
+
+    sw_interrupt <= not sw1;
+    sw_reset     <= not sw2;
+    led1         <= led_bkpt;
+    led2         <= led_trig0;
+    led3         <= led_trig1;
 
     MREQ_n  <= MREQ_n_int;
     IORQ_n  <= IORQ_n_int;
@@ -120,8 +129,8 @@ begin
             ClkMult           => 8,
             ClkDiv            => 25,
             ClkPer            => 20.000,
-            num_comparators   => 8,
-            avr_prog_mem_size => 1024 * 16
+            num_comparators   => num_comparators,
+            avr_prog_mem_size => avr_prog_mem_size
             )
         port map (
             clock49           => clock,
@@ -159,13 +168,13 @@ begin
             avr_TxD           => avr_TxD,
 
             -- Switches
-            sw_interrupt      => not sw1,
-            sw_reset          => not sw2,
+            sw_interrupt      => sw_interrupt,
+            sw_reset          => sw_reset,
 
             -- LEDs
-            led_bkpt          => led1,
-            led_trig0         => led2,
-            led_trig1         => led3,
+            led_bkpt          => led_bkpt,
+            led_trig0         => led_trig0,
+            led_trig1         => led_trig1,
 
             -- OHO_DY1 connected to test connector
             tmosi             => tmosi,

@@ -5,13 +5,13 @@ ROOT       = ../../..
 COMMON     = ../../common
 
 # The project .bit file produced by the Xilinx .xise project
-PROJECT    = Z80CpuMonGODIL
+PROJECT    = Z80CpuMonLX9
 
 # The target .bit file to be generated including the monitor program
 TARGET     = icez80
 
 # Frequuency that the AVR runs at
-F_CPU      = 19354838
+F_CPU      = 16000000
 
 # Common include files
 include $(COMMON)/Makefile_$(TARGET).inc
