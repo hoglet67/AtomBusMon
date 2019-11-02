@@ -5,13 +5,10 @@ ROOT       = ../../..
 COMMON     = ../../common
 
 # The project .bit file produced by the Xilinx .xise project
-PROJECT    = MOS6502CpuMonALS
+PROJECT    = MOS6502CpuMonGODIL
 
 # The target .bit file to be generated including the monitor program
-TARGET     = ice6502
-
-# Frequuency that the AVR runs at
-F_CPU      = 16000000
+TARGET     = ice65c02
 
 # Common include files
 include $(COMMON)/Makefile_$(TARGET).inc

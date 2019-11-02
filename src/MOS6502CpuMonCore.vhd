@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
--- Copyright (c) 2015 David Banks
+-- Copyright (c) 2019 David Banks
 --
 --------------------------------------------------------------------------------
 --   ____  ____
@@ -7,34 +7,34 @@
 -- /___/  \  /
 -- \   \   \/
 --  \   \
---  /   /         Filename  : AtomBusMon.vhd
--- /___/   /\     Timestamp : 30/05/2015
+--  /   /         Filename  : MOS6502CpuMonCore.vhd
+-- /___/   /\     Timestamp : 3/11/2019
 -- \   \  /  \
 --  \___\/\___\
 --
---Design Name: AtomBusMon
---Device: XC3S250E
+--Design Name: MOS6502CpuMonCore
+--Device: multiple
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
-use work.OhoPack.all ;
 
 entity MOS6502CpuMonCore is
     generic (
        UseT65Core        : boolean;
        UseAlanDCore      : boolean;
-       avr_data_mem_size : integer := 1024 * 2; -- 2K is the mimimum
-       avr_prog_mem_size : integer := 1024 * 8  -- 6502 fits in 8K, others need 9K
+       -- default sizing is used by Electron/Beeb Fpga
+       num_comparators   : integer := 8;
+       avr_prog_mem_size : integer := 1024 * 8
     );
     port (
-        clock_avr        : in    std_logic;
+        clock_avr       : in    std_logic;
 
-        busmon_clk       : in    std_logic;
-        busmon_clken     : in    std_logic;
-        cpu_clk          : in    std_logic;
-        cpu_clken        : in    std_logic;
+        busmon_clk      : in    std_logic;
+        busmon_clken    : in    std_logic;
+        cpu_clk         : in    std_logic;
+        cpu_clken       : in    std_logic;
 
         -- 6502 Signals
         IRQ_n           : in    std_logic;
@@ -50,25 +50,25 @@ entity MOS6502CpuMonCore is
         Rdy             : in    std_logic;
 
         -- External trigger inputs
-        trig             : in    std_logic_vector(1 downto 0);
+        trig            : in    std_logic_vector(1 downto 0);
 
         -- Serial Console
         avr_RxD         : in     std_logic;
         avr_TxD         : out    std_logic;
 
-        -- GODIL Switches
-        sw1              : in    std_logic;
-        nsw2             : in    std_logic;
+        -- Switches
+        sw_interrupt    : in    std_logic;
+        sw_reset        : in    std_logic;
 
-        -- GODIL LEDs
-        led3             : out   std_logic;
-        led6             : out   std_logic;
-        led8             : out   std_logic;
+        -- LEDs
+        led_bkpt        : out   std_logic;
+        led_trig0       : out   std_logic;
+        led_trig1       : out   std_logic;
 
         -- OHO_DY1 connected to test connector
-        tmosi            : out   std_logic;
-        tdin             : out   std_logic;
-        tcclk            : out   std_logic
+        tmosi           : out   std_logic;
+        tdin            : out   std_logic;
+        tcclk           : out   std_logic
     );
 end MOS6502CpuMonCore;
 
@@ -113,11 +113,19 @@ architecture behavioral of MOS6502CpuMonCore is
     signal NMI_n_masked  : std_logic;
     signal IRQ_n_masked  : std_logic;
 
+    signal led_trig0_n    : std_logic;
+    signal led_trig1_n    : std_logic;
+    signal led_bkpt_n     : std_logic;
+
 begin
+
+    led_trig0 <= not led_trig0_n;
+    led_trig1 <= not led_trig1_n;
+    led_bkpt  <= not led_bkpt_n;
 
     mon : entity work.BusMonCore
     generic map (
-        avr_data_mem_size => avr_data_mem_size,
+        num_comparators   => num_comparators,
         avr_prog_mem_size => avr_prog_mem_size
     )
     port map (
@@ -140,11 +148,11 @@ begin
         trig         => trig,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
-        sw1          => sw1,
-        nsw2         => nsw2,
-        led3         => led3,
-        led6         => led6,
-        led8         => led8,
+        sw1          => sw_interrupt,
+        nsw2         => not sw_reset,
+        led3         => led_trig0_n,
+        led6         => led_trig1_n,
+        led8         => led_bkpt_n,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk,

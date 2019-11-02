@@ -1,5 +1,5 @@
---------------------------------------------------------------------------------
--- Copyright (c) 2015 David Banks
+-------------------------------------------------------------------------------
+-- Copyright (c) 2019 David Banks
 --
 --------------------------------------------------------------------------------
 --   ____  ____
@@ -7,34 +7,31 @@
 -- /___/  \  /
 -- \   \   \/
 --  \   \
---  /   /         Filename  : AtomBusMon.vhd
--- /___/   /\     Timestamp : 30/05/2015
+--  /   /         Filename  : MOS6502CpuMon.vhd
+-- /___/   /\     Timestamp : 03/11/2019
 -- \   \  /  \
 --  \___\/\___\
 --
---Design Name: AtomBusMon
---Device: XC3S250E
+--Design Name: MOS6502CpuMon
+--Device: multiple
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
-use work.OhoPack.all ;
 
-
-entity AtomCpuMon is
+entity MOS6502CpuMon is
     generic (
-       UseT65Core     : boolean := true;
-       UseAlanDCore   : boolean := false;
-       LEDsActiveHigh : boolean := false;    -- default value correct for GODIL
-       SW1ActiveHigh  : boolean := true;     -- default value correct for GODIL
-       SW2ActiveHigh  : boolean := false;    -- default value correct for GODIL
-       ClkMult        : integer := 10;       -- default value correct for GODIL
-       ClkDiv         : integer := 31;       -- default value correct for GODIL
-       ClkPer         : real    := 20.345    -- default value correct for GODIL
+       UseT65Core        : boolean;
+       UseAlanDCore      : boolean;
+       ClkMult           : integer;
+       ClkDiv            : integer;
+       ClkPer            : real;
+       num_comparators   : integer;
+       avr_prog_mem_size : integer
        );
     port (
-        clock49         : in    std_logic;
+        clock           : in    std_logic;
 
         -- 6502 Signals
         Phi0            : in    std_logic;
@@ -60,23 +57,23 @@ entity AtomCpuMon is
         avr_RxD         : in     std_logic;
         avr_TxD         : out    std_logic;
 
-        -- GODIL Switches
-        sw1              : in    std_logic;
-        sw2              : in    std_logic;
+        -- Switches
+        sw_interrupt    : in    std_logic;
+        sw_reset        : in    std_logic;
 
-        -- GODIL LEDs
-        led3             : out   std_logic;
-        led6             : out   std_logic;
-        led8             : out   std_logic;
+        -- LEDs
+        led_bkpt        : out   std_logic;
+        led_trig0       : out   std_logic;
+        led_trig1       : out   std_logic;
 
         -- OHO_DY1 connected to test connector
         tmosi            : out   std_logic;
         tdin             : out   std_logic;
         tcclk            : out   std_logic
     );
-end AtomCpuMon;
+end MOS6502CpuMon;
 
-architecture behavioral of AtomCpuMon is
+architecture behavioral of MOS6502CpuMon is
 
     signal clock_avr     : std_logic;
 
@@ -101,20 +98,7 @@ architecture behavioral of AtomCpuMon is
     signal Res_n_in      : std_logic;
     signal Res_n_out     : std_logic;
 
-    signal led3_n         : std_logic;  -- led to indicate ext trig 0 is active
-    signal led6_n         : std_logic;  -- led to indicate ext trig 1 is active
-    signal led8_n         : std_logic;  -- led to indicate CPU has hit a breakpoint (and is stopped)
-    signal sw_interrupt_n : std_logic;  -- switch to pause the CPU
-    signal sw_reset_n     : std_logic;  -- switch to reset the CPU
-
 begin
-
-    -- Generics allows polarity of switches/LEDs to be tweaked from the project file
-    sw_interrupt_n <= not sw1 when SW1ActiveHigh else sw1;
-    sw_reset_n     <= not sw2 when SW2ActiveHigh else sw2;
-    led3           <= not led3_n when LEDsActiveHigh else led3_n;
-    led6           <= not led6_n when LEDsActiveHigh else led6_n;
-    led8           <= not led8_n when LEDsActiveHigh else led8_n;
 
     inst_dcm0 : entity work.DCM0
       generic map (
@@ -123,7 +107,7 @@ begin
         ClkPer       => ClkPer
       )
       port map(
-        CLKIN_IN     => clock49,
+        CLKIN_IN     => clock,
         CLKFX_OUT    => clock_avr
       );
 
@@ -131,7 +115,8 @@ begin
     generic map (
        UseT65Core        => UseT65Core,
        UseAlanDCore      => UseAlanDCore,
-       avr_prog_mem_size => 1024 * 8
+       num_comparators   => num_comparators,
+       avr_prog_mem_size => avr_prog_mem_size
     )
     port map (
         clock_avr    => clock_avr,
@@ -153,11 +138,11 @@ begin
         trig         => trig,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
-        sw1          => not sw_interrupt_n,
-        nsw2         => sw_reset_n,
-        led3         => led3_n,
-        led6         => led6_n,
-        led8         => led8_n,
+        sw_interrupt => sw_interrupt,
+        sw_reset     => sw_reset,
+        led_bkpt     => led_bkpt,
+        led_trig0    => led_trig0,
+        led_trig1    => led_trig1,
         tmosi        => tmosi,
         tdin         => tdin,
         tcclk        => tcclk
@@ -211,9 +196,9 @@ begin
     R_W_n <= R_W_n_int;
     Addr  <= Addr_int;
 
-    clk_gen : process(clock49)
+    clk_gen : process(clock)
     begin
-        if rising_edge(clock49) then
+        if rising_edge(clock) then
           Phi0_a <= Phi0;
           Phi0_b <= Phi0_a;
           Phi0_c <= Phi0_b;
