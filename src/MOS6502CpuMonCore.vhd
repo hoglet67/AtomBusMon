@@ -74,7 +74,7 @@ end MOS6502CpuMonCore;
 
 architecture behavioral of MOS6502CpuMonCore is
 
-    type state_type is (idle, nop0, nop1, rd, wr, done);
+    type state_type is (idle, nop0, nop1, rd, wr);
 
     signal state  : state_type;
 
@@ -298,12 +298,9 @@ begin
                         state <= nop0;
                     -- rd is a monitor initiated read cycle
                     when rd =>
-                        state <= done;
-                    -- rd is a monitor initiated read cycle
+                        state <= nop0;
+                    -- wr is a monitor initiated write cycle
                     when wr =>
-                        state <= done;
-                    -- done is a dead cycle, provides extra address hold time after a reas of write
-                    when done =>
                         state <= nop0;
                 end case;
             end if;
@@ -319,7 +316,7 @@ begin
              '1';
 
     Addr <= Addr_int(15 downto 0) when state = idle else
-            memory_addr when state = rd or state = wr or state = done else
+            memory_addr when state = rd or state = wr else
             (others => '0');
 
     Sync <= Sync_int when state = idle else
@@ -329,7 +326,9 @@ begin
     Dout   <= Dout_int when state = idle else
               memory_dout;
 
-    memory_done <= '1' when state = done else '0';
+    -- Data is captured by the bus monitor on the rising edge of cpu_clk
+    -- that sees done = 1.
+    memory_done <= '1' when state = rd or state = wr else '0';
 
     memory_din <= Din;
 
