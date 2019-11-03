@@ -1,20 +1,18 @@
 -- ****
 -- T65(b) core. In an effort to merge and maintain bug fixes ....
 --
---
--- Ver 303 ost(ML) July 2014
---   ALU opcodes to vhdl types
--- Ver 300 Bugfixes by ehenciak added
--- MikeJ March 2005
--- Latest version from www.fpgaarcade.com (original www.opencores.org)
+-- See list of changes in T65 top file (T65.vhd)...
 --
 -- ****
+-- 65xx compatible microprocessor core
 --
--- 6502 compatible microprocessor core
+-- FPGAARCADE SVN: $Id: T65_ALU.vhd 1234 2015-02-28 20:14:50Z wolfgang.scherr $
 --
--- Version : 0245
---
--- Copyright (c) 2002 Daniel Wallner (jesus@opencores.org)
+-- Copyright (c) 2002...2015
+--               Daniel Wallner (jesus <at> opencores <dot> org)
+--               Mike Johnson   (mikej <at> fpgaarcade <dot> com)
+--               Wolfgang Scherr (WoS <at> pin4 <dot> at>
+--               Morten Leikvoll ()
 --
 -- All rights reserved
 --
@@ -44,19 +42,12 @@
 -- ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 -- POSSIBILITY OF SUCH DAMAGE.
 --
--- Please report bugs to the author, but before you do so, please
+-- Please report bugs to the author(s), but before you do so, please
 -- make sure that this is not a derivative work and that
 -- you have the latest version of this file.
 --
--- The latest version of this file can be found at:
---      http://www.opencores.org/cvsweb.shtml/t65/
---
 -- Limitations :
---
--- File history :
---
---      0245 : First version
---
+--   See in T65 top file (T65.vhd)...
 
 library IEEE;
 use IEEE.std_logic_1164.all;
@@ -88,6 +79,7 @@ architecture rtl of T65_ALU is
   signal      SBC_V           : std_logic;
   signal      SBC_N           : std_logic;
   signal      SBC_Q           : std_logic_vector(7 downto 0);
+  signal      SBX_Q           : std_logic_vector(7 downto 0);
 
 begin
 
@@ -146,7 +138,7 @@ begin
          Op=ALU_OP_SBC or	--"0111"
          Op=ALU_OP_ROL or	--"1001"
          Op=ALU_OP_ROR or	--"1011"
-         Op=ALU_OP_EQ3 or	--"1101"
+--         Op=ALU_OP_EQ3 or	--"1101"
          Op=ALU_OP_INC		--"1111"
       ) then
       CT:='1';
@@ -156,10 +148,10 @@ begin
     AL := resize(unsigned(BusA(3 downto 0) & C), 7) - resize(unsigned(BusB(3 downto 0) & "1"), 6);
     AH := resize(unsigned(BusA(7 downto 4) & "0"), 6) - resize(unsigned(BusB(7 downto 4) & AL(5)), 6);
 
--- pragma translate_off
-      if is_x(std_logic_vector(AL)) then AL := "0000000"; end if;
-      if is_x(std_logic_vector(AH)) then AH := "000000"; end if;
--- pragma translate_on
+    -- pragma translate_off
+    if is_x(std_logic_vector(AL)) then AL := "0000000"; end if;
+    if is_x(std_logic_vector(AH)) then AH := "000000"; end if;
+    -- pragma translate_on
 
     if AL(4 downto 1) = 0 and AH(4 downto 1) = 0 then
       SBC_Z <= '1';
@@ -170,6 +162,8 @@ begin
     SBC_C <= not AH(5);
     SBC_V <= (AH(4) xor BusA(7)) and (BusA(7) xor BusB(7));
     SBC_N <= AH(4);
+
+    SBX_Q <= std_logic_vector(AH(4 downto 1) & AL(4 downto 1));
 
     if P_In(Flag_D) = '1' then
       if AL(5) = '1' then
@@ -186,79 +180,114 @@ begin
 
   process (Op, P_In, BusA, BusB,
       ADC_Z, ADC_C, ADC_V, ADC_N, ADC_Q,
-      SBC_Z, SBC_C, SBC_V, SBC_N, SBC_Q)
+      SBC_Z, SBC_C, SBC_V, SBC_N, SBC_Q,
+      SBX_Q)
     variable Q_t : std_logic_vector(7 downto 0);
+    variable Q2_t : std_logic_vector(7 downto 0);
   begin
     -- ORA, AND, EOR, ADC, NOP, LD, CMP, SBC
     -- ASL, ROL, LSR, ROR, BIT, LD, DEC, INC
     P_Out <= P_In;
     Q_t := BusA;
+    Q2_t := BusA;
     case Op is
-    when ALU_OP_OR=>
-      Q_t := BusA or BusB;
-    when ALU_OP_AND=>
-      Q_t := BusA and BusB;
-    when ALU_OP_EOR=>
-      Q_t := BusA xor BusB;
-    when ALU_OP_ADC=>
-      P_Out(Flag_V) <= ADC_V;
-      P_Out(Flag_C) <= ADC_C;
-      Q_t := ADC_Q;
-    when ALU_OP_EQ2|ALU_OP_EQ3=>
-      -- LDA
-    when ALU_OP_CMP=>
-      P_Out(Flag_C) <= SBC_C;
-    when ALU_OP_SBC=>
-      P_Out(Flag_V) <= SBC_V;
-      P_Out(Flag_C) <= SBC_C;
-      Q_t := SBC_Q;
-    when ALU_OP_ASL=>
-      Q_t := BusA(6 downto 0) & "0";
-      P_Out(Flag_C) <= BusA(7);
-    when ALU_OP_ROL=>
-      Q_t := BusA(6 downto 0) & P_In(Flag_C);
-      P_Out(Flag_C) <= BusA(7);
-    when ALU_OP_LSR=>
-      Q_t := "0" & BusA(7 downto 1);
-      P_Out(Flag_C) <= BusA(0);
-    when ALU_OP_ROR=>
-      Q_t := P_In(Flag_C) & BusA(7 downto 1);
-      P_Out(Flag_C) <= BusA(0);
-    when ALU_OP_BIT=>
-      P_Out(Flag_V) <= BusB(6);
-    when ALU_OP_DEC=>
-      Q_t := std_logic_vector(unsigned(BusA) - 1);
-    when ALU_OP_INC=>
-      Q_t := std_logic_vector(unsigned(BusA) + 1);
-    when others =>
-    --EQ1,EQ2,EQ3 passes BusA to Q_t
+      when ALU_OP_OR=>
+        Q_t := BusA or BusB;
+      when ALU_OP_AND=>
+        Q_t := BusA and BusB;
+      when ALU_OP_EOR=>
+        Q_t := BusA xor BusB;
+      when ALU_OP_ADC=>
+        P_Out(Flag_V) <= ADC_V;
+        P_Out(Flag_C) <= ADC_C;
+        Q_t := ADC_Q;
+      when ALU_OP_CMP=>
+        P_Out(Flag_C) <= SBC_C;
+      when ALU_OP_SAX=>
+        P_Out(Flag_C) <= SBC_C;
+        Q_t := SBX_Q;  -- undoc: subtract (A & X) - (immediate)
+      when ALU_OP_SBC=>
+        P_Out(Flag_V) <= SBC_V;
+        P_Out(Flag_C) <= SBC_C;
+        Q_t := SBC_Q;  -- undoc: subtract  (A & X) - (immediate), then decimal correction
+      when ALU_OP_ASL=>
+        Q_t := BusA(6 downto 0) & "0";
+        P_Out(Flag_C) <= BusA(7);
+      when ALU_OP_ROL=>
+        Q_t := BusA(6 downto 0) & P_In(Flag_C);
+        P_Out(Flag_C) <= BusA(7);
+      when ALU_OP_LSR=>
+        Q_t := "0" & BusA(7 downto 1);
+        P_Out(Flag_C) <= BusA(0);
+      when ALU_OP_ROR=>
+        Q_t := P_In(Flag_C) & BusA(7 downto 1);
+        P_Out(Flag_C) <= BusA(0);
+      when ALU_OP_ARR=> 
+        Q_t := P_In(Flag_C) & (BusA(7 downto 1) and BusB(7 downto 1));
+        P_Out(Flag_V) <= Q_t(5) xor Q_t(6);
+        Q2_t := Q_t;
+        if P_In(Flag_D)='1' then
+          if (BusA(3 downto 0) and BusB(3 downto 0)) > "0100" then
+            Q2_t(3 downto 0) := std_logic_vector(unsigned(Q_t(3 downto 0)) + x"6");
+          end if;
+          if (BusA(7 downto 4) and BusB(7 downto 4)) > "0100" then
+            Q2_t(7 downto 4) := std_logic_vector(unsigned(Q_t(7 downto 4)) + x"6");
+            P_Out(Flag_C) <= '1';
+          else
+            P_Out(Flag_C) <= '0';
+          end if;
+        else
+          P_Out(Flag_C) <= Q_t(6);
+        end if;
+      when ALU_OP_BIT=>
+        P_Out(Flag_V) <= BusB(6);
+      when ALU_OP_DEC=>
+        Q_t := std_logic_vector(unsigned(BusA) - 1);
+      when ALU_OP_INC=>
+        Q_t := std_logic_vector(unsigned(BusA) + 1);
+      when others =>
+        null;
+      --EQ1,EQ2,EQ3 passes BusA to Q_t and P_in to P_out
     end case;
 
     case Op is
-    when ALU_OP_ADC=>
-      P_Out(Flag_N) <= ADC_N;
-      P_Out(Flag_Z) <= ADC_Z;
-    when ALU_OP_CMP|ALU_OP_SBC=>
-      P_Out(Flag_N) <= SBC_N;
-      P_Out(Flag_Z) <= SBC_Z;
-    when ALU_OP_EQ1=>
-    when ALU_OP_BIT=>
-      P_Out(Flag_N) <= BusB(7);
-      if (BusA and BusB) = "00000000" then
-        P_Out(Flag_Z) <= '1';
-      else
-        P_Out(Flag_Z) <= '0';
-      end if;
-    when others =>
-      P_Out(Flag_N) <= Q_t(7);
-      if Q_t = "00000000" then
-        P_Out(Flag_Z) <= '1';
-      else
-        P_Out(Flag_Z) <= '0';
-      end if;
+      when ALU_OP_ADC=>
+        P_Out(Flag_N) <= ADC_N;
+        P_Out(Flag_Z) <= ADC_Z;
+      when ALU_OP_CMP|ALU_OP_SBC|ALU_OP_SAX=>
+        P_Out(Flag_N) <= SBC_N;
+        P_Out(Flag_Z) <= SBC_Z;
+      when ALU_OP_EQ1=>--dont touch P
+      when ALU_OP_BIT=>
+        P_Out(Flag_N) <= BusB(7);
+        if (BusA and BusB) = "00000000" then
+          P_Out(Flag_Z) <= '1';
+        else
+          P_Out(Flag_Z) <= '0';
+        end if;
+      when ALU_OP_ANC=>
+        P_Out(Flag_N) <= Q_t(7);
+        P_Out(Flag_C) <= Q_t(7);
+        if Q_t = "00000000" then
+          P_Out(Flag_Z) <= '1';
+        else
+          P_Out(Flag_Z) <= '0';
+        end if;
+      when others =>
+        P_Out(Flag_N) <= Q_t(7);
+        if Q_t = "00000000" then
+          P_Out(Flag_Z) <= '1';
+        else
+          P_Out(Flag_Z) <= '0';
+        end if;
     end case;
 
-    Q <= Q_t;
+    if Op=ALU_OP_ARR then
+      -- handled above in ARR code
+      Q <= Q2_t;
+    else
+      Q <= Q_t;
+    end if;
   end process;
 
 end;

@@ -1,32 +1,65 @@
 -- ****
 -- T65(b) core. In an effort to merge and maintain bug fixes ....
 --
+-- Ver 313 WoS January 2015
+--   Fixed issue that NMI has to be first if issued the same time as a BRK instruction is latched in
+--   Now all Lorenz CPU tests on FPGAARCADE C64 core (sources used: SVN version 1021) are OK! :D :D :D
+--   This is just a starting point to go for optimizations and detailed fixes (the Lorenz test can't find)
+--
+-- Ver 312 WoS January 2015
+--   Undoc opcode timing fixes for $B3 (LAX iy) and $BB (LAS ay)
+--   Added comments in MCode section to find handling of individual opcodes more easily
+--   All "basic" Lorenz instruction test (individual functional checks, CPUTIMING check) work now with 
+--       actual FPGAARCADE C64 core (sources used: SVN version 1021).
+--
+-- Ver 305, 306, 307, 308, 309, 310, 311 WoS January 2015
+--   Undoc opcode fixes (now all Lorenz test on instruction functionality working, except timing issues on $B3 and $BB):
+--     SAX opcode
+--     SHA opcode
+--     SHX opcode
+--     SHY opcode
+--     SHS opcode
+--     LAS opcode
+--     alternate SBC opcode
+--     fixed NOP with immediate param (caused Lorenz trap test to fail)
+--     IRQ and NMI timing fixes (in conjuction with branches)
+--
+-- Ver 304 WoS December 2014
+--   Undoc opcode fixes:
+--     ARR opcode
+--     ANE/XAA opcode
+--   Corrected issue with NMI/IRQ prio (when asserted the same time)
+--
 -- Ver 303 ost(ML) July 2014
 --   (Sorry for some scratchpad comments that may make little sense)
 --   Mods and some 6502 undocumented instructions.
---
--- Not correct opcodes acc. to Lorenz tests (incomplete list):
+--   Not correct opcodes acc. to Lorenz tests (incomplete list):
 --     NOPN    (nop)
 --     NOPZX   (nop + byte 172)
 --     NOPAX   (nop + word da  ...  da:  byte 0)
 --     ASOZ    (byte $07 + byte 172)
 --
--- Wolfgang April 2014
--- Ver 303 Bugfixes for NMI from foft
--- Ver 302 Bugfix for BRK command
--- Wolfgang January 2014
--- Ver 301 more merging
--- Ver 300 Bugfixes by ehenciak added, started tidyup *bust*
--- MikeJ March 2005
--- Latest version from www.fpgaarcade.com (original www.opencores.org)
+-- Ver 303,302 WoS April 2014
+--     Bugfixes for NMI from foft
+--     Bugfix for BRK command (and its special flag)
 --
+-- Ver 300,301 WoS January 2014
+--     More merging
+--     Bugfixes by ehenciak added, started tidyup *bust*
+--
+-- MikeJ March 2005
+--      Latest version from www.fpgaarcade.com (original www.opencores.org)
 -- ****
 --
 -- 65xx compatible microprocessor core
 --
--- Version : 0246
+-- FPGAARCADE SVN: $Id: T65.vhd 1347 2015-05-27 20:07:34Z wolfgang.scherr $
 --
--- Copyright (c) 2002 Daniel Wallner (jesus@opencores.org)
+-- Copyright (c) 2002...2015
+--               Daniel Wallner (jesus <at> opencores <dot> org)
+--               Mike Johnson   (mikej <at> fpgaarcade <dot> com)
+--               Wolfgang Scherr (WoS <at> pin4 <dot> at>
+--               Morten Leikvoll ()
 --
 -- All rights reserved
 --
@@ -56,22 +89,37 @@
 -- ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 -- POSSIBILITY OF SUCH DAMAGE.
 --
--- Please report bugs to the author, but before you do so, please
+-- Please report bugs to the author(s), but before you do so, please
 -- make sure that this is not a derivative work and that
 -- you have the latest version of this file.
 --
--- The latest version of this file can be found at:
---      http://www.opencores.org/cvsweb.shtml/t65/
+-- ----- IMPORTANT NOTES -----
 --
--- Limitations :
+-- Limitations:
+--   65C02 and 65C816 modes are incomplete (and definitely untested after all 6502 undoc fixes)
+--      65C02 supported : inc, dec, phx, plx, phy, ply
+--      65D02 missing : bra, ora, lda, cmp, sbc, tsb*2, trb*2, stz*2, bit*2, wai, stp, jmp, bbr*8, bbs*8
+--   Some interface signals behave incorrect
+--   NMI interrupt handling not nice, needs further rework (to cycle-based encoding).
 --
--- 65C02 and 65C816 modes are incomplete
--- Undocumented instructions are not supported
--- Some interface signals behaves incorrect
+-- Usage:
+--   The enable signal allows clock gating / throttling without using the ready signal.
+--   Set it to constant '1' when using the Clk input as the CPU clock directly.
 --
--- File history :
+--   TAKE CARE you route the DO signal back to the DI signal while R_W_n='0',
+--   otherwise some undocumented opcodes won't work correctly.
+--   EXAMPLE:
+--      CPU : entity work.T65
+--          port map (
+--              R_W_n   => cpu_rwn_s,
+--              [....all other ports....]
+--              DI      => cpu_din_s,
+--              DO      => cpu_dout_s
+--          );
+--      cpu_din_s <= cpu_dout_s when cpu_rwn_s='0' else 
+--                   [....other sources from peripherals and memories...]
 --
---      0246 : First release
+-- ----- IMPORTANT NOTES -----
 --
 
 library IEEE;
@@ -79,8 +127,6 @@ library IEEE;
   use IEEE.numeric_std.all;
   use work.T65_Pack.all;
 
--- ehenciak 2-23-2005 : Added the enable signal so that one doesn't have to use
--- the ready signal to limit the CPU.
 entity T65 is
   port(
     Mode    : in  std_logic_vector(1 downto 0);      -- "00" => 6502, "01" => 65C02, "10" => 65C816
@@ -102,17 +148,18 @@ entity T65 is
     VDA     : out std_logic;
     VPA     : out std_logic;
     A       : out std_logic_vector(23 downto 0);
-    DI      : in  std_logic_vector(7 downto 0);--NOTE:Make sure DI equals DO when writing. This is important for DCP/DCM undoc instruction. TODO:convert to inout
+    DI      : in  std_logic_vector(7 downto 0);
     DO      : out std_logic_vector(7 downto 0);
     -- 6502 registers (MSB) PC, SP, P, Y, X, A (LSB)
-    Regs    : out std_logic_vector(63 downto 0)
+    Regs    : out std_logic_vector(63 downto 0);
+    DEBUG   : out T_t65_dbg
   );
 end T65;
 
 architecture rtl of T65 is
 
   -- Registers
-  signal ABC, X, Y, D       : std_logic_vector(15 downto 0);
+  signal ABC, X, Y          : std_logic_vector(15 downto 0);
   signal P, AD, DL          : std_logic_vector(7 downto 0) :=  x"00";
   signal PwithB             : std_logic_vector(7 downto 0);--ML:New way to push P with correct B state to stack
   signal BAH                : std_logic_vector(7 downto 0);
@@ -149,6 +196,7 @@ architecture rtl of T65 is
   signal BusA               : std_logic_vector(7 downto 0);
   signal BusA_r             : std_logic_vector(7 downto 0);
   signal BusB               : std_logic_vector(7 downto 0);
+  signal BusB_r             : std_logic_vector(7 downto 0);
   signal ALU_Q              : std_logic_vector(7 downto 0);
   signal P_Out              : std_logic_vector(7 downto 0);
 
@@ -178,37 +226,39 @@ architecture rtl of T65 is
   signal LDBAH              : std_logic;
   signal SaveP              : std_logic;
   signal Write              : std_logic;
-  signal ALUmore            : std_logic;
 
-  signal really_rdy         : std_logic;
-  signal R_W_n_i            : std_logic;
-  signal R_W_n_i_d          : std_logic;
-  
-  signal NMIActClear        : std_logic; -- MWW hack
+  signal Res_n_i        : std_logic;
+  signal Res_n_d        : std_logic;
+
+  signal really_rdy     : std_logic;
+  signal WRn_i          : std_logic;
+
+  signal NMI_entered    : std_logic;
 
 begin
-  -- workaround for ready-handling
-  -- ehenciak : Drive R_W_n_i off chip.
-  R_W_n      <= R_W_n_i;
-
-  -- ehenciak : gate Rdy with read/write to make an "OK, it's
-  --            really OK to stop the processor now if Rdy is
-  --            deasserted" signal
-  really_rdy <= Rdy or not(R_W_n_i);
-  ----
-
+  -- gate Rdy with read/write to make an "OK, it's really OK to stop the processor 
+  really_rdy <= Rdy or not(WRn_i);
   Sync <= '1' when MCycle = "000" else '0';
   EF <= EF_i;
   MF <= MF_i;
   XF <= XF_i;
+  R_W_n <= WRn_i;
   ML_n <= '0' when IR(7 downto 6) /= "10" and IR(2 downto 1) = "11" and MCycle(2 downto 1) /= "00" else '1';
   VP_n <= '0' when IRQCycle = '1' and (MCycle = "101" or MCycle = "110") else '1';
-  VDA <= '1' when Set_Addr_To_r /= Set_Addr_To_PBR else '0';            -- Incorrect !!!!!!!!!!!!
-  VPA <= '1' when Jump(1) = '0' else '0';                     -- Incorrect !!!!!!!!!!!!
+  VDA <= '1' when Set_Addr_To_r /= Set_Addr_To_PBR else '0';
+  VPA <= '1' when Jump(1) = '0' else '0';
 
-    Regs <= std_logic_vector(PC) & std_logic_vector(S)& P & Y(7 downto 0) & X(7 downto 0) & ABC(7 downto 0);
+  -- debugging signals
+  DEBUG.I <= IR;
+  DEBUG.A <= ABC(7 downto 0);
+  DEBUG.X <= X(7 downto 0);
+  DEBUG.Y <= Y(7 downto 0);
+  DEBUG.S <= std_logic_vector(S(7 downto 0));
+  DEBUG.P <= P;
 
-  mcode : T65_MCode
+  Regs <= std_logic_vector(PC) & std_logic_vector(S)& P & Y(7 downto 0) & X(7 downto 0) & ABC(7 downto 0);
+
+  mcode : entity work.T65_MCode
     port map(
 --inputs
       Mode        => Mode_r,
@@ -240,11 +290,10 @@ begin
       LDBAL       => LDBAL,
       LDBAH       => LDBAH,
       SaveP       => SaveP,
-      ALUmore     => ALUmore,
       Write       => Write
       );
 
-  alu : T65_ALU
+  alu : entity work.T65_ALU
     port map(
       Mode => Mode_r,
       Op => ALU_Op_r,
@@ -255,14 +304,25 @@ begin
       Q => ALU_Q
       );
 
-
+  -- the 65xx design requires at least two clock cycles before
+  -- starting its reset sequence (according to datasheet)
   process (Res_n, Clk)
   begin
     if Res_n = '0' then
+      Res_n_i <= '0';
+      Res_n_d <= '0';
+    elsif Clk'event and Clk = '1' then
+      Res_n_i <= Res_n_d;
+      Res_n_d <= '1';
+    end if;
+  end process;
+
+  process (Res_n_i, Clk)
+  begin
+    if Res_n_i = '0' then
       PC <= (others => '0');  -- Program Counter
       IR <= "00000000";
-      S <= (others => '0');       -- Dummy !!!!!!!!!!!!!!!!!!!!!
-      D <= (others => '0');
+      S <= (others => '0');       -- Dummy
       PBR <= (others => '0');
       DBR <= (others => '0');
 
@@ -271,7 +331,7 @@ begin
       Write_Data_r <= Write_Data_DL;
       Set_Addr_To_r <= Set_Addr_To_PBR;
 
-      R_W_n_i <= '1';
+      WRn_i <= '1';
       EF_i <= '1';
       MF_i <= '1';
       XF_i <= '1';
@@ -279,9 +339,8 @@ begin
     elsif Clk'event and Clk = '1' then  
       if (Enable = '1') then
         if (really_rdy = '1') then
-          R_W_n_i <= not Write or RstCycle;
+          WRn_i <= not Write or RstCycle;
 
-          D <= (others => '1');   -- Dummy
           PBR <= (others => '1'); -- Dummy
           DBR <= (others => '1'); -- Dummy
           EF_i <= '0';    -- Dummy
@@ -300,6 +359,10 @@ begin
             else
               IR <= DI;
             end if;
+
+            if LDS = '1' then -- LAS won't work properly if not limited to machine cycle 0
+              S(7 downto 0) <= unsigned(ALU_Q);
+            end if;
           end if;
 
           ALU_Op_r <= ALU_Op;
@@ -316,9 +379,6 @@ begin
           if Dec_S = '1' and RstCycle = '0' then
             S <= S - 1;
           end if;
-          if LDS = '1' then
-            S(7 downto 0) <= unsigned(ALU_Q);
-          end if;
 
           if IR = "00000000" and MCycle = "001" and IRQCycle = '0' and NMICycle = '0' then
             PC <= PC + 1;
@@ -329,10 +389,8 @@ begin
           case Jump is
             when "01" =>
               PC <= PC + 1;
-
             when "10" =>
               PC <= unsigned(DI & DL);
-
             when "11" =>
               if PCAdder(8) = '1' then
                 if DL(7) = '0' then
@@ -342,7 +400,6 @@ begin
                 end if;
               end if;
               PC(7 downto 0) <= PCAdder(7 downto 0);
-
             when others => null;
           end case;
         end if;
@@ -353,13 +410,13 @@ begin
   PCAdder <= resize(PC(7 downto 0),9) + resize(unsigned(DL(7) & DL),9) when PCAdd = '1'
          else "0" & PC(7 downto 0);
 
-  process (Res_n, Clk)
-    variable tmpP:std_logic_vector(7 downto 0);--ML:Lets try to handle loading P at mcycle=0 and set/clk flags at same cycle
+  process (Res_n_i, Clk)
+    variable tmpP:std_logic_vector(7 downto 0);--Lets try to handle loading P at mcycle=0 and set/clk flags at same cycle
   begin
-    if Res_n = '0' then
-      P <= x"00"; -- ensure we have nothing set on reset (e.g. B flag!) 
+    if Res_n_i = '0' then
+      P <= x"00"; -- ensure we have nothing set on reset
     elsif Clk'event and Clk = '1' then
-    tmpP:=P;
+      tmpP:=P;
       if (Enable = '1') then
         if (really_rdy = '1') then
           if MCycle = "000" then
@@ -373,82 +430,59 @@ begin
               Y(7 downto 0) <= ALU_Q;
             end if;
             if (LDA or LDX or LDY) = '1' then
---              P <= P_Out;-- Replaced with:
               tmpP:=P_Out;
             end if;
           end if;
           if SaveP = '1' then
---            P <= P_Out;-- Replaced with:
             tmpP:=P_Out;
           end if;
           if LDP = '1' then
---            P <= ALU_Q;-- Replaced with:     --ML:no need anymore: AND x"EF";  -- NEVER set B on RTI and PLP
             tmpP:=ALU_Q;
           end if;
           if IR(4 downto 0) = "11000" then
             case IR(7 downto 5) is
             when "000" =>--0x18(clc)
---              P(Flag_C) <= '0';-- Replaced with:
               tmpP(Flag_C) := '0';
             when "001" =>--0x38(sec)
---              P(Flag_C) <= '1';
               tmpP(Flag_C) := '1';
             when "010" =>--0x58(cli)
---              P(Flag_I) <= '0';
               tmpP(Flag_I) := '0';
             when "011" =>--0x78(sei)
---              P(Flag_I) <= '1';
               tmpP(Flag_I) := '1';
             when "101" =>--0xb8(clv)
---              P(Flag_V) <= '0';
               tmpP(Flag_V) := '0';
             when "110" =>--0xd8(cld)
---              P(Flag_D) <= '0';
               tmpP(Flag_D) := '0';
             when "111" =>--0xf8(sed)
---              P(Flag_D) <= '1';
               tmpP(Flag_D) := '1';
             when others =>
             end case;
           end if;
-          --ML:Removed change of B flag, its constant '1' in P
-          --ML:The B flag appears to be locked to '1', but when pushed to stack, the SR data on the stack has the B flag cleared on interrupts, set on BRK instr.
-          --ML:The state of the B flag on warm reset apparently is unchanged (not confirmed, please do if you know)
-          --ML:The state of the B flag on cold reset is uncertain, but my guess would be set, unless it can be used to detect cold from warm reset.
-          --Since we cant (well, won't) simulate B=0 on cold reset, we just behave as if it was constant 1.
---          P(Flag_B) <= '1';
           tmpP(Flag_B) := '1';
---          if IR = "00000000" and MCycle = "011" and RstCycle = '0' and NMICycle = '0' and IRQCycle = '0' then -- BRK
---            P(Flag_B) <= '1';
---          elsif IR = "00001000" then -- PHP
---            P(Flag_B) <= '1';
---          else
---            P(Flag_B) <= '0';  --> not the best way, but we keep B zero except for BRK and PHP opcodes
---          end if;
-          if IR = "00000000" and MCycle = "100" and RstCycle = '0' then --and (NMICycle = '1' or IRQCycle = '1')  then
+          if IR = "00000000" and MCycle = "100" and RstCycle = '0' then
             --This should happen after P has been pushed to stack
---            P(Flag_I) <= '1';
             tmpP(Flag_I) := '1';
           end if;
           if SO_n_o = '1' and SO_n = '0' then
---            P(Flag_V) <= '1';
             tmpP(Flag_V) := '1';
           end if;
           if RstCycle = '1' then
---            P(Flag_I) <= '0';
---            P(Flag_D) <= '0';
             tmpP(Flag_I) := '1';
             tmpP(Flag_D) := '0';
           end if;
---          P(Flag_1) <= '1';
           tmpP(Flag_1) := '1';
 
           P<=tmpP;--new way
 
           SO_n_o <= SO_n;
-          IRQ_n_o <= IRQ_n;
+          if IR(4 downto 0)/="10000" or Jump/="01" then -- delay interrupts during branches (checked with Lorenz test and real 6510), not best way yet, though - but works...
+            IRQ_n_o <= IRQ_n;
+          end if;
         end if;
-        NMI_n_o <= NMI_n; -- MWW: detect nmi even if not rdy    
+        -- detect nmi even if not rdy
+        if IR(4 downto 0)/="10000" or Jump/="01" then -- delay interrupts during branches (checked with Lorenz test and real 6510) not best way yet, though - but works...
+          NMI_n_o <= NMI_n;
+        end if;
       end if;
     end if;
   end process;
@@ -459,24 +493,26 @@ begin
 --
 ---------------------------------------------------------------------------
 
-  process (Res_n, Clk)
+  process (Res_n_i, Clk)
   begin
-    if Res_n = '0' then
+    if Res_n_i = '0' then
       BusA_r <= (others => '0');
       BusB <= (others => '0');
+      BusB_r <= (others => '0');
       AD <= (others => '0');
       BAL <= (others => '0');
       BAH <= (others => '0');
       DL <= (others => '0');
     elsif Clk'event and Clk = '1' then
       if (Enable = '1') then
+        NMI_entered <= '0';
         if (really_rdy = '1') then
-        --if (Rdy = '1') then
           BusA_r <= BusA;
-          if ALUmore='1' then
-            BusB <= ALU_Q;
-          else
-            BusB <= DI;
+          BusB <= DI;
+
+          -- not really nice, but no better way found yet !
+          if Set_Addr_To_r = Set_Addr_To_PBR or Set_Addr_To_r = Set_Addr_To_ZPG then
+            BusB_r <= std_logic_vector(unsigned(DI(7 downto 0)) + 1); -- required for SHA
           end if;
 
           case BAAdd is
@@ -495,26 +531,25 @@ begin
           when others =>
           end case;
 
-          -- ehenciak : modified to use Y register as well (bugfix)
+          -- modified to use Y register as well
           if ADAdd = '1' then
             if (AddY = '1') then
-            AD <= std_logic_vector(unsigned(AD) + unsigned(Y(7 downto 0)));
+              AD <= std_logic_vector(unsigned(AD) + unsigned(Y(7 downto 0)));
             else
-            AD <= std_logic_vector(unsigned(AD) + unsigned(X(7 downto 0)));
+              AD <= std_logic_vector(unsigned(AD) + unsigned(X(7 downto 0)));
             end if;
           end if;
 
-          NMIActClear <= '0';
           if IR = "00000000" then
             BAL <= (others => '1');
             BAH <= (others => '1');
             if RstCycle = '1' then
-              BAL(2 downto 0) <= "100";          
-            elsif NMICycle = '1' then
+              BAL(2 downto 0) <= "100";
+            elsif NMICycle = '1' or (NMIAct = '1' and MCycle="100") or NMI_entered='1' then
               BAL(2 downto 0) <= "010";
-            elsif NMIAct = '1' then  -- MWW, force this to be changed by NMI, even if in midstream IRQ/brk
-              BAL(2 downto 0) <= "010";
-              NMIActClear <= '1';      
+              if MCycle="100" then
+                NMI_entered <= '1';
+              end if;
             else
               BAL(2 downto 0) <= "110";
             end if;
@@ -522,7 +557,6 @@ begin
               BAL(0) <= '1';
             end if;
           end if;
-
 
           if LDDI = '1' then
             DL <= DI;
@@ -554,16 +588,20 @@ begin
       Y(7 downto 0)                         when Set_BusA_To_Y,
       std_logic_vector(S(7 downto 0))       when Set_BusA_To_S,
       P                                     when Set_BusA_To_P,
+      ABC(7 downto 0) and DI                when Set_BusA_To_DA,
+      (ABC(7 downto 0) or x"ee") and DI     when Set_BusA_To_DAO,--ee for OAL instruction. constant may be different on other platforms.TODO:Move to generics
+      (ABC(7 downto 0) or x"ee") and DI and X(7 downto 0)    when Set_BusA_To_DAX,--XAA, ee for OAL instruction. constant may be different on other platforms.TODO:Move to generics
+      ABC(7 downto 0) and X(7 downto 0)     when Set_BusA_To_AAX,--SAX, SHA
       (others => '-')                       when Set_BusA_To_DONTCARE;--Can probably remove this
 
   with Set_Addr_To_r select
     A <=
-      "0000000000000001" & std_logic_vector(S(7 downto 0))                            when Set_Addr_To_S,
-      DBR & "00000000" & AD                                                           when Set_Addr_To_AD,
+      "0000000000000001" & std_logic_vector(S(7 downto 0))                            when Set_Addr_To_SP,
+      DBR & "00000000" & AD                                                           when Set_Addr_To_ZPG,
       "00000000" & BAH & BAL(7 downto 0)                                              when Set_Addr_To_BA,
       PBR & std_logic_vector(PC(15 downto 8)) & std_logic_vector(PCAdder(7 downto 0)) when Set_Addr_To_PBR;
 
-  --ML:This is the P that gets pushed on stack with correct B flag. I'm not sure if NMI also clears B, but I guess it does.
+  -- This is the P that gets pushed on stack with correct B flag. I'm not sure if NMI also clears B, but I guess it does.
   PwithB<=(P and x"ef") when (IRQCycle='1' or NMICycle='1') else P;
 
   with Write_Data_r select
@@ -576,6 +614,10 @@ begin
       PwithB                              when Write_Data_P,
       std_logic_vector(PC(7 downto 0))    when Write_Data_PCL,
       std_logic_vector(PC(15 downto 8))   when Write_Data_PCH,
+      ABC(7 downto 0) and X(7 downto 0)   when Write_Data_AX,
+      ABC(7 downto 0) and X(7 downto 0) and BusB_r(7 downto 0) when Write_Data_AXB, -- no better way found yet...
+      X(7 downto 0) and BusB_r(7 downto 0) when Write_Data_XB, -- no better way found yet...
+      Y(7 downto 0) and BusB_r(7 downto 0) when Write_Data_YB, -- no better way found yet...
       (others=>'-')                       when Write_Data_DONTCARE;--Can probably remove this
 
 
@@ -585,9 +627,9 @@ begin
 --
 -------------------------------------------------------------------------
 
-  process (Res_n, Clk)
+  process (Res_n_i, Clk)
   begin
-    if Res_n = '0' then
+    if Res_n_i = '0' then
       MCycle <= "001";
       RstCycle <= '1';
       IRQCycle <= '0';
@@ -596,30 +638,28 @@ begin
     elsif Clk'event and Clk = '1' then
       if (Enable = '1') then
         if (really_rdy = '1') then
-          if (NMIActClear = '1') then
-            NMIAct <= '0';
-          end if;
-        
           if MCycle = LCycle or Break = '1' then
             MCycle <= "000";
             RstCycle <= '0';
             IRQCycle <= '0';
             NMICycle <= '0';
-            if NMIAct = '1' then
+            if NMIAct = '1' and IR/=x"00" then -- delay NMI further if we just executed a BRK
               NMICycle <= '1';
+              NMIAct <= '0'; -- reset NMI edge detector if we start processing the NMI
             elsif IRQ_n_o = '0' and P(Flag_I) = '0' then
               IRQCycle <= '1';
             end if;
           else
             MCycle <= std_logic_vector(unsigned(MCycle) + 1);
           end if;
-
-          if NMICycle = '1' then
-            NMIAct <= '0';
-          end if;
-        end if;        
-        if NMI_n_o = '1' and NMI_n = '0' then  -- MWW: detect nmi even if not rdy    
+        end if;
+        --detect NMI even if not rdy    
+        if NMI_n_o = '1' and (NMI_n = '0' and (IR(4 downto 0)/="10000" or Jump/="01")) then -- branches have influence on NMI start (not best way yet, though - but works...)
           NMIAct <= '1';
+        end if;
+        -- we entered NMI during BRK instruction
+        if NMI_entered='1' then
+          NMIAct <= '0';
         end if;
       end if;
     end if;
