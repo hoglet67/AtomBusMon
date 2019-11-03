@@ -929,7 +929,7 @@ void test(unsigned int start, unsigned int end, int data) {
 
 int pollForEvents() {
   int cont = 1;
-  while (STATUS_DIN & BW_ACTIVE_MASK) {
+  if (STATUS_DIN & BW_ACTIVE_MASK) {
     cont = logDetails();
     hwCmd(CMD_WATCH_READ, 0);
     Delay_us(10);
