@@ -159,6 +159,9 @@ architecture behavioral of BusMonCore is
     signal unused_d6       : std_logic;
     signal unused_d7       : std_logic;
 
+    signal last_done       : std_logic;
+    signal inc_addr        : std_logic;
+
 begin
 
     inst_oho_dy1 : entity work.Oho_Dy1 port map (
@@ -474,7 +477,7 @@ begin
                 end if;
 
                 -- Auto increment the memory address reg the cycle after a rd/wr
-                if (auto_inc = '1' and Done = '1') then
+                if (auto_inc = '1' and inc_addr = '1') then
                     addr_dout_reg(23 downto 8) <= addr_dout_reg(23 downto 8) + 1;
                 end if;
 
@@ -518,6 +521,13 @@ begin
                 -- Latch memory read in response to a read command
                 if (Done = '1') then
                     din_reg <= DataIn;
+                end if;
+                -- Delay the increnting of the address by one cycle
+                last_done <= Done;
+                if Done = '1' and last_done = '0' then
+                    inc_addr <= '1';
+                else
+                    inc_addr <= '0';
                 end if;
             end if;
         end if;
