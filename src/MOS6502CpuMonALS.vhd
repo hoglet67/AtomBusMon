@@ -52,7 +52,7 @@ entity MOS6502CpuMonALS is
         R_W_n            : out   std_logic_vector(1 downto 0);
         Data             : inout std_logic_vector(7 downto 0);
         SO_n             : in    std_logic;
-        Res_n            : inout std_logic;
+        Res_n            : in    std_logic;
         Rdy              : in    std_logic;
 
         -- 65C02 Signals

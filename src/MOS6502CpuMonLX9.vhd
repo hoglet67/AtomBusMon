@@ -43,7 +43,7 @@ entity MOS6502CpuMonLX9 is
         R_W_n            : out   std_logic;
         Data             : inout std_logic_vector(7 downto 0);
         SO_n             : in    std_logic;
-        Res_n            : inout std_logic;
+        Res_n            : in    std_logic;
         Rdy              : in    std_logic;
 
         -- External trigger inputs

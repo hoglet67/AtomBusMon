@@ -45,8 +45,7 @@ entity MOS6502CpuMonCore is
         Din             : in    std_logic_vector(7 downto 0);
         Dout            : out   std_logic_vector(7 downto 0);
         SO_n            : in    std_logic;
-        Res_n_in        : in    std_logic;
-        Res_n_out       : out   std_logic;
+        Res_n           : in    std_logic;
         Rdy             : in    std_logic;
 
         -- External trigger inputs
@@ -86,6 +85,7 @@ architecture behavioral of MOS6502CpuMonCore is
     signal Wr_n_int      : std_logic;
     signal Sync_int      : std_logic;
     signal Addr_int      : std_logic_vector(23 downto 0);
+    signal Res_n_out     : std_logic;
 
     signal cpu_addr_us   : unsigned (15 downto 0);
     signal cpu_dout_us   : unsigned (7 downto 0);
@@ -134,7 +134,7 @@ begin
         WrIO_n       => '1',
         Sync         => Sync_int,
         Rdy          => open,
-        nRSTin       => Res_n_in,
+        nRSTin       => Res_n,
         nRSTout      => Res_n_out,
         CountCycle   => CountCycle,
         trig         => trig,
@@ -210,7 +210,7 @@ begin
             if reset_counter(reset_counter'high) = '0' then
                 reset_counter <= reset_counter + 1;
             end if;
-            cpu_reset_n <= Res_n_in and reset_counter(reset_counter'high);
+            cpu_reset_n <= Res_n and Res_n_out and reset_counter(reset_counter'high);
         end if;
     end process;
 
