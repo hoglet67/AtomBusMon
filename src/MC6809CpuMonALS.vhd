@@ -67,28 +67,35 @@ entity MC6809CpuMonALS is
         avr_RxD          : in    std_logic;
         avr_TxD          : out   std_logic;
 
-        -- GODIL Switches
-        sw_reset_n       : in    std_logic;
-        sw_interrupt_n   : in    std_logic;
+        -- Switches
+        sw1              : in    std_logic;
+        sw2              : in    std_logic;
 
-        -- GODIL LEDs
-        led_bkpt         : out   std_logic;
-        led_trig0        : out   std_logic;
-        led_trig1        : out   std_logic
+        -- LEDs
+        led1             : out   std_logic;
+        led2             : out   std_logic;
+        led3             : out   std_logic
 
     );
 end MC6809CpuMonALS;
 
 architecture behavioral of MC6809CpuMonALS is
 
-    signal sw_reset      : std_logic;
-    signal sw_interrupt  : std_logic;
     signal R_W_n_int     : std_logic;
+
+    signal sw_interrupt : std_logic;
+    signal sw_reset     : std_logic;
+    signal led_bkpt     : std_logic;
+    signal led_trig0    : std_logic;
+    signal led_trig1    : std_logic;
 
 begin
 
-    sw_reset <= not sw_reset_n;
-    sw_interrupt <= not sw_interrupt_n;
+    sw_interrupt <= not sw1;
+    sw_reset     <= not sw2;
+    led1         <= led_bkpt;
+    led2         <= led_trig0;
+    led3         <= led_trig1;
 
     wrapper : entity work.MC6809CpuMon
       generic map (
