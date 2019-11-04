@@ -456,7 +456,7 @@ void hwCmd(unsigned int cmd, unsigned int param) {
 unsigned int hwRead8(unsigned int offset) {
   MUXSEL_PORT &= ~MUXSEL_MASK;
   MUXSEL_PORT |= offset << MUXSEL_BIT;
-  Delay_us(1);
+  Delay_us(1); // fixed 1us delay is needed here
   return MUX_DIN;
 }
 
@@ -465,10 +465,10 @@ unsigned int hwRead16(unsigned int offset) {
   unsigned int lsb;
   MUXSEL_PORT &= ~MUXSEL_MASK;
   MUXSEL_PORT |= offset << MUXSEL_BIT;
-  Delay_us(1);
+  Delay_us(1); // fixed 1us delay is needed here
   lsb = MUX_DIN;
   MUXSEL_PORT |= 1 << MUXSEL_BIT;
-  Delay_us(1);
+  Delay_us(1); // fixed 1us delay is needed here
   return (MUX_DIN << 8) | lsb;
 }
 
@@ -522,13 +522,11 @@ void loadAddr(unsigned int addr) {
 
 unsigned int readMemByte() {
   hwCmd(CMD_RD_MEM, 0);
-  Delay_us(10);
   return hwRead8(OFFSET_DATA);
 }
 
 unsigned int readMemByteInc() {
   hwCmd(CMD_RD_MEM_INC, 0);
-  Delay_us(10);
   return hwRead8(OFFSET_DATA);
 }
 
@@ -542,13 +540,11 @@ void writeMemByteInc() {
 
 unsigned int readIOByte() {
   hwCmd(CMD_RD_IO, 0);
-  Delay_us(10);
   return hwRead8(OFFSET_DATA);
 }
 
 unsigned int readIOByteInc() {
   hwCmd(CMD_RD_IO_INC, 0);
-  Delay_us(10);
   return hwRead8(OFFSET_DATA);
 }
 
@@ -932,7 +928,6 @@ int pollForEvents() {
   if (STATUS_DIN & BW_ACTIVE_MASK) {
     cont = logDetails();
     hwCmd(CMD_WATCH_READ, 0);
-    Delay_us(10);
   }
   if (Serial_ByteRecieved0()) {
     // Interrupt on a return, ignore other characters
@@ -941,6 +936,15 @@ int pollForEvents() {
     }
   }
   return cont;
+}
+
+// Applies a fixed 1ms long reset pulse to the CPU
+// This should be good for clock rates down to ~10KHz
+void resetCpu() {
+  log0("Resetting CPU\n");
+  hwCmd(CMD_RESET, 1);
+  Delay_us(1000);
+  hwCmd(CMD_RESET, 0);
 }
 
 /*******************************************
@@ -978,7 +982,6 @@ void doCmdStep(char *params) {
       i = instructions;
     }
     if (i == instructions || (trace && (--j == 0))) {
-      Delay_us(10);
       logAddr();
       j = trace;
     }
@@ -986,24 +989,7 @@ void doCmdStep(char *params) {
 }
 
 void doCmdReset(char *params) {
-  log0("Resetting CPU\n");
-#if defined(CPU_6502) || defined(CPU_65C02)
-  // For the 6502 cores, to get the single stepping to stop correctly
-  // on the first instruction after reset, it helps to assert reset twice.
-  // I haven't looked into why this is, as it doesn't seem very important.
-  // It's mostly cosmetic, but nice on the Atom to consisently show FF3F.
-  int i;
-  for (i = 0; i < 2; i++) {
-#endif
-   hwCmd(CMD_RESET, 1);
-   Delay_us(50);
-   hwCmd(CMD_STEP, 0);
-   Delay_us(50);
-   hwCmd(CMD_RESET, 0);
-   Delay_us(50);
-#if defined(CPU_6502) || defined(CPU_65C02)
-  }
-#endif
+  resetCpu();
   logAddr();
 }
 
@@ -1347,10 +1333,7 @@ void doCmdContinue(char *params) {
 
   // Reset if required
   if (reset) {
-    log0("Resetting CPU\n");
-    hwCmd(CMD_RESET, 1);
-    Delay_us(100);
-    hwCmd(CMD_RESET, 0);
+    resetCpu();
   }
 
   // Wait for breakpoint to become active
