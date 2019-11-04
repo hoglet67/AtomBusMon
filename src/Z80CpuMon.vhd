@@ -166,7 +166,6 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal Sync0          : std_logic;
     signal Sync1          : std_logic;
     signal Mem_IO_n       : std_logic;
-    signal nRST           : std_logic;
 
     signal MemState       : std_logic_vector(2 downto 0);
 
@@ -231,7 +230,7 @@ begin
         trig         => trig,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD_int,
-        sw_reset_cpu => '0',
+        sw_reset_cpu => sw_reset_cpu,
         sw_reset_avr => sw_reset_avr,
         led_bkpt     => led_bkpt,
         led_trig0    => led_trig0,
