@@ -94,7 +94,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
 
     signal clock_avr      : std_logic;
 
-    signal RESET_n_int    : std_logic;
+    signal cpu_reset_n    : std_logic;
     signal cpu_clk        : std_logic;
     signal cpu_clken      : std_logic;
     signal busmon_clk     : std_logic;
@@ -225,8 +225,8 @@ begin
         WrIO_n       => WriteIO_n,
         Sync         => Sync,
         Rdy          => open,
-        nRSTin       => RESET_n_int,
-        nRSTout      => nRST,
+        nRSTin       => RESET_n,
+        nRSTout      => cpu_reset_n,
         CountCycle   => CountCycle,
         trig         => trig,
         avr_RxD      => avr_RxD,
@@ -262,7 +262,7 @@ begin
         TS      => TState,
         Regs    => Regs,
         PdcData => PdcData,
-        RESET_n => RESET_n_int,
+        RESET_n => cpu_reset_n,
         CLK_n   => cpu_clk,
         CEN     => cpu_clken,
         WAIT_n  => WAIT_n,
@@ -444,9 +444,9 @@ begin
 
     Din <= Data;
 
-    men_access_machine_rising : process(CLK_n, RESET_n)
+    men_access_machine_rising : process(CLK_n, cpu_reset_n)
     begin
-        if (RESET_n = '0') then
+        if (cpu_reset_n = '0') then
             state <= idle;
             memory_rd1 <= '0';
             memory_wr1 <= '0';
@@ -643,8 +643,6 @@ begin
     end process;
 
     mon_busak_n <= mon_busak_n1 or mon_busak_n2;
-
-    RESET_n_int <= RESET_n and (not sw_interrupt) and nRST;
 
     avr_TxD <= avr_Txd_int;
 

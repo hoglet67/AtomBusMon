@@ -85,12 +85,10 @@ architecture behavioral of MOS6502CpuMonCore is
     signal Wr_n_int      : std_logic;
     signal Sync_int      : std_logic;
     signal Addr_int      : std_logic_vector(23 downto 0);
-    signal Res_n_out     : std_logic;
 
     signal cpu_addr_us   : unsigned (15 downto 0);
     signal cpu_dout_us   : unsigned (7 downto 0);
     signal cpu_reset_n   : std_logic;
-    signal reset_counter : std_logic_vector(9 downto 0);
 
     signal Regs          : std_logic_vector(63 downto 0);
     signal Regs1         : std_logic_vector(255 downto 0);
@@ -135,7 +133,7 @@ begin
         Sync         => Sync_int,
         Rdy          => open,
         nRSTin       => Res_n,
-        nRSTout      => Res_n_out,
+        nRSTout      => cpu_reset_n,
         CountCycle   => CountCycle,
         trig         => trig,
         avr_RxD      => avr_RxD,
@@ -195,24 +193,6 @@ begin
     Regs1(255 downto 64) <= (others => '0');
 
     cpu_clken_ss <= '1' when Rdy = '1' and (state = idle) and cpu_clken = '1' else '0';
-
-    -- Generate a short (~1ms @ 1MHz) power up reset pulse
-    --
-    -- This is in case FPGA configuration takes longer than
-    -- the length of the host system reset pulse.
-    --
-    -- Some 6502 cores (particularly the AlanD core) needs
-    -- reset to be asserted to start.
-
-    process(cpu_clk)
-    begin
-        if rising_edge(cpu_clk) then
-            if reset_counter(reset_counter'high) = '0' then
-                reset_counter <= reset_counter + 1;
-            end if;
-            cpu_reset_n <= Res_n and Res_n_out and reset_counter(reset_counter'high);
-        end if;
-    end process;
 
     GenT65Core: if UseT65Core generate
         inst_t65: entity work.T65 port map (

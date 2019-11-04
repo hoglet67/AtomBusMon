@@ -92,12 +92,12 @@ architecture behavioral of MC6809CpuMon is
     signal clock_avr      : std_logic;
 
     signal cpu_clk        : std_logic;
+    signal cpu_reset_n    : std_logic;
     signal busmon_clk     : std_logic;
     signal R_W_n_int      : std_logic;
     signal NMI_sync       : std_logic;
     signal IRQ_sync       : std_logic;
     signal FIRQ_sync      : std_logic;
-    signal nRST_sync      : std_logic;
     signal HALT_sync      : std_logic;
     signal Addr_int       : std_logic_vector(15 downto 0);
     signal Din            : std_logic_vector(7 downto 0);
@@ -184,8 +184,8 @@ begin
         WrIO_n       => '1',
         Sync         => Sync_int,
         Rdy          => open,
-        nRSTin       => nRST_sync,
-        nRSTout      => nRSTout,
+        nRSTin       => RES_n,
+        nRSTout      => cpu_reset_n,
         CountCycle   => CountCycle,
         trig         => trig,
         avr_RxD      => avr_RxD,
@@ -244,7 +244,7 @@ begin
 
     inst_cpu09: entity work.cpu09 port map (
         clk      => cpu_clk,
-        rst      => not nRST_sync,
+        rst      => not cpu_reset_n,
         vma      => AVMA,
         lic_out  => LIC_int,
         ifetch   => ifetch,
@@ -271,7 +271,6 @@ begin
             NMI_sync   <= not NMI_n_masked;
             IRQ_sync   <= not IRQ_n_masked;
             FIRQ_sync  <= not FIRQ_n_masked;
-            nRST_sync  <= RES_n and nRSTout;
             HALT_sync  <= not HALT_n;
         end if;
     end process;

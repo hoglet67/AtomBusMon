@@ -102,7 +102,15 @@ end BusMonCore;
 
 architecture behavioral of BusMonCore is
 
+
+    signal cpu_reset_n     : std_logic;
     signal nrst_avr        : std_logic;
+    signal nrst1           : std_logic;
+    signal nrst2           : std_logic;
+    signal nrst3           : std_logic;
+
+    -- debounce time is 2^17 / 16MHz = 8.192ms
+    signal nrst_counter    : unsigned(17 downto 0);
 
     signal dy_counter      : std_logic_vector(31 downto 0);
     signal dy_data         : y2d_type ;
@@ -162,6 +170,8 @@ architecture behavioral of BusMonCore is
     signal last_done       : std_logic;
     signal inc_addr        : std_logic;
 
+    signal reset_counter   : std_logic_vector(9 downto 0);
+
 begin
 
     inst_oho_dy1 : entity work.Oho_Dy1 port map (
@@ -216,7 +226,7 @@ begin
         portdin(3)           => '0',
         portdin(4)           => '0',
         portdin(5)           => '0',
-        portdin(6)           => sw_interrupt,
+        portdin(6)           => '0', -- sw_interrupt,
         portdin(7)           => fifo_empty_n,
 
         portdout(0)           => muxsel(0),
@@ -408,7 +418,7 @@ begin
         if rising_edge(busmon_clk) then
             if busmon_clken = '1' then
                 -- Cycle counter, wraps every 16s at 1MHz
-                if (nRSTin = '0') then
+                if (cpu_reset_n = '0') then
                     cycleCount <= (others => '0');
                 elsif (CountCycle = '1') then
                     cycleCount <= cycleCount + 1;
@@ -493,8 +503,6 @@ begin
                     Rdy_int <= (not Sync);
                 end if;
 
-                nRSTout <= not reset;
-
                 -- Latch instruction address for the whole cycle
                 if (Sync = '1') then
                     addr_inst <= Addr;
@@ -541,5 +549,52 @@ begin
     AddrOut <= addr_dout_reg(23 downto 8);
     DataOut <= addr_dout_reg(7 downto 0);
     SS_Single <= single;
+
+    -- Reset Logic
+    -- Generate a short (~1ms @ 1MHz) power up reset pulse
+    --
+    -- This is in case FPGA configuration takes longer than
+    -- the length of the host system reset pulse.
+    --
+    -- Some 6502 cores (particularly the AlanD core) needs
+    -- reset to be asserted to start.
+
+
+
+    -- Debounce nRSTin using clock_avr as this is always 16MHz
+    --    nrst1 is the possibly glitchy input
+    --    nrst2 is the filtered output
+    process(clock_avr)
+    begin
+        if rising_edge(clock_avr) then
+            -- Syncronise nRSTin
+            nrst1 <= nRSTin and (not sw_interrupt);
+            -- De-glitch NRST
+            if nrst1 = '0' then
+                nrst_counter <= to_unsigned(0, nrst_counter'length);
+                nrst2 <= '0';
+            elsif nrst_counter(nrst_counter'high) = '0' then
+                nrst_counter <= nrst_counter + 1;
+            else
+                nrst2 <= '1';
+            end if;
+        end if;
+    end process;
+
+
+    process(cpu_clk)
+    begin
+        if rising_edge(cpu_clk) then
+            if cpu_clken = '1' then
+                if reset_counter(reset_counter'high) = '0' then
+                    reset_counter <= reset_counter + 1;
+                end if;
+                nrst3 <= nrst2;
+                cpu_reset_n <= nrst3 and reset_counter(reset_counter'high) and (not reset);
+            end if;
+        end if;
+    end process;
+
+    nRSTout <= cpu_reset_n;
 
 end behavioral;
