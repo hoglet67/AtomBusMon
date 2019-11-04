@@ -1,6 +1,5 @@
 
 NET "CLK_n" CLOCK_DEDICATED_ROUTE = FALSE;
-TIMESPEC TS_clk_period_clk_n = PERIOD "clk_period_grp_clk_n" 125ns LOW;
 
 NET "clock49" CLOCK_DEDICATED_ROUTE = FALSE;
 
@@ -11,7 +10,7 @@ NET "Addr<12>" LOC="P95" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z
 NET "Addr<13>" LOC="P18" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 3
 NET "Addr<14>" LOC="P17" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 4
 NET "Addr<15>" LOC="P94" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 5
-NET "CLK_n"    LOC="P22" | IOSTANDARD = LVCMOS33                           ; # Z80 pin 6
+NET "CLK_n"    LOC="P22" | IOSTANDARD = LVCMOS33 | PERIOD = 125.00ns       ; # Z80 pin 6
 NET "Data<4>"  LOC="P23" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 7
 NET "Data<3>"  LOC="P33" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 8
 NET "Data<5>"  LOC="P32" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 9
@@ -47,39 +46,31 @@ NET "Addr<8>"  LOC="P9"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z
 NET "Addr<9>"  LOC="P10" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 39
 NET "Addr<10>" LOC="P11" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # Z80 pin 40
 
-NET "led3"       LOC="P43" | IOSTANDARD = LVCMOS33 ; # Red LED (near SW1)
-NET "led6"       LOC="P25" | IOSTANDARD = LVCMOS33 ; # Red LED (just left of FPGA)
-NET "led8"       LOC="P47" | IOSTANDARD = LVCMOS33 ; # Green LED (near SW1)
-NET "sw1"        LOC="P39" | IOSTANDARD = LVCMOS33 ; # Bottom Switch
-NET "sw2"        LOC="P69" | IOSTANDARD = LVCMOS33 | PULLUP ; # Top Switch
+NET "led3"     LOC="P43" | IOSTANDARD = LVCMOS33                           ; # Red LED (near SW1)
+NET "led6"     LOC="P25" | IOSTANDARD = LVCMOS33                           ; # Red LED (just left of FPGA)
+NET "led8"     LOC="P47" | IOSTANDARD = LVCMOS33                           ; # Green LED (near SW1)
+NET "sw1"      LOC="P39" | IOSTANDARD = LVCMOS33                           ; # Left Switch
+NET "sw2"      LOC="P69" | IOSTANDARD = LVCMOS33 | PULLUP                  ; # Right Switch
 
 # I/O's for test connector
-#NET tvs1                      LOC=P48 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-#NET tvs0                      LOC=P49 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-NET tmosi                     LOC=P27 | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET tdin                      LOC=P44 | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET tcclk                     LOC=P50 | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-#NET tm1                       LOC=P42 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
-#NET thsw                      LOC=P99 | IOSTANDARD = LVCMOS33 | DRIVE=16 ;
+#NET tvs1      LOC="P48" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # connector pin E2
+#NET tvs0      LOC="P49" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # connector pin E3
+NET tmosi      LOC="P27" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # connector pin E4
+NET tdin       LOC="P44" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # connector pin E5
+NET tcclk      LOC="P50" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # connector pin E6
+#NET tm1       LOC="P42" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # connector pin E7
+#NET thsw      LOC="P99" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # connector pin E8
 
-NET "avr_TxD" LOC="P26" | IOSTANDARD = LVCMOS33 ;
-NET "avr_RxD" LOC="P15" | IOSTANDARD = LVCMOS33 ;
+NET "avr_TxD"  LOC="P26" | IOSTANDARD = LVCMOS33 ;
+NET "avr_RxD"  LOC="P15" | IOSTANDARD = LVCMOS33 ;
 
-NET "trig<0>" LOC="P62" | IOSTANDARD = LVCMOS33 ;
-NET "trig<1>" LOC="P63" | IOSTANDARD = LVCMOS33 ;
+NET "trig<0>"  LOC="P62" | IOSTANDARD = LVCMOS33 ;
+NET "trig<1>"  LOC="P63" | IOSTANDARD = LVCMOS33 ;
 
-NET "test1" LOC="P65" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET "test2" LOC="P66" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET "test3" LOC="P12" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
-NET "test4" LOC="P91" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test1"    LOC="P65" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test2"    LOC="P66" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test3"    LOC="P12" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
+NET "test4"    LOC="P91" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ;
 
 # This input controls whether the idle mode includes M1 cycles
-NET "mode" LOC="P88" | IOSTANDARD = LVCMOS33 | PULLUP;
-
-# NET ""  LOC="P48" | IOSTANDARD = LVCMOS33 ; # connector pin E2
-# NET ""  LOC="P49" | IOSTANDARD = LVCMOS33 ; # connector pin E3
-# NET ""  LOC="P27" | IOSTANDARD = LVCMOS33 ; # connector pin E4
-# NET ""  LOC="P44" | IOSTANDARD = LVCMOS33 ; # connector pin E5
-# NET ""  LOC="P50" | IOSTANDARD = LVCMOS33 ; # connector pin E6
-# NET ""  LOC="P42" | IOSTANDARD = LVCMOS33 ; # connector pin E7
-# NET ""  LOC="P99" | IOSTANDARD = LVCMOS33 ; # connector pin E8
+NET "mode"     LOC="P88" | IOSTANDARD = LVCMOS33 | PULLUP;
