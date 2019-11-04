@@ -1519,7 +1519,7 @@ calcAddr: process(clk)
 	
    sync_irq <= irqActive;
 
-   Regs <= std_logic_vector(PC) &
+   Regs <= std_logic_vector(myAddr) &
            "00000001" & std_logic_vector(S)& 
            N & V & R & B & D & I & Z & C & 
            std_logic_vector(Y) & 
