@@ -613,8 +613,8 @@ begin
                 if reset_counter(reset_counter'high) = '0' then
                     reset_counter <= reset_counter + 1;
                 end if;
-                nrst3 <= nrst2;
-                cpu_reset_n <= nrst3 and reset_counter(reset_counter'high) and (not reset);
+                nrst3 <= nrst2 and reset_counter(reset_counter'high) and (not reset);
+                cpu_reset_n <= nrst3;
             end if;
         end if;
     end process;
