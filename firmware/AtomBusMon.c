@@ -126,7 +126,7 @@ void (*cmdFuncs[])(char *params) = {
 #define CMD_EDGE          0x20
 
 // Commands are placed on bits 4..0
-#define CMD_MASK          0x3F
+#define CMD_MASK          0x1F
 
 // Bits 7..6 are the special function output bits
 // On the 6502, these are used to mask IRQ and NMI
@@ -186,8 +186,8 @@ void (*cmdFuncs[])(char *params) = {
 #define STATUS_DDR        DDRD
 #define STATUS_DIN        PIND
 
-// This bit indicates the interrupt button on the hardware has been pressed
-#define INTERRUPTED_MASK  0x40
+// This bit changing indicates the command has been completed
+#define CMD_ACK_MASK      0x40
 
 // This bit indicates the hardware FIFO contains data
 // which will be either a watch or a breakpoint event
@@ -444,12 +444,12 @@ void readCmd(char *cmd) {
 
 // Send a single hardware command
 void hwCmd(unsigned int cmd, unsigned int param) {
+  unsigned int status = STATUS_DIN;
   cmd |= param;
   CTRL_PORT &= ~CMD_MASK;
-  CTRL_PORT |= cmd;
-  Delay_us(2);
-  CTRL_PORT |= CMD_EDGE;
-  Delay_us(2);
+  CTRL_PORT ^= cmd | CMD_EDGE;
+  // Wait for the CMD_ACK bit to toggle
+  while (!((STATUS_DIN ^ status) & CMD_ACK_MASK));
 }
 
 // Read an 8-bit register via the Mux
@@ -933,9 +933,6 @@ int pollForEvents() {
     cont = logDetails();
     hwCmd(CMD_WATCH_READ, 0);
     Delay_us(10);
-  }
-  if (STATUS_DIN & INTERRUPTED_MASK) {
-    cont = 0;
   }
   if (Serial_ByteRecieved0()) {
     // Interrupt on a return, ignore other characters

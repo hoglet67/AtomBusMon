@@ -120,6 +120,9 @@ architecture behavioral of BusMonCore is
     signal cmd_edge        : std_logic;
     signal cmd_edge1       : std_logic;
     signal cmd_edge2       : std_logic;
+    signal cmd_ack         : std_logic;
+    signal cmd_ack1        : std_logic;
+    signal cmd_ack2        : std_logic;
     signal cmd             : std_logic_vector(4 downto 0);
 
     signal addr_sync       : std_logic_vector(15 downto 0);
@@ -148,7 +151,8 @@ architecture behavioral of BusMonCore is
     signal fifo_din        : std_logic_vector(fifo_width - 1 downto 0);
     signal fifo_dout       : std_logic_vector(fifo_width - 1 downto 0);
     signal fifo_empty      : std_logic;
-    signal fifo_empty_n    : std_logic;
+    signal fifo_not_empty1 : std_logic;
+    signal fifo_not_empty2 : std_logic;
     signal fifo_rd         : std_logic;
     signal fifo_rd_en      : std_logic;
     signal fifo_wr         : std_logic;
@@ -168,7 +172,7 @@ architecture behavioral of BusMonCore is
     signal unused_d7       : std_logic;
 
     signal last_done       : std_logic;
-    signal inc_addr        : std_logic;
+    signal cmd_done        : std_logic;
 
     signal reset_counter   : std_logic_vector(9 downto 0);
 
@@ -226,8 +230,8 @@ begin
         portdin(3)           => '0',
         portdin(4)           => '0',
         portdin(5)           => '0',
-        portdin(6)           => '0',
-        portdin(7)           => fifo_empty_n,
+        portdin(6)           => cmd_ack2,
+        portdin(7)           => fifo_not_empty2,
 
         portdout(0)           => muxsel(0),
         portdout(1)           => muxsel(1),
@@ -248,8 +252,19 @@ begin
 
         rxd                  => avr_RxD,
         txd                  => avr_TxD
-    );
-    fifo_empty_n <= not fifo_empty;
+        );
+
+    -- Syncronise signals crossing busmon_clk / clock_avr boundary
+    process (clock_avr)
+    begin
+        if rising_edge(clock_avr) then
+            fifo_not_empty1 <= not fifo_empty;
+            fifo_not_empty2 <= fifo_not_empty1;
+            cmd_ack1        <= cmd_ack;
+            cmd_ack2        <= cmd_ack1;
+        end if;
+    end process;
+
 
     WatchEvents_inst : entity work.WatchEvents port map(
         clk    => busmon_clk,
@@ -392,7 +407,7 @@ begin
     end process;
 
     -- CPU Control Commands
-    -- 0000x Enable/Disable single strpping
+    -- 0000x Enable/Disable single stepping
     -- 0001x Enable/Disable breakpoints / watches
     -- 0010x Load breakpoint / watch register
     -- 0011x Reset CPU
@@ -435,7 +450,7 @@ begin
                 io_rd     <= '0';
                 io_wr     <= '0';
                 SS_Step   <= '0';
-                if (cmd_edge2 = '0' and cmd_edge1 = '1') then
+                if (cmd_edge2 /= cmd_edge1) then
                     if (cmd(4 downto 1) = "0000") then
                         single <= cmd(0);
                     end if;
@@ -484,11 +499,20 @@ begin
                         auto_inc  <= cmd(0);
                     end if;
 
+                    -- Acknowlege certain commands immediately
+                    if cmd(4) = '0' then
+                        cmd_ack <= not cmd_ack;
+                    end if;
+
                 end if;
 
-                -- Auto increment the memory address reg the cycle after a rd/wr
-                if (auto_inc = '1' and inc_addr = '1') then
-                    addr_dout_reg(23 downto 8) <= addr_dout_reg(23 downto 8) + 1;
+                if cmd_done = '1' then
+                    -- Acknowlege memory access commands when thet complete
+                    cmd_ack <= not cmd_ack;
+                    -- Auto increment the memory address reg the cycle after a rd/wr
+                    if auto_inc = '1' then
+                        addr_dout_reg(23 downto 8) <= addr_dout_reg(23 downto 8) + 1;
+                    end if;
                 end if;
 
                 -- Single Stepping
@@ -496,7 +520,7 @@ begin
                     single <= '1';
                 end if;
 
-                if ((single = '0') or (cmd_edge2 = '0' and cmd_edge1 = '1' and cmd = "01000")) then
+                if ((single = '0') or (cmd_edge2 /= cmd_edge1 and cmd = "01000")) then
                     Rdy_int <= (not brkpt_active);
                     SS_Step <= (not brkpt_active);
                 else
@@ -533,9 +557,9 @@ begin
                 -- Delay the increnting of the address by one cycle
                 last_done <= Done;
                 if Done = '1' and last_done = '0' then
-                    inc_addr <= '1';
+                    cmd_done <= '1';
                 else
-                    inc_addr <= '0';
+                    cmd_done <= '0';
                 end if;
             end if;
         end if;
