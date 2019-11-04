@@ -100,8 +100,8 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal busmon_clk     : std_logic;
 
     signal Addr_int       : std_logic_vector(15 downto 0);
---  signal Addr1          : std_logic_vector(15 downto 0);
---  signal Addr2          : std_logic_vector(15 downto 0);
+    signal Addr1          : std_logic_vector(15 downto 0);
+    signal Addr2          : std_logic_vector(15 downto 0);
     signal RD_n_int       : std_logic;
     signal WR_n_int       : std_logic;
     signal MREQ_n_int     : std_logic;
@@ -406,7 +406,7 @@ begin
     RFSH_n  <= RFSH_n_int  when state = idle else mon_rfsh_n;
     M1_n    <= M1_n_int    when state = idle else mon_m1_n;
 
-    Addr    <= x"0000"     when state = nop_t1 or state = nop_t2 else
+    Addr1   <= x"0000"     when state = nop_t1 or state = nop_t2 else
                rfsh_addr   when state = nop_t3 or state = nop_t4 else
                memory_addr when state /= idle                    else
                Addr_int;
@@ -426,13 +426,13 @@ begin
 --
 -- If the problem recurs, we should switch to something like:
 --
---    addr_delay : process(clock)
---    begin
---        if rising_edge(clock) then
---            Addr2 <= Addr1;
---            Addr <= Addr2;
---        end if;
---    end process;
+    addr_delay : process(clock)
+    begin
+        if rising_edge(clock) then
+            Addr2 <= Addr1;
+            Addr <= Addr2;
+        end if;
+    end process;
 
     Data   <= memory_dout when state = wr_wa or state = wr_t2 or state = wr_t3 else
               Dout        when state = idle and Den = '1' else
