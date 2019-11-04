@@ -7,19 +7,18 @@
 -- /___/  \  /
 -- \   \   \/
 --  \   \
---  /   /         Filename  : MC6808CpuMonCore.vhd
--- /___/   /\     Timestamp : 24/010/2019
+--  /   /         Filename  : MC6808CpuMon.vhd
+-- /___/   /\     Timestamp : 24/10/2019
 -- \   \  /  \
 --  \___\/\___\
 --
---Design Name: MC6808CpuMonCore
---Device: XC3S250E
+--Design Name: MC6808CpuMon
+--Device: multiple
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
-use work.OhoPack.all ;
 
 entity MC6809CpuMon is
     generic (
