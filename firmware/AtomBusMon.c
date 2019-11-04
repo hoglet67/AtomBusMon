@@ -1323,11 +1323,6 @@ void doCmdContinue(char *params) {
   int reset = 0;
   sscanf(params, "%d", &reset);
 
-#if defined(CPU_6809)
-  // Step the 6809, otherwise the breakpoint happends again immediately
-  hwCmd(CMD_STEP, 0);
-#endif
-
   // Disable single stepping
   setSingle(0);
 
