@@ -81,8 +81,8 @@ end Z80CpuMonGODIL;
 
 architecture behavioral of Z80CpuMonGODIL is
 
-    signal sw_reset     : std_logic;
-    signal sw_interrupt : std_logic;
+    signal sw_reset_avr : std_logic;
+    signal sw_reset_cpu : std_logic;
     signal led_bkpt     : std_logic;
     signal led_trig0    : std_logic;
     signal led_trig1    : std_logic;
@@ -96,8 +96,8 @@ architecture behavioral of Z80CpuMonGODIL is
     signal tristate_n   : std_logic;
 
 begin
-    sw_interrupt <= sw1;
-    sw_reset     <= not sw2;
+    sw_reset_cpu <= sw1;
+    sw_reset_avr <= not sw2;
     led3         <= not led_trig0;
     led6         <= not led_trig1;
     led8         <= not led_bkpt;
@@ -153,8 +153,8 @@ begin
             avr_TxD         =>  avr_TxD,
 
             -- Switches
-            sw_interrupt    => sw_interrupt,
-            sw_reset        => sw_reset,
+            sw_reset_cpu    => sw_reset_cpu,
+            sw_reset_avr    => sw_reset_avr,
 
             -- LEDs
             led_bkpt        => led_bkpt,

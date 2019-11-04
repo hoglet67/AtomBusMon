@@ -85,8 +85,8 @@ entity BusMonCore is
         avr_TxD          : out   std_logic;
 
         -- Switches
-        sw_interrupt    : in    std_logic;
-        sw_reset        : in    std_logic;
+        sw_reset_cpu    : in    std_logic;
+        sw_reset_avr    : in    std_logic;
 
         -- LEDs
         led_bkpt        : out   std_logic;
@@ -226,7 +226,7 @@ begin
         portdin(3)           => '0',
         portdin(4)           => '0',
         portdin(5)           => '0',
-        portdin(6)           => '0', -- sw_interrupt,
+        portdin(6)           => '0',
         portdin(7)           => fifo_empty_n,
 
         portdout(0)           => muxsel(0),
@@ -275,12 +275,12 @@ begin
     led_trig1 <= trig(1);
     led_bkpt  <= brkpt_active;
 
-    nrst_avr <= not sw_reset;
+    nrst_avr <= not sw_reset_avr;
 
     -- OHO DY1 Display for Testing
     dy_data(0) <= hex & "0000" & Addr(3 downto 0);
     dy_data(1) <= hex & "0000" & Addr(7 downto 4);
-    dy_data(2) <= hex & "0000" & "00" & sw_reset & sw_interrupt;
+    dy_data(2) <= hex & "0000" & "00" & sw_reset_avr & sw_reset_cpu;
 
     mux <= addr_inst(7 downto 0)            when muxsel = 0 else
            addr_inst(15 downto 8)           when muxsel = 1 else
@@ -568,7 +568,7 @@ begin
     begin
         if rising_edge(clock_avr) then
             -- Syncronise nRSTin
-            nrst1 <= nRSTin and (not sw_interrupt);
+            nrst1 <= nRSTin and (not sw_reset_cpu);
             -- De-glitch NRST
             if nrst1 = '0' then
                 nrst_counter <= to_unsigned(0, nrst_counter'length);

@@ -95,8 +95,8 @@ architecture behavioral of MC6809CpuMonGODIL is
 
     signal clock7_3728    : std_logic;
 
-    signal sw_reset       : std_logic;
-    signal sw_interrupt   : std_logic;
+    signal sw_reset_avr   : std_logic;
+    signal sw_reset_cpu   : std_logic;
     signal led_bkpt       : std_logic;
     signal led_trig0      : std_logic;
     signal led_trig1      : std_logic;
@@ -116,8 +116,8 @@ architecture behavioral of MC6809CpuMonGODIL is
 begin
 
     -- Generics allows polarity of switches/LEDs to be tweaked from the project file
-    sw_interrupt <= sw1;
-    sw_reset     <= not sw2;
+    sw_reset_cpu <= sw1;
+    sw_reset_avr <= not sw2;
     led3         <= not led_trig0;
     led6         <= not led_trig1;
     led8         <= not led_bkpt;
@@ -169,8 +169,8 @@ begin
         avr_TxD         => avr_TxD,
 
         -- Switches
-        sw_interrupt    => sw_interrupt,
-        sw_reset        => sw_reset,
+        sw_reset_cpu    => sw_reset_cpu,
+        sw_reset_avr    => sw_reset_avr,
 
         -- LEDs
         led_bkpt        => led_bkpt,

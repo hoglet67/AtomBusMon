@@ -98,16 +98,16 @@ architecture behavioral of MOS6502CpuMonALS is
 
     signal R_W_n_int    : std_logic;
 
-    signal sw_interrupt : std_logic;
-    signal sw_reset     : std_logic;
+    signal sw_reset_cpu : std_logic;
+    signal sw_reset_avr : std_logic;
     signal led_bkpt     : std_logic;
     signal led_trig0    : std_logic;
     signal led_trig1    : std_logic;
 
 begin
 
-    sw_interrupt <= not sw1;
-    sw_reset     <= not sw2;
+    sw_reset_cpu <= not sw1;
+    sw_reset_avr <= not sw2;
     led1         <= led_bkpt;
     led2         <= led_trig0;
     led3         <= led_trig1;
@@ -150,8 +150,8 @@ begin
             avr_TxD           => avr_TxD,
 
             -- Switches
-            sw_interrupt      => sw_interrupt,
-            sw_reset          => sw_reset,
+            sw_reset_cpu      => sw_reset_cpu,
+            sw_reset_avr      => sw_reset_avr,
 
             -- LEDs
             led_bkpt          => led_bkpt,

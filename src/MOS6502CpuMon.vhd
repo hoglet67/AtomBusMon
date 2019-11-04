@@ -58,8 +58,8 @@ entity MOS6502CpuMon is
         avr_TxD         : out    std_logic;
 
         -- Switches
-        sw_interrupt    : in    std_logic;
-        sw_reset        : in    std_logic;
+        sw_reset_cpu    : in    std_logic;
+        sw_reset_avr    : in    std_logic;
 
         -- LEDs
         led_bkpt        : out   std_logic;
@@ -134,8 +134,8 @@ begin
         trig         => trig,
         avr_RxD      => avr_RxD,
         avr_TxD      => avr_TxD,
-        sw_interrupt => sw_interrupt,
-        sw_reset     => sw_reset,
+        sw_reset_cpu => sw_reset_cpu,
+        sw_reset_avr => sw_reset_avr,
         led_bkpt     => led_bkpt,
         led_trig0    => led_trig0,
         led_trig1    => led_trig1,

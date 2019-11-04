@@ -74,16 +74,16 @@ end MOS6502CpuMonLX9;
 
 architecture behavioral of MOS6502CpuMonLX9 is
 
-    signal sw_interrupt : std_logic;
-    signal sw_reset     : std_logic;
+    signal sw_reset_cpu : std_logic;
+    signal sw_reset_avr : std_logic;
     signal led_bkpt     : std_logic;
     signal led_trig0    : std_logic;
     signal led_trig1    : std_logic;
 
 begin
 
-    sw_interrupt <= sw1;
-    sw_reset     <= sw2;
+    sw_reset_cpu <= sw1;
+    sw_reset_avr <= sw2;
     led8         <= led_bkpt;
     led3         <= led_trig0;
     led6         <= led_trig1;
@@ -126,8 +126,8 @@ begin
             avr_TxD           => avr_TxD,
 
             -- Switches
-            sw_interrupt      => sw_interrupt,
-            sw_reset          => sw_reset,
+            sw_reset_cpu      => sw_reset_cpu,
+            sw_reset_avr      => sw_reset_avr,
 
             -- LEDs
             led_bkpt          => led_bkpt,
