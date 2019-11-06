@@ -51,6 +51,9 @@ void doCmdCrc(char *params);
 void doCmdDis(char *params);
 void doCmdFill(char *params);
 void doCmdHelp(char *params);
+#if defined(COMMAND_HISTORY)
+void doCmdHistory(char *params);
+#endif
 void doCmdIO(char *params);
 void doCmdList(char *params);
 void doCmdMem(char *params);

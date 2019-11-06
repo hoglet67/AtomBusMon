@@ -4,6 +4,8 @@
 #include <ctype.h>
 #include <avr/pgmspace.h>
 
+#define COMMAND_HISTORY
+
 #include "AtomBusMon.h"
 
 /********************************************************
@@ -35,6 +37,9 @@
 
 // Must be kept in step with cmdFuncs (just below)
 char *cmdStrings[] = {
+#if defined(COMMAND_HISTORY)
+  "history",
+#endif
   "help",
   "continue",
   "next",
@@ -75,6 +80,9 @@ char *cmdStrings[] = {
 
 // Must be kept in step with cmdStrings (just above)
 void (*cmdFuncs[])(char *params) = {
+#if defined(COMMAND_HISTORY)
+  doCmdHistory,
+#endif
   doCmdHelp,
   doCmdContinue,
   doCmdNext,
@@ -403,12 +411,55 @@ long trace;
  * User Command Processor
  ********************************************************/
 
+#if defined(COMMAND_HISTORY)
+int8_t readCmd(char *cmd, int8_t reuse) {
+  uint8_t esc = 0;
+#else
 void readCmd(char *cmd) {
+#endif
   char c;
   int i = 0;
+#if defined(COMMAND_HISTORY)
+  // Wipe out the last command
+  Serial_TxByte0(13);
+  for (i = 0; i < 32; i++) {
+    Serial_TxByte0(32);
+  }
+  Serial_TxByte0(13);
+#endif
   log0(">> ");
+#if defined(COMMAND_HISTORY)
+  i = 0;
+  if (reuse) {
+    while (cmd[i]) {
+      Serial_TxByte0(cmd[i++]);
+    }
+  }
+#endif
   while (1) {
     c = Serial_RxByte0();
+#if defined(COMMAND_HISTORY)
+    // Handle Cursor Keys
+    //   Cursor Up   - ESC [ A
+    //   Cursor Down - ESC [ B
+    if (esc == 2) {
+      if (c == 65) {
+        return -1;
+      } else if (c == 66) {
+        return 1;
+      } else {
+        esc = 0;
+      }
+    } else if (esc == 1) {
+      if (c == 91) {
+        esc++;
+      } else {
+        esc = 0;
+      }
+    } else if (c == 27) {
+      esc++;
+    } else
+#endif
     if (c == 8) {
       // Handle backspace/delete
       if (i > 0) {
@@ -419,6 +470,13 @@ void readCmd(char *cmd) {
       }
     } else if (c == 13) {
       // Handle return
+#if defined(COMMAND_HISTORY)
+      cmd[i] = 0;
+      Serial_TxByte0(10);
+      Serial_TxByte0(13);
+      return 0;
+#else
+      // Return repeats the previous command
       if (i == 0) {
         while (cmd[i]) {
           Serial_TxByte0(cmd[i++]);
@@ -429,6 +487,7 @@ void readCmd(char *cmd) {
       Serial_TxByte0(10);
       Serial_TxByte0(13);
       return;
+#endif
     } else if (c >= 32) {
       // Handle any other non-control character
       Serial_TxByte0(c);
@@ -1391,6 +1450,92 @@ void dispatchCmd(char *cmd) {
   log0("Unknown command %s\n", cmd);
 }
 
+#ifdef COMMAND_HISTORY
+
+#define HISTORY_LENGTH 16
+#define COMMAND_LENGTH 32
+
+static char history[HISTORY_LENGTH][COMMAND_LENGTH];
+static char command[COMMAND_LENGTH];
+
+// Last points to the most recent history item, or -1 if the history is empty
+int8_t last = -1;
+
+void doCmdHistory(char *params) {
+  uint8_t id = 1;
+  for (uint8_t i = 1; i <= HISTORY_LENGTH; i++) {
+    char *h = history[(last + i) & (HISTORY_LENGTH - 1)];
+    if (*h) {
+      log0("[%d] %s\n", id++, h);
+    }
+  }
+}
+
+int main(void) {
+
+  // Index points to the currently selected history item
+  int8_t index = -1;
+
+  // Direction indicates the direction of traversal through the history buffer
+  int8_t direction = 0;
+
+  initialize();
+  doCmdContinue(NULL);
+  while (1) {
+    // Returns:
+    // -1 to move back through the history buffer
+    // 0 to use the current command
+    // 1 to move forward through the history buffer
+    direction = readCmd(command, direction);
+    if (direction != 0) {
+      // Calculate next history item, given the direction
+      int8_t tmp = (index + direction + HISTORY_LENGTH) & (HISTORY_LENGTH - 1);
+      // Update index of the next history item, or -1 if there isn't one
+      if (index < 0) {
+        if (direction < 0) {
+          // This covers the first time back is pressed
+          index = last;
+        }
+      } else {
+        if (direction < 0) {
+          // Stepping back through the history buffer
+          if (tmp != last && *history[tmp]) {
+            index = tmp;
+          }
+        } else {
+          // Stepping forward through the history buffer
+          if (index == last) {
+            // Already the most recent item
+            index = -1;
+          } else {
+            index = tmp;
+          }
+        }
+      }
+      // Relast the command from the history last
+      if (index >= 0) {
+        strcpy(command, history[index]);
+      } else {
+        direction = 0;
+      }
+    } else {
+      if (*command) {
+        if (last < 0 || strcmp(history[last], command)) {
+          // Save the command on the end of the history buffer
+          last = (last + 1) & (HISTORY_LENGTH - 1);
+          strcpy(history[last], command);
+        }
+      }
+      // Execute the command
+      dispatchCmd(command);
+      // Reset the history cursor to the current slot
+      index = -1;
+    }
+  }
+  return 0;
+}
+
+#else
 
 int main(void) {
   static char command[32];
@@ -1402,3 +1547,5 @@ int main(void) {
   }
   return 0;
 }
+
+#endif
