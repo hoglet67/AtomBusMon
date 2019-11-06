@@ -279,7 +279,7 @@ void (*cmdFuncs[])(char *params) = {
 #define MAXBKPTS 8
 
 // The current number of watches/breakpoints
-int numbkpts = 0;
+bknum_t numbkpts = 0;
 
 // Watches/Breakpoints are loaded into a massive shift register by the
 // continue command. The following variables in the AVR track what the
@@ -291,15 +291,15 @@ int numbkpts = 0;
 // <Trigger:4> <Mode:10> <Address Mask:16> <Address Value:16>
 
 // A 16 bit breakpoint address
-unsigned int breakpoints[MAXBKPTS];
+addr_t breakpoints[MAXBKPTS];
 
 // A 16 bit breakpoint address mask
-unsigned int       masks[MAXBKPTS];
+addr_t masks[MAXBKPTS];
 
 // The type (aka mode) of breakpoint (a 10 bit values), allowing
 // multiple types to be defined. The bits correspond to the mode
 // definitions below.
-unsigned int       modes[MAXBKPTS];
+modes_t modes[MAXBKPTS];
 
 // The number of different watch/breakpoint modes
 #define NUM_MODES   11
@@ -358,7 +358,7 @@ char *modeStrings[NUM_MODES] = {
 
 // A boolean function of the external trigger inputs that
 // is used to gate the watch/breakpoint.
-unsigned char triggers[MAXBKPTS];
+trigger_t triggers[MAXBKPTS];
 
 #define NUM_TRIGGERS 16
 
@@ -390,10 +390,10 @@ char * triggerStrings[NUM_TRIGGERS] = {
  ********************************************************/
 
 // The current memory address (e.g. used when disassembling)
-unsigned int memAddr = 0;
+addr_t memAddr = 0;
 
 // The address of the next instruction
-unsigned int nextAddr = 0;
+addr_t nextAddr = 0;
 
 // When single stepping, trace (i.e. log) event N instructions
 // Setting this to 0 will disable logging
@@ -443,8 +443,8 @@ void readCmd(char *cmd) {
  ********************************************************/
 
 // Send a single hardware command
-void hwCmd(unsigned int cmd, unsigned int param) {
-  unsigned int status = STATUS_DIN;
+void hwCmd(cmd_t cmd, cmd_t param) {
+  uint8_t status = STATUS_DIN;
   cmd |= param;
   CTRL_PORT &= ~CMD_MASK;
   CTRL_PORT ^= cmd | CMD_EDGE;
@@ -453,7 +453,7 @@ void hwCmd(unsigned int cmd, unsigned int param) {
 }
 
 // Read an 8-bit register via the Mux
-unsigned int hwRead8(unsigned int offset) {
+uint8_t hwRead8(offset_t offset) {
   MUXSEL_PORT &= ~MUXSEL_MASK;
   MUXSEL_PORT |= offset << MUXSEL_BIT;
   Delay_us(1); // fixed 1us delay is needed here
@@ -461,8 +461,8 @@ unsigned int hwRead8(unsigned int offset) {
 }
 
 // Read an 16-bit register via the Mux
-unsigned int hwRead16(unsigned int offset) {
-  unsigned int lsb;
+uint16_t hwRead16(offset_t offset) {
+  uint8_t lsb;
   MUXSEL_PORT &= ~MUXSEL_MASK;
   MUXSEL_PORT |= offset << MUXSEL_BIT;
   Delay_us(1); // fixed 1us delay is needed here
@@ -474,14 +474,14 @@ unsigned int hwRead16(unsigned int offset) {
 
 // Shift a breakpoint definition into the breakpoint shift register
 
-void shift(unsigned int value, int numbits) {
+void shift(uint16_t value, uint8_t numbits) {
   while (numbits-- > 0) {
     hwCmd(CMD_LOAD_BRKPT, value & 1);
     value >>= 1;
   }
 }
 
-void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int mode, unsigned char trigger) {
+void shiftBreakpointRegister(addr_t addr, addr_t mask, modes_t mode, trigger_t trigger) {
   shift(addr, 16);
   shift(mask, 16);
   shift(mode, 10);
@@ -492,40 +492,40 @@ void shiftBreakpointRegister(unsigned int addr, unsigned int mask, unsigned int 
  * Host Memory/IO Access helpers
  ********************************************************/
 
-void log_char(int c) {
+void log_char(uint8_t c) {
   if (c < 32 || c > 126) {
     c = '.';
   }
   log0("%c", c);
 }
 
-void log_addr_data(int a, int d) {
+void log_addr_data(addr_t a, data_t d) {
   log0(" %04X = %02X  ", a, d);
   log_char(d);
 }
 
-void loadData(unsigned int data) {
-  int i;
+void loadData(data_t data) {
+  uint8_t i;
   for (i = 0; i <= 7; i++) {
     hwCmd(CMD_LOAD_MEM, data & 1);
     data >>= 1;
   }
 }
 
-void loadAddr(unsigned int addr) {
-  int i;
+void loadAddr(addr_t addr) {
+  uint8_t i;
   for (i = 0; i <= 15; i++) {
     hwCmd(CMD_LOAD_MEM, addr & 1);
     addr >>= 1;
   }
 }
 
-unsigned int readMemByte() {
+data_t readMemByte() {
   hwCmd(CMD_RD_MEM, 0);
   return hwRead8(OFFSET_DATA);
 }
 
-unsigned int readMemByteInc() {
+data_t readMemByteInc() {
   hwCmd(CMD_RD_MEM_INC, 0);
   return hwRead8(OFFSET_DATA);
 }
@@ -538,12 +538,12 @@ void writeMemByteInc() {
   hwCmd(CMD_WR_MEM_INC, 0);
 }
 
-unsigned int readIOByte() {
+data_t readIOByte() {
   hwCmd(CMD_RD_IO, 0);
   return hwRead8(OFFSET_DATA);
 }
 
-unsigned int readIOByteInc() {
+data_t readIOByteInc() {
   hwCmd(CMD_RD_IO_INC, 0);
   return hwRead8(OFFSET_DATA);
 }
@@ -556,14 +556,15 @@ void writeIOByteInc() {
   hwCmd(CMD_WR_IO_INC, 0);
 }
 
-unsigned int disMem(unsigned int addr) {
+addr_t disMem(addr_t addr) {
   loadAddr(addr);
   return disassemble(addr);
 }
 
-void genericDump(char *params, unsigned int (*readFunc)()) {
-  int i, j;
-  unsigned int row[16];
+void genericDump(char *params, data_t (*readFunc)()) {
+  uint16_t i;
+  uint16_t j;
+  data_t row[16];
   sscanf(params, "%x", &memAddr);
   loadAddr(memAddr);
   for (i = 0; i < 0x100; i+= 16) {
@@ -576,7 +577,7 @@ void genericDump(char *params, unsigned int (*readFunc)()) {
     }
     log0(" ");
     for (j = 0; j < 16; j++) {
-      unsigned int c = row[j];
+      data_t c = row[j];
       log_char(c);
     }
     log0("\n");
@@ -585,9 +586,9 @@ void genericDump(char *params, unsigned int (*readFunc)()) {
 }
 
 void genericWrite(char *params, void (*writeFunc)()) {
-  unsigned int data;
+  data_t data;
   long count = 1;
-  sscanf(params, "%x %x %ld", &memAddr, &data, &count);
+  sscanf(params, "%x %hhx %ld", &memAddr, &data, &count);
   log0("Wr: ");
   log_addr_data(memAddr, data);
   log0("\n");
@@ -599,9 +600,10 @@ void genericWrite(char *params, void (*writeFunc)()) {
   memAddr++;
 }
 
-void genericRead(char *params, unsigned int (*readFunc)()) {
-  unsigned int data;
-  unsigned int data2;
+void genericRead(char *params, data_t (*readFunc)()) {
+  // Note: smaller types here increase the code size by 28 bytes
+  uint16_t data;
+  uint16_t data2;
   long count = 1;
   sscanf(params, "%x %ld", &memAddr, &count);
   loadAddr(memAddr);
@@ -630,9 +632,10 @@ void logCycleCount(int offsetLow, int offsetHigh) {
   log0("%02ld.%06ld: ", countSecs, countMicros);
 }
 
-void logMode(unsigned int mode) {
-  int i;
-  int first = 1;
+void logMode(modes_t mode) {
+  uint8_t first = 1;
+  // Note: smaller types here increase the code size by 8 bytes
+  uint16_t i;
   for (i = 0; i < NUM_MODES; i++) {
     if (mode & 1) {
       if (!first) {
@@ -645,7 +648,7 @@ void logMode(unsigned int mode) {
   }
 }
 
-void logTrigger(unsigned char trigger) {
+void logTrigger(trigger_t trigger) {
   if (trigger < NUM_TRIGGERS) {
     log0("trigger: %s", triggerStrings[trigger]);
   } else {
@@ -653,12 +656,12 @@ void logTrigger(unsigned char trigger) {
   }
 }
 
-int logDetails() {
-  unsigned int i_addr = hwRead16(OFFSET_BW_IAL);
-  unsigned int b_addr = hwRead16(OFFSET_BW_BAL);
-  unsigned int b_data = hwRead8(OFFSET_BW_BD);
-  unsigned int mode   = hwRead8(OFFSET_BW_M);
-  unsigned int watch  = mode & 1;
+uint8_t logDetails() {
+  addr_t i_addr = hwRead16(OFFSET_BW_IAL);
+  addr_t b_addr = hwRead16(OFFSET_BW_BAL);
+  data_t b_data = hwRead8(OFFSET_BW_BD);
+  modes_t mode  = hwRead8(OFFSET_BW_M);
+  uint8_t watch = mode & 1;
 
   // Convert from 4-bit compressed to 10 bit expanded mode representation
   mode = 1 << mode;
@@ -706,8 +709,9 @@ void version() {
  ********************************************************/
 
 // Return the index of a breakpoint from the user specified address
-int lookupBreakpointN(int n) {
-  int i;
+bknum_t lookupBreakpointN(addr_t n) {
+  // Note: smaller types here increase the code size by 8 bytes
+  bknum_t i;
   // First, look assume n is an address, and try to map to an index
   for (i = 0; i < numbkpts; i++) {
     if (breakpoints[i] == n) {
@@ -722,10 +726,10 @@ int lookupBreakpointN(int n) {
   }
 }
 
-int lookupBreakpoint(char *params) {
+bknum_t lookupBreakpoint(char *params) {
   int addr = -1;
   sscanf(params, "%x", &addr);
-  int n = lookupBreakpointN(addr);
+  bknum_t n = lookupBreakpointN(addr);
   if (n < 0) {
     log0("Breakpoint/watch not set at %04X\n", addr);
   }
@@ -733,7 +737,7 @@ int lookupBreakpoint(char *params) {
 }
 
 // Enable/Disable single stepping
-void setSingle(int single) {
+void setSingle(uint8_t single) {
   hwCmd(CMD_SINGLE_ENABLE, single ? 1 : 0);
 }
 
@@ -749,7 +753,7 @@ void setTrace(long i) {
 
 // Set the breakpoint state variables
 
-void logBreakpoint(unsigned int addr, unsigned int mode) {
+void logBreakpoint(addr_t addr, modes_t mode) {
   logMode(mode);
   log0(" set at %04X\n", addr);
 }
@@ -759,7 +763,8 @@ void logTooManyBreakpoints() {
 }
 
 void uploadBreakpoints() {
-  int i;
+  // This should be bknum_t, but code increases by 40 bytes
+  uint8_t i;
   // Disable breakpoints to allow loading
   hwCmd(CMD_BRKPT_ENABLE, 0);
 
@@ -774,7 +779,7 @@ void uploadBreakpoints() {
   hwCmd(CMD_BRKPT_ENABLE, 1);
 }
 
-void setBreakpoint(int n, unsigned int addr, unsigned int mask, unsigned int mode, unsigned char trigger) {
+void setBreakpoint(bknum_t n, addr_t addr, addr_t mask, modes_t mode, trigger_t trigger) {
   breakpoints[n] = addr & mask;
   masks[n] = mask;
   modes[n] = mode;
@@ -783,8 +788,8 @@ void setBreakpoint(int n, unsigned int addr, unsigned int mask, unsigned int mod
   uploadBreakpoints();
 }
 
-void clearBreakpoint(int n) {
-  int i;
+void clearBreakpoint(bknum_t n) {
+  bknum_t i;
   for (i = n; i < numbkpts; i++) {
     breakpoints[i] = breakpoints[i + 1];
     masks[i] = masks[i + 1];
@@ -798,10 +803,10 @@ void clearBreakpoint(int n) {
 
 // A generic helper that does most of the work of the watch/breakpoint commands
 void genericBreakpoint(char *params, unsigned int mode) {
-  int i;
-  unsigned int addr;
-  unsigned int mask = 0xFFFF;
-  unsigned char trigger = TRIGGER_UNDEFINED;
+  bknum_t i;
+  addr_t addr;
+  addr_t mask = 0xFFFF;
+  trigger_t trigger = TRIGGER_UNDEFINED;
   sscanf(params, "%x %x %hhx", &addr, &mask, &trigger);
   // First, see if a breakpoint with this address already exists
   for (i = 0; i < numbkpts; i++) {
@@ -850,7 +855,7 @@ void genericBreakpoint(char *params, unsigned int mode) {
  * Test Helpers
  ********************************************************/
 
-char *testNames[6] = {
+char *testNames[] = {
   "Fixed",
   "Checkerboard",
   "Inverse checkerboard",
@@ -859,7 +864,7 @@ char *testNames[6] = {
   "Random"
 };
 
-unsigned int getData(unsigned int addr, int data) {
+data_t getData(addr_t addr, int data) {
   if (data == -1) {
     // checkerboard
     return (addr & 1) ? 0x55 : 0xAA;
@@ -881,12 +886,12 @@ unsigned int getData(unsigned int addr, int data) {
   }
 }
 
-void test(unsigned int start, unsigned int end, int data) {
+void test(addr_t start, addr_t end, int data) {
   long i;
   int name;
-  int actual;
-  int expected;
-  unsigned int fail = 0;
+  data_t actual;
+  data_t expected;
+  addr_t fail = 0;
   // Write
   srand(data);
   for (i = start; i <= end; i++) {
@@ -923,8 +928,8 @@ void test(unsigned int start, unsigned int end, int data) {
   }
 }
 
-int pollForEvents() {
-  int cont = 1;
+uint8_t pollForEvents() {
+  uint8_t cont = 1;
   if (STATUS_DIN & BW_ACTIVE_MASK) {
     cont = logDetails();
     hwCmd(CMD_WATCH_READ, 0);
@@ -952,7 +957,7 @@ void resetCpu() {
  *******************************************/
 
 void doCmdHelp(char *params) {
-  int i;
+  uint8_t i;
   version();
   log0("Commands:\n");
   for (i = 0; i < NUM_CMDS; i++) {
@@ -996,7 +1001,7 @@ void doCmdReset(char *params) {
 // doCmdRegs is now in regs<cpu>.c
 
 void doCmdDis(char *params) {
-  int i;
+  uint8_t i;
   sscanf(params, "%x", &memAddr);
   loadAddr(memAddr);
   for (i = 0; i < 10; i++) {
@@ -1006,10 +1011,10 @@ void doCmdDis(char *params) {
 
 void doCmdFill(char *params) {
   long i;
-  unsigned int start;
-  unsigned int end;
-  unsigned int data;
-  sscanf(params, "%x %x %x", &start, &end, &data);
+  addr_t start;
+  addr_t end;
+  data_t data;
+  sscanf(params, "%x %x %hhx", &start, &end, &data);
   log0("Wr: %04X to %04X = %02X\n", start, end, data);
   loadData(data);
   loadAddr(start);
@@ -1020,11 +1025,11 @@ void doCmdFill(char *params) {
 
 void doCmdCrc(char *params) {
   long i;
-  int j;
-  unsigned int start;
-  unsigned int end;
-  unsigned int data;
-  unsigned long crc = 0;
+  uint8_t j;
+  addr_t start;
+  addr_t end;
+  data_t data;
+  uint16_t crc = 0;
   sscanf(params, "%x %x", &start, &end);
   loadAddr(start);
   for (i = start; i <= end; i++) {
@@ -1069,10 +1074,10 @@ void doCmdWriteIO(char *params) {
 #endif
 
 void doCmdTest(char *params) {
-  unsigned int start;
-  unsigned int end;
+  addr_t start;
+  addr_t end;
   int data =-100;
-  int i;
+  int8_t i;
   sscanf(params, "%x %x %d", &start, &end, &data);
   if (data == -100) {
     test(start, end, 0x55);
@@ -1086,16 +1091,15 @@ void doCmdTest(char *params) {
   }
 }
 
-int crc;
+uint8_t crc;
 
 int getHex() {
-   int i;
+   uint8_t i;
    char hex[2];
    hex[0] = Serial_RxByte0();
    hex[1] = Serial_RxByte0();
-   sscanf(hex, "%2x", &i);
+   sscanf(hex, "%2hhx", &i);
    crc += i;
-   crc &= 0xff;
    return i;
 }
 
@@ -1107,18 +1111,19 @@ int getHex() {
 //
 //
 
-void doCmdSRec(char *params) {
-   int c;
-   int count;
-   int data;
-   int good_rec = 0;
-   int bad_rec = 0;
-   unsigned int addr;
-   unsigned int total = 0;
-   unsigned int timeout;
 
-   unsigned int addrlo = 0xFFFF;
-   unsigned int addrhi = 0x0000;
+void doCmdSRec(char *params) {
+   char c;
+   uint8_t count;
+   data_t data;
+   addr_t good_rec = 0;
+   addr_t bad_rec = 0;
+   addr_t addr;
+   addr_t total = 0;
+   uint16_t timeout;
+
+   addr_t addrlo = 0xFFFF;
+   addr_t addrhi = 0x0000;
 
 
    log0("Send file now...\n");
@@ -1185,10 +1190,9 @@ void doCmdSRec(char *params) {
          good_rec++;
       }
    }
-
 }
 
-void logSpecial(char *function, int value) {
+void logSpecial(char *function, uint8_t value) {
    log0("%s", function);
    if (value) {
       log0(" inhibited\n");
@@ -1214,7 +1218,8 @@ void doCmdTrace(char *params) {
 }
 
 void doCmdList(char *params) {
-  int i;
+  // This should be bknum_t, but code increases by 22 bytes
+  uint8_t i;
   if (numbkpts) {
     for (i = 0; i < numbkpts; i++) {
       log0("%d: %04X mask %04X: ", i, breakpoints[i], masks[i]);
@@ -1273,7 +1278,7 @@ void doCmdWatchWrIO(char *params) {
 #endif
 
 void doCmdClear(char *params) {
-  int n = lookupBreakpoint(params);
+  bknum_t n = lookupBreakpoint(params);
   if (n < 0) {
     return;
   }
@@ -1284,7 +1289,7 @@ void doCmdClear(char *params) {
 }
 
 void doCmdTrigger(char *params) {
-  unsigned char trigger = TRIGGER_UNDEFINED;
+  trigger_t trigger = TRIGGER_UNDEFINED;
   sscanf(params, "%*x %hhx", &trigger);
   if (trigger >= NUM_TRIGGERS) {
     log0("Trigger Codes:\n");
@@ -1294,7 +1299,7 @@ void doCmdTrigger(char *params) {
     return;
   }
   // Lookup the breakpoint
-  int n = lookupBreakpoint(params);
+  bknum_t n = lookupBreakpoint(params);
   if (n < 0) {
     return;
   }
@@ -1320,8 +1325,8 @@ void doCmdNext(char *params) {
 }
 
 void doCmdContinue(char *params) {
-  int reset = 0;
-  sscanf(params, "%d", &reset);
+  uint8_t reset = 0;
+  sscanf(params, "%hhd", &reset);
 
   // Disable single stepping
   setSingle(0);
@@ -1343,7 +1348,7 @@ void doCmdContinue(char *params) {
   logAddr();
 
   // If we have hit the transient breakpoint, clear it
-  int n = lookupBreakpointN(memAddr);
+  bknum_t n = lookupBreakpointN(memAddr);
   if ((n >= 0)  && (modes[n] & (1 << TRANSIENT))) {
     clearBreakpoint(n);
   }
@@ -1366,11 +1371,11 @@ void initialize() {
 }
 
 void dispatchCmd(char *cmd) {
-  int i;
   char *cmdString;
-  int minLen;
-  int cmdStringLen;
-  int cmdLen = 0;
+  uint8_t i;
+  uint8_t minLen;
+  uint8_t cmdStringLen;
+  uint8_t cmdLen = 0;
   while (cmd[cmdLen] >= 'a' && cmd[cmdLen] <= 'z') {
     cmdLen++;
   }
@@ -1385,6 +1390,7 @@ void dispatchCmd(char *cmd) {
   }
   log0("Unknown command %s\n", cmd);
 }
+
 
 int main(void) {
   static char command[32];

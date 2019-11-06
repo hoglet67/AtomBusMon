@@ -17,19 +17,29 @@
           __builtin_avr_delay_cycles((unsigned long) ( F_CPU/1000.0 * __ms)+1);\
     else __builtin_avr_delay_cycles((unsigned long) ( F_CPU/1000.0 * __ms))
 
-unsigned int hwRead8(unsigned int offset);
-unsigned int hwRead16(unsigned int offset);
 
-unsigned int disMem(unsigned int addr);
-void loadData(unsigned int data);
-void loadAddr(unsigned int addr);
-unsigned int readMemByte();
-unsigned int readMemByteInc();
+typedef uint8_t  data_t;
+typedef uint16_t addr_t;
+typedef uint8_t  offset_t;
+typedef uint16_t modes_t;
+typedef uint8_t  trigger_t;
+typedef uint16_t cmd_t;
+typedef uint16_t param_t;
+typedef int16_t  bknum_t;
+
+uint8_t hwRead8(offset_t offset);
+uint16_t hwRead16(offset_t offset);
+
+addr_t disMem(addr_t addr);
+void loadData(data_t data);
+void loadAddr(addr_t addr);
+data_t readMemByte();
+data_t readMemByteInc();
 void writeMemByte();
 void writeMemByteInc();
-unsigned int disMem(unsigned int addr);
+addr_t disMem(addr_t addr);
 
-void doCmdBreak(char *params, unsigned int mode);
+void doCmdBreak(char *params, modes_t mode);
 void doCmdBreakI(char *params);
 void doCmdBreakRdIO(char *params);
 void doCmdBreakRdMem(char *params);
