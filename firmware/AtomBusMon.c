@@ -1088,7 +1088,7 @@ void doCmdCrc(char *params) {
   addr_t start;
   addr_t end;
   data_t data;
-  uint16_t crc = 0;
+  uint32_t crc = 0;
   sscanf(params, "%x %x", &start, &end);
   loadAddr(start);
   for (i = start; i <= end; i++) {
