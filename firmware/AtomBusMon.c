@@ -408,6 +408,23 @@ addr_t nextAddr = 0;
 long trace;
 
 /********************************************************
+ * Simple string logger, as log0 is expensive
+ ********************************************************/
+
+void logc(char c) {
+  Serial_TxByte0(c);
+  if (c == '\n') {
+    Serial_TxByte0('\r');
+  }
+}
+
+void logstr(char *s) {
+  while (*s) {
+    logc(*s++);
+  }
+}
+
+/********************************************************
  * User Command Processor
  ********************************************************/
 
@@ -427,7 +444,7 @@ void readCmd(char *cmd) {
   }
   Serial_TxByte0(13);
 #endif
-  log0(">> ");
+  logstr(">> ");
 #if defined(COMMAND_HISTORY)
   i = 0;
   if (reuse) {
@@ -555,7 +572,7 @@ void log_char(uint8_t c) {
   if (c < 32 || c > 126) {
     c = '.';
   }
-  log0("%c", c);
+  logc(c);
 }
 
 void log_addr_data(addr_t a, data_t d) {
@@ -634,12 +651,12 @@ void genericDump(char *params, data_t (*readFunc)()) {
     for (j = 0; j < 16; j++) {
       log0("%02X ", row[j]);
     }
-    log0(" ");
+    logc(' ');
     for (j = 0; j < 16; j++) {
       data_t c = row[j];
       log_char(c);
     }
-    log0("\n");
+    logc('\n');
   }
   memAddr += 0x100;
 }
@@ -648,9 +665,9 @@ void genericWrite(char *params, void (*writeFunc)()) {
   data_t data;
   long count = 1;
   sscanf(params, "%x %hhx %ld", &memAddr, &data, &count);
-  log0("Wr: ");
+  logstr("Wr: ");
   log_addr_data(memAddr, data);
-  log0("\n");
+  logc('\n');
   loadData(data);
   loadAddr(memAddr);
   while (count-- > 0) {
@@ -667,9 +684,9 @@ void genericRead(char *params, data_t (*readFunc)()) {
   sscanf(params, "%x %ld", &memAddr, &count);
   loadAddr(memAddr);
   data = (*readFunc)();
-  log0("Rd: ");
+  logstr("Rd: ");
   log_addr_data(memAddr, data);
-  log0("\n");
+  logc('\n');
   while (count-- > 1) {
     data2 = (*readFunc)();
     if (data2 != data) {
@@ -698,9 +715,9 @@ void logMode(modes_t mode) {
   for (i = 0; i < NUM_MODES; i++) {
     if (mode & 1) {
       if (!first) {
-        log0(", ");
+        logstr(", ");
       }
-      log0("%s", modeStrings[i]);
+      logstr(modeStrings[i]);
       first = 0;
     }
     mode >>= 1;
@@ -709,9 +726,10 @@ void logMode(modes_t mode) {
 
 void logTrigger(trigger_t trigger) {
   if (trigger < NUM_TRIGGERS) {
-    log0("trigger: %s", triggerStrings[trigger]);
+    logstr("trigger: ");
+    logstr(triggerStrings[trigger]);
   } else {
-    log0("trigger: ILLEGAL");
+    logstr("trigger: ILLEGAL");
   }
 }
 
@@ -733,13 +751,13 @@ uint8_t logDetails() {
   log0(" hit at %04X", i_addr);
   if (mode & BW_RDWR_MASK) {
     if (mode & BW_WR_MASK) {
-      log0(" writing");
+      logstr(" writing");
     } else {
-      log0(" reading");
+      logstr(" reading");
     }
     log_addr_data(b_addr, b_data);
   }
-  log0("\n");
+  logc('\n');
   if (mode & B_RDWR_MASK) {
     // It's only safe to do this for brkpts, as it makes memory accesses
     logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
@@ -758,9 +776,12 @@ void logAddr() {
 }
 
 void version() {
-  log0("%s In-Circuit Emulator version %s\n", NAME, VERSION);
-  log0("Compiled at %s on %s\n",__TIME__,__DATE__);
-  log0("%d watches/breakpoints implemented\n",MAXBKPTS);
+  log0("%s In-Circuit Emulator version %s\nCompiled at %s on %s\n%d watches/breakpoints implemented\n",
+       NAME,
+       VERSION,
+       __TIME__,
+       __DATE__,
+       MAXBKPTS);
 }
 
 /********************************************************
@@ -806,7 +827,7 @@ void setTrace(long i) {
   if (trace) {
     log0("Tracing every %ld instructions while single stepping\n", trace);
   } else {
-    log0("Tracing disabled\n");
+    logstr("Tracing disabled\n");
   }
 }
 
@@ -976,14 +997,15 @@ void test(addr_t start, addr_t end, int data) {
   if (name > 5) {
     name = 5;
   }
-  log0("Memory test: %s", testNames[name]);
+  logstr("Memory test: ");
+  logstr(testNames[name]);
   if (data >= 0) {
     log0(" %02X", data);
   }
   if (fail) {
     log0(": failed: %d errors\n", fail);
   } else {
-    log0(": passed\n");
+    logstr(": passed\n");
   }
 }
 
@@ -1005,7 +1027,7 @@ uint8_t pollForEvents() {
 // Applies a fixed 1ms long reset pulse to the CPU
 // This should be good for clock rates down to ~10KHz
 void resetCpu() {
-  log0("Resetting CPU\n");
+  logstr("Resetting CPU\n");
   hwCmd(CMD_RESET, 1);
   Delay_us(1000);
   hwCmd(CMD_RESET, 0);
@@ -1018,9 +1040,11 @@ void resetCpu() {
 void doCmdHelp(char *params) {
   uint8_t i;
   version();
-  log0("Commands:\n");
+  logstr("Commands:\n");
   for (i = 0; i < NUM_CMDS; i++) {
-    log0("    %s\n", cmdStrings[i]);
+    logstr("    ");
+    logstr(cmdStrings[i]);
+    logc('\n');
   }
 }
 
@@ -1030,7 +1054,7 @@ void doCmdStep(char *params) {
   long j;
   sscanf(params, "%ld", &instructions);
   if (instructions <= 0) {
-    log0("Number of instuctions must be positive\n");
+    logstr("Number of instuctions must be positive\n");
     return;
   }
 
@@ -1185,7 +1209,7 @@ void doCmdSRec(char *params) {
    addr_t addrhi = 0x0000;
 
 
-   log0("Send file now...\n");
+   logstr("Send file now...\n");
 
    // Special case reading the first record, with no timeout
    c = Serial_RxByte0();
@@ -1252,11 +1276,11 @@ void doCmdSRec(char *params) {
 }
 
 void logSpecial(char *function, uint8_t value) {
-   log0("%s", function);
+   logstr(function);
    if (value) {
-      log0(" inhibited\n");
+      logstr(" inhibited\n");
    } else {
-      log0(" enabled\n");
+      logstr(" enabled\n");
    }
 }
 
@@ -1283,12 +1307,12 @@ void doCmdList(char *params) {
     for (i = 0; i < numbkpts; i++) {
       log0("%d: %04X mask %04X: ", i, breakpoints[i], masks[i]);
       logMode(modes[i]);
-      log0(" (");
+      logc(' ');
       logTrigger(triggers[i]);
-      log0(")\n");
+      logstr(")\n");
     }
   } else {
-      log0("No breakpoints set\n");
+      logstr("No breakpoints set\n");
   }
 }
 
@@ -1341,7 +1365,7 @@ void doCmdClear(char *params) {
   if (n < 0) {
     return;
   }
-  log0("Removing ");
+  logstr("Removing ");
   logMode(modes[n]);
   log0(" at %04X\n", breakpoints[n]);
   clearBreakpoint(n);
@@ -1351,7 +1375,7 @@ void doCmdTrigger(char *params) {
   trigger_t trigger = TRIGGER_UNDEFINED;
   sscanf(params, "%*x %hhx", &trigger);
   if (trigger >= NUM_TRIGGERS) {
-    log0("Trigger Codes:\n");
+    logstr("Trigger Codes:\n");
     for (trigger = 0; trigger < NUM_TRIGGERS; trigger++) {
       log0("    %X = %s\n", trigger, triggerStrings[trigger]);
     }
@@ -1396,9 +1420,9 @@ void doCmdContinue(char *params) {
   }
 
   // Wait for breakpoint to become active
-  log0("CPU free running...\n");
+  logstr("CPU free running...\n");
   while (pollForEvents());
-  log0("Interrupted\n");
+  logstr("Interrupted\n");
 
   // Enable single stepping
   setSingle(1);
