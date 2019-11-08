@@ -131,8 +131,8 @@ begin
 
     BUSAK_n <= BUSAK_n_i;
     MREQ_n_i <= not MREQ or (Req_Inhibit and MReq_Inhibit);
-    RD_n_i <= not RD or Req_Inhibit;
-    WR_n_j <= WR_n_i;					    		-- 0247a
+    RD_n_i <= not RD or (IORQ and IReq_Inhibit) or Req_Inhibit;  -- DMB
+    WR_n_j <= WR_n_i or (IORQ and IReq_Inhibit);                 -- DMB
     HALT_n <= HALT_n_int;
 
 
@@ -212,7 +212,7 @@ begin
     process (CLK_n)		-- 0247a
     begin
         if CLK_n'event and CLK_n = '1' then
-        -- IReq_Inhibit <= not IORQ;
+            IReq_Inhibit <= (not IORQ) and IntCycle_n;
         end if;
     end process;
 
@@ -229,7 +229,7 @@ begin
                         WR_n_i <= '1';
                     end if;
                 else
-                    if TState = "001" and IORQ_n_i = '0' then
+                    if TState = "001" then     -- DMB
                         WR_n_i <= not Write;
                     elsif Tstate = "011" then
                         WR_n_i <= '1';
@@ -295,11 +295,7 @@ begin
                     if TState = "001" and NoRead = '0' then
                         IORQ_n_i <= not IORQ;
                         MREQ <= not IORQ;
-                        if IORQ = '0' then
-                            RD <= not Write;
-                        elsif IORQ_n_i = '0' then
-                            RD <= not Write;
-                        end if;
+                        RD <= not Write;    -- DMB
                     end if;
                     if TState = "011" then
                         RD <= '0';
