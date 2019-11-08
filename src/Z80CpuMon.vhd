@@ -137,7 +137,8 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal memory_rd1     : std_logic;
     signal memory_wr1     : std_logic;
     signal mon_m1_n       : std_logic;
-    signal mon_xx_n       : std_logic;
+    signal mon_xx_n       : std_logic; -- shorten MREQ and RD in M1 NOP cycle
+    signal mon_yy         : std_logic; -- delay IORQ/RD/WR in IO cycle
     signal mon_mreq_n     : std_logic;
     signal mon_iorq_n     : std_logic;
     signal mon_rfsh_n     : std_logic;
@@ -399,9 +400,9 @@ begin
     -- The mon_ versions come from the state machine below
 
     MREQ_n  <= MREQ_n_int  when state = idle else mon_mreq_n and mon_xx_n;
-    IORQ_n  <= IORQ_n_int  when state = idle else mon_iorq_n;
-    WR_n    <= WR_n_int    when state = idle else mon_wr_n;
-    RD_n    <= RD_n_int    when state = idle else mon_rd_n and mon_xx_n;
+    IORQ_n  <= IORQ_n_int  when state = idle else (mon_iorq_n or mon_yy);
+    WR_n    <= WR_n_int    when state = idle else (mon_wr_n or mon_yy);
+    RD_n    <= RD_n_int    when state = idle else (mon_rd_n or mon_yy) and mon_xx_n;
     RFSH_n  <= RFSH_n_int  when state = idle else mon_rfsh_n;
     M1_n    <= M1_n_int    when state = idle else mon_m1_n;
 
@@ -433,11 +434,11 @@ begin
         end if;
     end process;
 
-    Data   <= memory_dout when state = wr_wa or state = wr_t2 or state = wr_t3 else
+    Data   <= memory_dout when (state = wr_t1 and io_not_mem = '1') or state = wr_wa or state = wr_t2 or state = wr_t3 else
               Dout        when state = idle and Den = '1' else
               (others => 'Z');
 
-    DIRD   <= '0' when state = wr_wa or state = wr_t2 or state = wr_t3 else
+    DIRD   <= '0' when (state = wr_t1 and io_not_mem = '1') or state = wr_wa or state = wr_t2 or state = wr_t3 else
               '0' when state = idle and Den = '1' else
               '1';
 
@@ -455,6 +456,7 @@ begin
             mon_rfsh_n <= '1';
             mon_m1_n <= '1';
             mon_xx_n <= '1';
+            mon_yy <= '0';
             mon_busak_n1 <= '1';
 
         elsif rising_edge(CLK_n) then
@@ -531,9 +533,11 @@ begin
                     elsif memory_wr1 = '1' or io_wr1 = '1' then
                         state <= wr_t1;
                         io_not_mem <= io_wr1;
+                        mon_yy <= io_wr1;
                     elsif memory_rd1 = '1' or io_rd1 = '1' then
                         state <= rd_t1;
                         io_not_mem <= io_rd1;
+                        mon_yy <= io_rd1;
                     else
                         state <= nop_t1;
                         mon_m1_n <= mode;
@@ -541,6 +545,7 @@ begin
 
                 -- Read cycle
                 when rd_t1 =>
+                    mon_yy <= '0';
                     if io_not_mem = '1' then
                         state <= rd_wa;
                     else
@@ -565,6 +570,7 @@ begin
 
                 -- Write cycle
                 when wr_t1 =>
+                    mon_yy <= '0';
                     if io_not_mem = '1' then
                         state <= wr_wa;
                     else
@@ -631,7 +637,7 @@ begin
                 mon_rd_n <= '1';
             end if;
             -- Write strobe
-            if state = wr_wa or state = wr_t2 then
+            if (state = wr_t1 and io_not_mem = '1') or state = wr_wa or state = wr_t2 then
                 mon_wr_n <= '0';
             else
                 mon_wr_n <= '1';
