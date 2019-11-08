@@ -102,6 +102,7 @@ architecture behavioral of Z80CpuMonALS is
     signal led_trig0    : std_logic;
     signal led_trig1    : std_logic;
 
+    signal TState       : std_logic_vector(2 downto 0);
 begin
 
     sw_reset_cpu <= not sw1;
@@ -183,9 +184,9 @@ begin
 
             -- Debugging signals
             test1             => open,
-            test2             => open,
-            test3             => open,
-            test4             => open
+            test2             => TState(0),
+            test3             => TState(1),
+            test4             => TSTate(2)
             );
 
     -- Test outputs
@@ -195,9 +196,9 @@ begin
     test(3) <= MREQ_n_int;
     test(4) <= IORQ_n_int;
     test(5) <= WAIT_n;
-    test(6) <= RESET_n;
-    test(7) <= CLK_n;
-    test(8) <= RFSH_n_int;
-    test(9) <= INT_n;
+    test(6) <= CLK_n;
+    test(7) <= TState(2);
+    test(8) <= TState(1);
+    test(9) <= TState(0);
 
 end behavioral;
