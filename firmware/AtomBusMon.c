@@ -557,14 +557,12 @@ void readCmd(char *cmd) {
 #if defined(COMMAND_HISTORY)
   // Wipe out the last command
   Serial_TxByte0(13);
-  for (i = 0; i < 32; i++) {
-    Serial_TxByte0(32);
-  }
-  Serial_TxByte0(13);
+  Serial_TxByte0(27);
+  Serial_TxByte0('[');
+  Serial_TxByte0('K');
 #endif
   logstr(">> ");
 #if defined(COMMAND_HISTORY)
-  i = 0;
   if (reuse) {
     while (cmd[i]) {
       Serial_TxByte0(cmd[i++]);
