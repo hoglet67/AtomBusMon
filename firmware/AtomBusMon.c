@@ -473,6 +473,14 @@ addr_t nextAddr = 0;
 // Setting this to 0 will disable logging
 long trace;
 
+// An error flag
+// Bit 0 indicates clock errors
+// Bit 1 indicates memory access timeout errors
+uint8_t error_flag = 0;
+
+#define MASK_CLOCK_ERROR   1
+#define MASK_TIMEOUT_ERROR 2
+
 /********************************************************
  * Simple string logger, as log0 is expensive
  ********************************************************/
@@ -631,11 +639,19 @@ void readCmd(char *cmd) {
 // Send a single hardware command
 void hwCmd(cmd_t cmd, cmd_t param) {
   uint8_t status = STATUS_DIN;
+  uint16_t timeout = 10000;
   cmd |= param;
   CTRL_PORT &= ~CMD_MASK;
   CTRL_PORT ^= cmd | CMD_EDGE;
   // Wait for the CMD_ACK bit to toggle
-  while (!((STATUS_DIN ^ status) & CMD_ACK_MASK));
+  while ((--timeout) && !((STATUS_DIN ^ status) & CMD_ACK_MASK));
+  if (timeout == 0) {
+    if (cmd & 0x10) {
+      error_flag |= MASK_TIMEOUT_ERROR;
+    } else {
+      error_flag |= MASK_CLOCK_ERROR;
+    }
+  }
 }
 
 // Read an 8-bit register via the Mux
@@ -1627,6 +1643,18 @@ void dispatchCmd(char *cmd) {
   logc('\n');
 }
 
+void check_errors() {
+  if (error_flag) {
+    logstr("*** ");
+    if (error_flag & MASK_CLOCK_ERROR) {
+      logstr("missing clock");
+    } else if (error_flag & MASK_TIMEOUT_ERROR) {
+      logstr("memory timeout");
+    }
+    logstr(" ***\n");
+  }
+  error_flag = 0;
+}
 #ifdef COMMAND_HISTORY
 
 #define HISTORY_LENGTH 16
@@ -1657,8 +1685,10 @@ int main(void) {
   int8_t direction = 0;
 
   initialize();
+  check_errors();
   doCmdContinue(NULL);
   while (1) {
+    check_errors();
     // Returns:
     // -1 to move back through the history buffer
     // 0 to use the current command
@@ -1717,8 +1747,10 @@ int main(void) {
 int main(void) {
   static char command[32];
   initialize();
+  check_errors();
   doCmdContinue(NULL);
   while (1) {
+    check_errors();
     readCmd(command);
     dispatchCmd(command);
   }
