@@ -1399,7 +1399,7 @@ void doCmdList(char *params) {
     for (i = 0; i < numbkpts; i++) {
       log0("%d: %04X mask %04X: ", i, breakpoints[i], masks[i]);
       logMode(modes[i]);
-      logc(' ');
+      logs(" (");
       logTrigger(triggers[i]);
       logstr(")\n");
     }
