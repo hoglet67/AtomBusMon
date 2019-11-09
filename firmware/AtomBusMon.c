@@ -325,19 +325,32 @@ modes_t modes[MAXBKPTS];
 #define WATCH_EXEC      9
 #define TRANSIENT      10
 
+
+static const char MODE0[] PROGMEM = "Mem Rd Brkpt";
+static const char MODE1[] PROGMEM = "Mem Rd Watch";
+static const char MODE2[] PROGMEM = "Mem Wr Brkpt";
+static const char MODE3[] PROGMEM = "Mem Wr Watch";
+static const char MODE4[] PROGMEM = "IO Rd Brkpt";
+static const char MODE5[] PROGMEM = "IO Rd Watch";
+static const char MODE6[] PROGMEM = "IO Wr Brkpt";
+static const char MODE7[] PROGMEM = "IO Wr Watch";
+static const char MODE8[] PROGMEM = "Ex Brkpt";
+static const char MODE9[] PROGMEM = "Ex Watch";
+static const char MODE10[] PROGMEM = "Transient";
+
 // Breakpoint Mode Strings, should match the modes above
-char *modeStrings[NUM_MODES] = {
-  "Mem Rd Brkpt",
-  "Mem Rd Watch",
-  "Mem Wr Brkpt",
-  "Mem Wr Watch",
-  "IO Rd Brkpt",
-  "IO Rd Watch",
-  "IO Wr Brkpt",
-  "IO Wr Watch",
-  "Ex Brkpt",
-  "Ex Watch",
-  "Transient"
+static const char *modeStrings[NUM_MODES] = {
+  MODE0,
+  MODE1,
+  MODE2,
+  MODE3,
+  MODE4,
+  MODE5,
+  MODE6,
+  MODE7,
+  MODE8,
+  MODE9,
+  MODE10
 };
 
 // For convenience, several masks are defined that group similar types of breakpoint/watch
@@ -771,7 +784,7 @@ void logMode(modes_t mode) {
       if (!first) {
         logstr(", ");
       }
-      logs(modeStrings[i]);
+      logpgmstr(modeStrings[i]);
       first = 0;
     }
     mode >>= 1;
