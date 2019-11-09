@@ -418,10 +418,22 @@ void logc(char c) {
   }
 }
 
-void logstr(char *s) {
+void logs(const char *s) {
   while (*s) {
     logc(*s++);
   }
+}
+
+#define logstr(s) logpgmstr(PSTR((s)))
+
+void logpgmstr(const char *s) {
+  char c;
+  do {
+    c = pgm_read_byte(s++);
+    if (c) {
+      logc(c);
+    }
+  } while (c);
 }
 
 void loghex1(uint8_t i) {
@@ -447,13 +459,13 @@ void loghex4(uint16_t i) {
 //void loglong(long i) {
 //  char buffer[16];
 //  // ltoa adds 176 bytes
-//  logstr(ltoa(i, buffer, 10));
+//  logs(ltoa(i, buffer, 10));
 //}
 //
 //void logint(int i) {
 //  char buffer[16];
 //  // itoa adds 176 bytes
-//  logstr(itoa(i, buffer, 10));
+//  logs(itoa(i, buffer, 10));
 //}
 
 /********************************************************
@@ -759,7 +771,7 @@ void logMode(modes_t mode) {
       if (!first) {
         logstr(", ");
       }
-      logstr(modeStrings[i]);
+      logs(modeStrings[i]);
       first = 0;
     }
     mode >>= 1;
@@ -769,7 +781,7 @@ void logMode(modes_t mode) {
 void logTrigger(trigger_t trigger) {
   if (trigger < NUM_TRIGGERS) {
     logstr("trigger: ");
-    logstr(triggerStrings[trigger]);
+    logs(triggerStrings[trigger]);
   } else {
     logstr("trigger: ILLEGAL");
   }
@@ -1056,7 +1068,7 @@ void test(addr_t start, addr_t end, int data) {
     name = 5;
   }
   logstr("Memory test: ");
-  logstr(testNames[name]);
+  logs(testNames[name]);
   if (data >= 0) {
     logc(' ');
     loghex2(data);
@@ -1102,7 +1114,7 @@ void doCmdHelp(char *params) {
   logstr("Commands:\n");
   for (i = 0; i < NUM_CMDS; i++) {
     logstr("    ");
-    logstr(cmdStrings[i]);
+    logs(cmdStrings[i]);
     logc('\n');
   }
 }
@@ -1343,7 +1355,7 @@ void doCmdSRec(char *params) {
 }
 
 void logSpecial(char *function, uint8_t value) {
-   logstr(function);
+   logs(function);
    if (value) {
       logstr(" inhibited\n");
    } else {
@@ -1449,7 +1461,7 @@ void doCmdTrigger(char *params) {
       logstr("    ");
       loghex1(trigger);
       logstr(" = ");
-      logstr(triggerStrings[trigger]);
+      logs(triggerStrings[trigger]);
       logc('\n');
     }
     return;
@@ -1545,7 +1557,7 @@ void dispatchCmd(char *cmd) {
     }
   }
   logstr("Unknown command ");
-  logstr(cmd);
+  logs(cmd);
   logc('\n');
 }
 
