@@ -383,23 +383,76 @@ trigger_t triggers[MAXBKPTS];
 
 #define NUM_TRIGGERS 16
 
-char * triggerStrings[NUM_TRIGGERS] = {
-  "Never",
-  "~T0 and ~T1",
-  "T0 and ~T1",
-  "~T1",
-  "~T0 and T1",
-  "~T0",
-  "T0 xor T1",
-  "~T0 or ~T1",
-  "T0 and T1",
-  "T0 xnor T1",
-  "T0",
-  "T0 or ~T1",
-  "T1",
-  "~T0 or T1",
-  "T0 or T1",
-  "Always",
+// The original definition was
+// char * triggerStrings[NUM_TRIGGERS] = {
+//   "Never",
+//   "~T0 and ~T1",
+//   "T0 and ~T1",
+//   "~T1",
+//   "~T0 and T1",
+//   "~T0",
+//   "T0 xor T1",
+//   "~T0 or ~T1",
+//   "T0 and T1",
+//   "T0 xnor T1",
+//   "T0",
+//   "T0 or ~T1",
+//   "T1",
+//   "~T0 or T1",
+//   "T0 or T1",
+//   "Always",
+// };
+//
+//
+// GCC was able to clverly compress this down to the following unique strings
+//   Never
+//   ~T0 and ~T1
+//   ~T0 and T1
+//   ~T0
+//   T0 xor T1
+//   ~T0 or ~T1
+//   T0 xnor T1
+//   ~T0 or T1
+//   Always
+//
+// Mechanically moving to the PROGMEM pattern lost this compression
+//
+// So we re-create it manually
+
+static   const char TRIG0[] PROGMEM = "Never";
+static   const char TRIG1[] PROGMEM = "~T0 and ~T1";
+//static const char TRIG2[] PROGMEM = "T0 and ~T1";  // substring of TRIG1
+//static const char TRIG3[] PROGMEM = "~T1";         // substring of TRIG1
+static   const char TRIG4[] PROGMEM = "~T0 and T1";
+static   const char TRIG5[] PROGMEM = "~T0";
+static   const char TRIG6[] PROGMEM = "T0 xor T1";
+static   const char TRIG7[] PROGMEM = "~T0 or ~T1";
+//static const char TRIG8[] PROGMEM = "T0 and T1";   // substring of TRIG4
+static   const char TRIG9[] PROGMEM = "T0 xnor T1";
+//static const char TRIGA[] PROGMEM = "T0";          // substring of TRIG5
+static   const char TRIGB[] PROGMEM = "T0 or ~T1";   // sibstring of TRIG7
+//static const char TRIGC[] PROGMEM = "T1";          // substring of TRIG4
+static   const char TRIGD[] PROGMEM = "~T0 or T1";
+//static const char TRIGE[] PROGMEM = "T0 or T1";    // substring of TRIGD
+static   const char TRIGF[] PROGMEM = "Always";
+
+static const char * triggerStrings[NUM_TRIGGERS] = {
+  TRIG0,
+  TRIG1,
+  TRIG1 + 1,
+  TRIG1 + 8,
+  TRIG4,
+  TRIG5,
+  TRIG6,
+  TRIG7,
+  TRIG4 + 1,
+  TRIG9,
+  TRIG5 + 1,
+  TRIG7 + 1,
+  TRIG4 + 8,
+  TRIGD,
+  TRIGD + 1,
+  TRIGF
 };
 
 #define TRIGGER_ALWAYS 15
@@ -794,7 +847,7 @@ void logMode(modes_t mode) {
 void logTrigger(trigger_t trigger) {
   if (trigger < NUM_TRIGGERS) {
     logstr("trigger: ");
-    logs(triggerStrings[trigger]);
+    logpgmstr(triggerStrings[trigger]);
   } else {
     logstr("trigger: ILLEGAL");
   }
@@ -1474,7 +1527,7 @@ void doCmdTrigger(char *params) {
       logstr("    ");
       loghex1(trigger);
       logstr(" = ");
-      logs(triggerStrings[trigger]);
+      logpgmstr(triggerStrings[trigger]);
       logc('\n');
     }
     return;
