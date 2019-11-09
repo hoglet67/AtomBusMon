@@ -1732,9 +1732,9 @@ int main(void) {
           last = (last + 1) & (HISTORY_LENGTH - 1);
           strcpy(history[last], command);
         }
+        // Execute the command
+        dispatchCmd(command);
       }
-      // Execute the command
-      dispatchCmd(command);
       // Reset the history cursor to the current slot
       index = -1;
     }
