@@ -454,7 +454,7 @@ void loghex1(uint8_t i) {
   if (i < 10) {
     i += '0';
   } else {
-    i += 'A';
+    i += ('A' - 10);
   }
   logc(i);
 }
