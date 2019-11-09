@@ -424,6 +424,38 @@ void logstr(char *s) {
   }
 }
 
+void loghex1(uint8_t i) {
+  i &= 0x0f;
+  if (i < 10) {
+    i += '0';
+  } else {
+    i += 'A';
+  }
+  logc(i);
+}
+
+void loghex2(uint8_t i) {
+  loghex1(i >> 4);
+  loghex1(i);
+}
+
+void loghex4(uint16_t i) {
+  loghex2(i >> 8);
+  loghex2(i);
+}
+
+//void loglong(long i) {
+//  char buffer[16];
+//  // ltoa adds 176 bytes
+//  logstr(ltoa(i, buffer, 10));
+//}
+//
+//void logint(int i) {
+//  char buffer[16];
+//  // itoa adds 176 bytes
+//  logstr(itoa(i, buffer, 10));
+//}
+
 /********************************************************
  * User Command Processor
  ********************************************************/
@@ -576,7 +608,11 @@ void log_char(uint8_t c) {
 }
 
 void log_addr_data(addr_t a, data_t d) {
-  log0(" %04X = %02X  ", a, d);
+  logc(' ');
+  loghex4(a);
+  logstr(" = ");
+  loghex2(d);
+  logstr("  ");
   log_char(d);
 }
 
@@ -647,9 +683,11 @@ void genericDump(char *params, data_t (*readFunc)()) {
     for (j = 0; j < 16; j++) {
       row[j] = (*readFunc)();
     }
-    log0("%04X ", memAddr + i);
+    loghex4(memAddr + i);
+    logc(' ');
     for (j = 0; j < 16; j++) {
-      log0("%02X ", row[j]);
+      loghex2(row[j]);
+      logc(' ');
     }
     logc(' ');
     for (j = 0; j < 16; j++) {
@@ -690,7 +728,11 @@ void genericRead(char *params, data_t (*readFunc)()) {
   while (count-- > 1) {
     data2 = (*readFunc)();
     if (data2 != data) {
-      log0("Inconsistent Rd: %02X <> %02X\n", data2, data);
+      logstr("Inconsistent Rd: ");
+      loghex2(data2);
+      logstr(" <> ");
+      loghex2(data);
+      logc('\n');
     }
     data = data2;
   }
@@ -748,7 +790,8 @@ uint8_t logDetails() {
     logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
   }
   logMode(mode);
-  log0(" hit at %04X", i_addr);
+  logstr(" hit at ");
+  loghex4(i_addr);
   if (mode & BW_RDWR_MASK) {
     if (mode & BW_WR_MASK) {
       logstr(" writing");
@@ -770,18 +813,21 @@ void logAddr() {
   memAddr = hwRead16(OFFSET_IAL);
   // Update the serial console
   logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
-  //log0("%04X\n", i_addr);
   nextAddr = disMem(memAddr);
   return;
 }
 
 void version() {
-  log0("%s In-Circuit Emulator version %s\nCompiled at %s on %s\n%d watches/breakpoints implemented\n",
-       NAME,
-       VERSION,
-       __TIME__,
-       __DATE__,
-       MAXBKPTS);
+  logstr(NAME);
+  logstr(" In-Circuit Emulator version ");
+  logstr(VERSION);
+  logstr("\nCompiled at ");
+  logstr(__TIME__);
+  logstr(" on ");
+  logstr(__DATE__);
+  logc('\n');
+  loghex2(MAXBKPTS);
+  logstr(" watches/breakpoints implemented\n");
 }
 
 /********************************************************
@@ -811,7 +857,9 @@ bknum_t lookupBreakpoint(char *params) {
   sscanf(params, "%x", &addr);
   bknum_t n = lookupBreakpointN(addr);
   if (n < 0) {
-    log0("Breakpoint/watch not set at %04X\n", addr);
+    logstr("Breakpoint/watch not set at ");
+    loghex4(addr);
+    logc('\n');
   }
   return n;
 }
@@ -835,7 +883,9 @@ void setTrace(long i) {
 
 void logBreakpoint(addr_t addr, modes_t mode) {
   logMode(mode);
-  log0(" set at %04X\n", addr);
+  logstr(" set at ");
+  loghex4(addr);
+  logc('\n');
 }
 
 void logTooManyBreakpoints() {
@@ -893,7 +943,9 @@ void genericBreakpoint(char *params, unsigned int mode) {
     if (breakpoints[i] == addr) {
       if (modes[i] & mode) {
         logMode(mode);
-        log0(" already set at %04X\n", addr);
+        logstr(" already set at ");
+        loghex4(addr);
+        logc('\n');
         return;
       } else {
         // Preserve the existing trigger, unless it is overridden
@@ -986,7 +1038,13 @@ void test(addr_t start, addr_t end, int data) {
     actual = readMemByteInc();
     expected = getData(i, data);
     if (expected != actual) {
-      log0("Fail at %04lX (Wrote: %02X, Read back %02X)\n", i, expected, actual);
+      logstr("Fail at ");
+      loghex4(i);
+      logstr(" (Wrote: ");
+      loghex2(expected);
+      logstr(", Read back ");
+      loghex2(actual);
+      logstr(")\n");
       fail++;
     }
   }
@@ -1000,7 +1058,8 @@ void test(addr_t start, addr_t end, int data) {
   logstr("Memory test: ");
   logstr(testNames[name]);
   if (data >= 0) {
-    log0(" %02X", data);
+    logc(' ');
+    loghex2(data);
   }
   if (fail) {
     log0(": failed: %d errors\n", fail);
@@ -1098,7 +1157,13 @@ void doCmdFill(char *params) {
   addr_t end;
   data_t data;
   sscanf(params, "%x %x %hhx", &start, &end, &data);
-  log0("Wr: %04X to %04X = %02X\n", start, end, data);
+  logstr("Wr: ");
+  loghex4(start);
+  logstr(" to ");
+  loghex4(end);
+  logstr(" = ");
+  loghex2(data);
+  logc('\n');
   loadData(data);
   loadAddr(start);
   for (i = start; i <= end; i++) {
@@ -1125,7 +1190,9 @@ void doCmdCrc(char *params) {
         crc = (crc ^ CRC_POLY) & 0xFFFF;
     }
   }
-  log0("crc: %04X\n", crc);
+  logstr("crc: ");
+  loghex4(crc);
+  logc('\n');
 }
 
 void doCmdMem(char *params) {
@@ -1367,7 +1434,9 @@ void doCmdClear(char *params) {
   }
   logstr("Removing ");
   logMode(modes[n]);
-  log0(" at %04X\n", breakpoints[n]);
+  logstr(" at ");
+  loghex4(breakpoints[n]);
+  logc('\n');
   clearBreakpoint(n);
 }
 
@@ -1377,7 +1446,11 @@ void doCmdTrigger(char *params) {
   if (trigger >= NUM_TRIGGERS) {
     logstr("Trigger Codes:\n");
     for (trigger = 0; trigger < NUM_TRIGGERS; trigger++) {
-      log0("    %X = %s\n", trigger, triggerStrings[trigger]);
+      logstr("    ");
+      loghex1(trigger);
+      logstr(" = ");
+      logstr(triggerStrings[trigger]);
+      logc('\n');
     }
     return;
   }
@@ -1471,7 +1544,9 @@ void dispatchCmd(char *cmd) {
       return;
     }
   }
-  log0("Unknown command %s\n", cmd);
+  logstr("Unknown command ");
+  logstr(cmd);
+  logc('\n');
 }
 
 #ifdef COMMAND_HISTORY
