@@ -1,11 +1,11 @@
 /*
 	Status.c
-	
+
 	Functions for logging program status to the serial port, to
 	be used for debugging pruposes etc.
-	
+
 	2008-03-21, P.Harvey-Smith.
-	
+
 */
 
 #include <avr/interrupt.h>
@@ -13,6 +13,67 @@
 #include <ctype.h>
 #include "terminalcodes.h"
 #include "status.h"
+
+
+/********************************************************
+ * Simple string logger, as log0 is expensive
+ ********************************************************/
+
+void logc(char c) {
+  Serial_TxByte0(c);
+  if (c == '\n') {
+    Serial_TxByte0('\r');
+  }
+}
+
+void logs(const char *s) {
+  while (*s) {
+    logc(*s++);
+  }
+}
+
+void logpgmstr(const char *s) {
+  char c;
+  do {
+    c = pgm_read_byte(s++);
+    if (c) {
+      logc(c);
+    }
+  } while (c);
+}
+
+void loghex1(uint8_t i) {
+  i &= 0x0f;
+  if (i < 10) {
+    i += '0';
+  } else {
+    i += ('A' - 10);
+  }
+  logc(i);
+}
+
+void loghex2(uint8_t i) {
+  loghex1(i >> 4);
+  loghex1(i);
+}
+
+void loghex4(uint16_t i) {
+  loghex2(i >> 8);
+  loghex2(i);
+}
+
+//void loglong(long i) {
+//  char buffer[16];
+//  // ltoa adds 176 bytes
+//  logs(ltoa(i, buffer, 10));
+//}
+//
+//void logint(int i) {
+//  char buffer[16];
+//  // itoa adds 176 bytes
+//  logs(itoa(i, buffer, 10));
+//}
+
 
 #ifdef SERIAL_STATUS
 
@@ -24,7 +85,7 @@ FILE ser1stream = FDEV_SETUP_STREAM(StdioSerial_TxByte1,NULL,_FDEV_SETUP_WRITE);
 
 void StdioSerial_TxByte(char DataByte, uint8_t	Port)
 {
-	#ifdef COOKED_SERIAL	
+	#ifdef COOKED_SERIAL
 		if((DataByte=='\r') || (DataByte=='\n'))
 		{
 			if(Port==1)
@@ -40,12 +101,12 @@ void StdioSerial_TxByte(char DataByte, uint8_t	Port)
 		}
 		else
 	#endif
-	
+
 	if(Port==1)
 		Serial_TxByte1(DataByte);
 	else
 		Serial_TxByte0(DataByte);
-	
+
 }
 
 int StdioSerial_TxByte0(char DataByte, FILE *Stream)
@@ -81,11 +142,11 @@ void USART_Init0(const uint32_t BaudRate)
 	UCSR0A = 0;
 	UCSR0B = ((1 << RXEN0) | (1 << TXEN0));
 	UCSR0C = ((1 << UCSZ01) | (1 << UCSZ00));
-	
+
 	UBRR0  = SERIAL_UBBRVAL(BaudRate);
 #else
 	UCR = ((1 << RXEN)  | (1 << TXEN));
-	
+
 	UBRR  	= SERIAL_UBBRVAL(BaudRate);
 #endif
 }
@@ -97,7 +158,7 @@ void USART_Init1(const uint32_t BaudRate)
 	UCSR1A = 0;
 	UCSR1B = ((1 << RXEN1) | (1 << TXEN1));
 	UCSR1C = ((1 << UCSZ11) | (1 << UCSZ10));
-	
+
 	UBRR1  = SERIAL_UBBRVAL(BaudRate);
 #endif
 }
@@ -135,7 +196,7 @@ char Serial_RxByte0(void)
 #ifdef UCSR0A
 	while (!(USR & (1 << RXC0)))	;
 	return UDR0;
-#else 
+#else
 	while (!(USR & (1<<RXC)))	;
 	return UDR;
 #endif
@@ -181,17 +242,17 @@ void Serial_Init(const uint32_t BaudRate0,
 		USART_Init1(DefaultBaudRate);
 	else
 		USART_Init1(BaudRate1);
-		
+
 	cls(0);
 	cls(1);
-	
+
 	// log0("stdio initialised\n");
 	// log0("SerialPort0\n");
 	// log1("SerialPort1\n");
 }
 
 #ifdef USE_HEXDUMP
-void HexDump(const uint8_t 	*Buff, 
+void HexDump(const uint8_t 	*Buff,
 				   uint16_t Length,
 				   uint8_t	Port)
 {
@@ -200,14 +261,14 @@ void HexDump(const uint8_t 	*Buff,
 	uint16_t	LineOffset;
 	uint16_t	CharOffset;
 	const uint8_t		*BuffPtr;
-	
+
 	BuffPtr=Buff;
-	
+
 	for(LineOffset=0;LineOffset<Length;LineOffset+=16, BuffPtr+=16)
 	{
 		LineBuffPos=LineBuff;
 		LineBuffPos+=sprintf(LineBuffPos,"%4.4X ",LineOffset);
-		
+
 		for(CharOffset=0;CharOffset<16;CharOffset++)
 		{
 			if((LineOffset+CharOffset)<Length)
@@ -215,7 +276,7 @@ void HexDump(const uint8_t 	*Buff,
 			else
 			    LineBuffPos+=sprintf(LineBuffPos,"   ");
 		}
-		
+
 		for(CharOffset=0;CharOffset<16;CharOffset++)
 		{
 			if((LineOffset+CharOffset)<Length)
@@ -236,20 +297,20 @@ void HexDump(const uint8_t 	*Buff,
 	}
 }
 
-void HexDumpHead(const uint8_t 	*Buff, 
+void HexDumpHead(const uint8_t 	*Buff,
 				       uint16_t Length,
-				       uint8_t	Port) 
+				       uint8_t	Port)
 {
 	FILE	*File;
 
 	File=&ser0stream;
-	
+
 	switch (Port)
 	{
 		case 0 : File=&ser0stream; break;
 		case 1 : File=&ser1stream; break;
 	}
-	
+
 	fprintf_P(File,PSTR("%d\n"),Buff);
 
 	fprintf_P(File,PSTR("Addr 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F ASCII\n"));
@@ -258,13 +319,13 @@ void HexDumpHead(const uint8_t 	*Buff,
 	HexDump(Buff,Length,Port);
 };
 #else
-void HexDump(const uint8_t 	*Buff, 
+void HexDump(const uint8_t 	*Buff,
 				   uint16_t Length,
 				   uint8_t	Port) {};
-void HexDumpHead(const uint8_t 	*Buff, 
+void HexDumpHead(const uint8_t 	*Buff,
 				       uint16_t Length,
 				       uint8_t	Port) {};
-#endif 
+#endif
 
 #else
 
@@ -283,10 +344,10 @@ void Serial_Init(const uint32_t BaudRate0,
 
 void cls(uint8_t	Port) {};
 
-void HexDump(const uint8_t 	*Buff, 
+void HexDump(const uint8_t 	*Buff,
 				   uint16_t Length,
 				   uint8_t	Port) {};
-void HexDumpHead(const uint8_t 	*Buff, 
+void HexDumpHead(const uint8_t 	*Buff,
 				       uint16_t Length,
 				       uint8_t	Port) {};
 

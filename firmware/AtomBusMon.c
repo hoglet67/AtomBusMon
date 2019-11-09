@@ -482,67 +482,6 @@ uint8_t error_flag = 0;
 #define MASK_TIMEOUT_ERROR 2
 
 /********************************************************
- * Simple string logger, as log0 is expensive
- ********************************************************/
-
-void logc(char c) {
-  Serial_TxByte0(c);
-  if (c == '\n') {
-    Serial_TxByte0('\r');
-  }
-}
-
-void logs(const char *s) {
-  while (*s) {
-    logc(*s++);
-  }
-}
-
-#define logstr(s) logpgmstr(PSTR((s)))
-
-void logpgmstr(const char *s) {
-  char c;
-  do {
-    c = pgm_read_byte(s++);
-    if (c) {
-      logc(c);
-    }
-  } while (c);
-}
-
-void loghex1(uint8_t i) {
-  i &= 0x0f;
-  if (i < 10) {
-    i += '0';
-  } else {
-    i += ('A' - 10);
-  }
-  logc(i);
-}
-
-void loghex2(uint8_t i) {
-  loghex1(i >> 4);
-  loghex1(i);
-}
-
-void loghex4(uint16_t i) {
-  loghex2(i >> 8);
-  loghex2(i);
-}
-
-//void loglong(long i) {
-//  char buffer[16];
-//  // ltoa adds 176 bytes
-//  logs(ltoa(i, buffer, 10));
-//}
-//
-//void logint(int i) {
-//  char buffer[16];
-//  // itoa adds 176 bytes
-//  logs(itoa(i, buffer, 10));
-//}
-
-/********************************************************
  * User Command Processor
  ********************************************************/
 
