@@ -486,14 +486,20 @@ uint8_t error_flag = 0;
  ********************************************************/
 
 #if defined(COMMAND_HISTORY)
-int8_t readCmd(char *cmd, int8_t reuse) {
-  uint8_t esc = 0;
+int8_t
 #else
-void readCmd(char *cmd) {
+void
 #endif
+readCmd(
+        char *cmd
+#if defined(COMMAND_HISTORY)
+        , int8_t reuse
+#endif
+        ) {
   char c;
   int i = 0;
 #if defined(COMMAND_HISTORY)
+  uint8_t esc = 0;
   // Wipe out the last command
   Serial_TxByte0(13);
   Serial_TxByte0(27);
@@ -1001,11 +1007,11 @@ void genericBreakpoint(char *params, unsigned int mode) {
     }
     // Maintain the breakpoints in order of address
     while (i > 0 && breakpoints[i - 1] > addr) {
-        breakpoints[i] = breakpoints[i - 1];
-        masks[i] = masks[i - 1];
-        modes[i] = modes[i - 1];
-        triggers[i] = triggers[i - 1];
-        i--;
+      breakpoints[i] = breakpoints[i - 1];
+      masks[i] = masks[i - 1];
+      modes[i] = modes[i - 1];
+      triggers[i] = triggers[i - 1];
+      i--;
     }
     numbkpts++;
   }
@@ -1275,13 +1281,13 @@ void doCmdTest(char *params) {
 uint8_t crc;
 
 int getHex() {
-   uint8_t i;
-   char hex[2];
-   hex[0] = Serial_RxByte0();
-   hex[1] = Serial_RxByte0();
-   sscanf(hex, "%2hhx", &i);
-   crc += i;
-   return i;
+  uint8_t i;
+  char hex[2];
+  hex[0] = Serial_RxByte0();
+  hex[1] = Serial_RxByte0();
+  sscanf(hex, "%2hhx", &i);
+  crc += i;
+  return i;
 }
 
 // Simple SRecord command
@@ -1294,102 +1300,102 @@ int getHex() {
 
 
 void doCmdSRec(char *params) {
-   char c;
-   uint8_t count;
-   data_t data;
-   addr_t good_rec = 0;
-   addr_t bad_rec = 0;
-   addr_t addr;
-   addr_t total = 0;
-   uint16_t timeout;
+  char c;
+  uint8_t count;
+  data_t data;
+  addr_t good_rec = 0;
+  addr_t bad_rec = 0;
+  addr_t addr;
+  addr_t total = 0;
+  uint16_t timeout;
 
-   addr_t addrlo = 0xFFFF;
-   addr_t addrhi = 0x0000;
+  addr_t addrlo = 0xFFFF;
+  addr_t addrhi = 0x0000;
 
 
-   logstr("Send file now...\n");
+  logstr("Send file now...\n");
 
-   // Special case reading the first record, with no timeout
-   c = Serial_RxByte0();
+  // Special case reading the first record, with no timeout
+  c = Serial_RxByte0();
 
-   while (1) {
+  while (1) {
 
-      while (c != 'S') {
+    while (c != 'S') {
 
-         // Wait for a character to be received, while testing for a timeout
-         timeout = 65535;
-         while (timeout > 0 && !Serial_ByteRecieved0()) {
-            timeout--;
-         }
-
-         // If we have timed out, then exit
-         if (timeout == 0) {
-            log0("recieved %d good records, %d bad records\n", good_rec, bad_rec);
-            log0("transferred %d bytes to 0x%04x - 0x%04x\n", total, addrlo, addrhi);
-            return;
-         }
-
-         // Read the character
-         c = Serial_RxByte0();
+      // Wait for a character to be received, while testing for a timeout
+      timeout = 65535;
+      while (timeout > 0 && !Serial_ByteRecieved0()) {
+        timeout--;
       }
 
-      // Read the S record type
+      // If we have timed out, then exit
+      if (timeout == 0) {
+        log0("recieved %d good records, %d bad records\n", good_rec, bad_rec);
+        log0("transferred %d bytes to 0x%04x - 0x%04x\n", total, addrlo, addrhi);
+        return;
+      }
+
+      // Read the character
       c = Serial_RxByte0();
+    }
 
-      // Skip to the next line
-      if (c != '1') {
-         log0("skipping S%d\n", c);
-         continue;
+    // Read the S record type
+    c = Serial_RxByte0();
+
+    // Skip to the next line
+    if (c != '1') {
+      log0("skipping S%d\n", c);
+      continue;
+    }
+
+    // Process S1 record
+    crc = 1;
+    count = getHex() - 3;
+    addr = (getHex() << 8) + getHex();
+    while (count-- > 0) {
+      data = getHex();
+      if (addr < addrlo) {
+        addrlo = addr;
       }
-
-      // Process S1 record
-      crc = 1;
-      count = getHex() - 3;
-      addr = (getHex() << 8) + getHex();
-      while (count-- > 0) {
-         data = getHex();
-         if (addr < addrlo) {
-            addrlo = addr;
-         }
-         if (addr > addrhi) {
-            addrhi = addr;
-         }
-         loadData(data);
-         loadAddr(addr++);
-         writeMemByteInc();
-         total++;
+      if (addr > addrhi) {
+        addrhi = addr;
       }
-      // Read the crc byte
-      getHex();
+      loadData(data);
+      loadAddr(addr++);
+      writeMemByteInc();
+      total++;
+    }
+    // Read the crc byte
+    getHex();
 
-      // Read the terminator byte
-      c = Serial_RxByte0();
+    // Read the terminator byte
+    c = Serial_RxByte0();
 
-      if (crc) {
-         bad_rec++;
-      } else {
-         good_rec++;
-      }
-   }
+    if (crc) {
+      bad_rec++;
+    } else {
+      good_rec++;
+    }
+  }
 }
 
 void logSpecial(char *function, uint8_t value) {
-   logs(function);
-   if (value) {
-      logstr(" inhibited\n");
-   } else {
-      logstr(" enabled\n");
-   }
+  logs(function);
+  if (value) {
+    logstr(" inhibited\n");
+  } else {
+    logstr(" enabled\n");
+  }
 }
 
 void doCmdSpecial(char *params) {
-   int special = -1;
-   sscanf(params, "%x", &special);
-   if (special >= 0 && special <= 3) {
-      CTRL_PORT = (CTRL_PORT & ~SPECIAL_MASK) | (special << SPECIAL_0);
-   }
-   logSpecial("NMI", CTRL_PORT & (1 << SPECIAL_1));
-   logSpecial("IRQ", CTRL_PORT & (1 << SPECIAL_0));
+  int special = -1;
+  sscanf(params, "%x", &special);
+  if (special >= 0 && special <= 3) {
+    CTRL_PORT = (CTRL_PORT & ~SPECIAL_MASK) | (special << SPECIAL_0);
+  }
+  logSpecial("NMI", CTRL_PORT & (1 << SPECIAL_1));
+  logSpecial("IRQ", CTRL_PORT & (1 << SPECIAL_0));
 }
 
 void doCmdTrace(char *params) {
@@ -1410,7 +1416,7 @@ void doCmdList(char *params) {
       logstr(")\n");
     }
   } else {
-      logstr("No breakpoints set\n");
+    logstr("No breakpoints set\n");
   }
 }
 
