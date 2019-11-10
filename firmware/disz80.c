@@ -530,6 +530,10 @@ static const unsigned char cmd_ED40[192] PROGMEM = {
     NOP,0,0
   };
 
+static const char word_EX_HALT[] PROGMEM = "**HALT**";
+static const char word_EX_INT[] PROGMEM = "**INT**";
+static const char word_EX_NMI[] PROGMEM = "**NMI**";
+
 unsigned char cmd_halt[] = { HALT,0,0 };
 unsigned char cmd_nop[]  = { NOP,0,0 };
 
@@ -539,9 +543,6 @@ unsigned char c_blk[]    = { LDI,CPI,INI,OUTI,0,0,0,0,LDD,CPD,IND,OUTD,0,0,0,0,
                              LDIR,CPIR,INIR,OTIR,0,0,0,0,LDDR,CPDR,INDR,OTDR };
 
 unsigned char c_sh[]     = { RLC,RRC,RL,RR,SLA,SRA,SLL,SRL };
-
-
-char buffer[10];
 
 // ============================================================================================
 
@@ -760,117 +761,170 @@ int OpcodeLength (unsigned char op1, unsigned char op2) {
 
 // ===================================================================================
 
-void xword (unsigned char n, unsigned int *ip) {
+char * xword (char *ptr, unsigned char n, unsigned int *ip) {
   unsigned int nn;
 
+  // TODO: Replace switch with a more intelligent case
   switch (n)
     {
     case DIS:
       n = Peek((*ip)++);
-      log0("$%04X", *ip+(char)n,4);      // branch destination
+      *ptr++ = '$';
+      ptr = strhex4(ptr, *ip+(char)n);      // branch destination
       break;
     case N:
       n = Peek((*ip)++);
-      log0("$%02X", n);
+      *ptr++ = '$';
+      ptr = strhex2(ptr, n);
       break;
     case NN:
       n = Peek((*ip)++);
       nn = n+256*Peek((*ip)++);
-      log0("$%04X", nn);
+      *ptr++ = '$';
+      ptr = strhex4(ptr, nn);
       break;
     case XNN:
       n = Peek((*ip)++);
       nn = n+256*Peek((*ip)++);
-      log0("($%04X)", nn);
+      *ptr++ = '(';
+      *ptr++ = '$';
+      ptr = strhex4(ptr, nn);
+      *ptr++ = ')';
       break;
     case XN:
       n = Peek((*ip)++);
-      log0("($%02X)", n);
+      *ptr++ = '(';
+      *ptr++ = '$';
+      ptr = strhex2(ptr, n);
+      *ptr++ = ')';
       break;
     case XIX:
       n = Peek((*ip)++);
+      *ptr++ = '(';
+      *ptr++ = 'I';
+      *ptr++ = 'X';
       if (n&0x80) {
-        log0("(IX-$%02X)", 256-n);
+        *ptr++ = '-';
+        ptr = strhex2(ptr, 256 - n);
       } else {
-        log0("(IX+$%02X)", n);
+        *ptr++ = '+';
+        ptr = strhex2(ptr, n);
       }
+      *ptr++ = ')';
       break;
     case XIY:
       n = Peek((*ip)++);
+      *ptr++ = '(';
+      *ptr++ = 'I';
+      *ptr++ = 'Y';
       if (n&0x80) {
-        log0("(IY-$%02X)", 256-n);
+        *ptr++ = '-';
+        ptr = strhex2(ptr, 256 - n);
       } else {
-        log0("(IY+$%02X)", n);
+        *ptr++ = '+';
+        ptr = strhex2(ptr, n);
       }
+      *ptr++ = ')';
       break;
     default:
-      strcpy_P(buffer, (PGM_P)pgm_read_word(&(word[n])));
-      log0("%s", buffer);
+      strcpy_P(ptr, (PGM_P)pgm_read_word(&(word[n])));
+      ptr += strlen(ptr);
       break;
     }
+  return ptr;
 }
 
 
 // ---- expand 3-char descriptor m[3] to mnemonic with arguments via pc
-void disass (const unsigned char *m, unsigned int *ip) {
-  strcpy_P(buffer, (PGM_P)pgm_read_word(&(word[*m++])));
-  log0("%-5s", buffer);
+char *disass (char *ptr, const unsigned char *m, unsigned int *ip) {
+  strcpy_P(ptr, (PGM_P)pgm_read_word(&(word[*m++])));
+  *(ptr + strlen(ptr)) = ' ';
+  ptr += 5;
   if (*m) {
-    xword(*m++,ip);
+    ptr = xword(ptr, *m++,ip);
   }
   if (*m) {
-    log0(",");
-    xword(*m,ip);
+    *ptr++ = ',';
+    ptr = xword(ptr, *m,ip);
   }
+  return ptr;
 }
 
-void disassem (unsigned int *ip) {
+char * disassem (char *ptr, unsigned int *ip) {
   unsigned char op;
 
   op = Peek((*ip)++);
   switch (op)
     {
     case 0xcb:
-      disass (mnemoCB(Peek((*ip)++)), ip);
+      ptr = disass(ptr, mnemoCB(Peek((*ip)++)), ip);
       break;
     case 0xed:
-      disass (mnemoED(Peek((*ip)++)), ip);
+      ptr = disass(ptr, mnemoED(Peek((*ip)++)), ip);
       break;
     case 0xdd:
       op = Peek((*ip)++);
       if (op!=0xCB) {
-        disass (mnemoIX(op), ip);
+        ptr = disass(ptr, mnemoIX(op), ip);
       } else {
-        disass (mnemoIXCB(Peek((*ip)+1)), ip);
+        ptr = disass(ptr, mnemoIXCB(Peek((*ip)+1)), ip);
         (*ip)++;
       }
       break;
     case 0xfd:
       op = Peek((*ip)++);
       if (op!=0xCB) {
-        disass (mnemoIY(op), ip);
+        ptr = disass(ptr, mnemoIY(op), ip);
       } else {
-        disass (mnemoIYCB(Peek((*ip)+1)), ip);
+        ptr = disass(ptr, mnemoIYCB(Peek((*ip)+1)), ip);
         (*ip)++;
       }
       break;
     default:
-      disass (mnemo(op),ip);
+      ptr = disass(ptr, mnemo(op),ip);
       break;
     }
+  return ptr;
 }
 
-unsigned int disassemble(unsigned int addr) {
-  log0("%04X : ", addr);
+addr_t disassemble(addr_t addr) {
+  static char buffer[64];
+
+  char *ptr;
+  addr_t addr2 = addr;
+
+  // 0123456789012345678901234567890123456789
+  // AAAA : HH HH HH HH HH : LD   RR,($XXXX)
+
+  strfill(buffer, ' ', sizeof(buffer));
+  buffer[5] = ':';
+  buffer[22] = ':';
+
+  // Address
+  strhex4(buffer, addr);
+
+  // Opcode
+  ptr = buffer + 24;
   if (PDC_DIN & 0x80) {
-    log0("**HALT**");
+    strcpy_P(ptr, PSTR("**HALT**"));
   } else if (PDC_DIN & 0x40) {
-    log0("**NMI**");
+    strcpy(ptr, PSTR("**NMI**"));
   } else if (PDC_DIN & 0x20) {
-    log0("**INT**");
+    strcpy(ptr, PSTR("**INT**"));
   } else {
-    disassem(&addr);
+    ptr = disassem(ptr, &addr2);
   }
-  log0("\n");
+  *ptr++ = '\n';
+  *ptr++ = '\0';
+
+  // Hex
+  loadAddr(addr);
+  ptr = buffer + 7;
+  while (addr < addr2) {
+    strhex2(ptr, readMemByteInc());
+    ptr += 3;
+    addr++;
+  }
+  logs(buffer);
   return addr;
 }
