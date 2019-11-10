@@ -782,9 +782,23 @@ void genericRead(char *params, data_t (*readFunc)()) {
 
 void logCycleCount(int offsetLow, int offsetHigh) {
   unsigned long count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow);
-  unsigned long countSecs = count / 1000000;
-  unsigned long countMicros = count % 1000000;
-  log0("%02ld.%06ld: ", countSecs, countMicros);
+  char buffer[16];
+  uint8_t i;
+  // count is 24 bits so a maximum of 16777215
+  // "16777215: "
+  strlong(buffer, count);
+  uint8_t len = strlen(buffer);
+  for (i = 0; i < 8; i++) {
+    if (i == 2) {
+      logc('.');
+    }
+    if (i < 8 - len) {
+      logc('0');
+    } else {
+      logc(buffer[i - (8 - len)]);
+    }
+  }
+  logs(" : ");
 }
 
 void logMode(modes_t mode) {
@@ -863,7 +877,7 @@ void version() {
   logstr(" on ");
   logstr(__DATE__);
   logc('\n');
-  loghex2(MAXBKPTS);
+  logint(MAXBKPTS);
   logstr(" watches/breakpoints implemented\n");
 }
 
@@ -908,12 +922,15 @@ void setSingle(uint8_t single) {
 
 // Enable/Disable tracing
 void setTrace(long i) {
-  trace = i;
-  if (trace) {
-    log0("Tracing every %ld instructions while single stepping\n", trace);
+  if (i > 0) {
+    logstr("Tracing every ");
+    loglong(i);
+    logstr(" instructions while single stepping\n");
   } else {
+    i = 0;
     logstr("Tracing disabled\n");
   }
+  trace = i;
 }
 
 // Set the breakpoint state variables
@@ -926,7 +943,9 @@ void logBreakpoint(addr_t addr, modes_t mode) {
 }
 
 void logTooManyBreakpoints() {
-  log0("All %d breakpoints are already set\n", numbkpts);
+  logstr("All ");
+  logint(numbkpts);
+  logstr(" breakpoints are already set\n");
 }
 
 void uploadBreakpoints() {
@@ -1099,7 +1118,9 @@ void test(addr_t start, addr_t end, int data) {
     loghex2(data);
   }
   if (fail) {
-    log0(": failed: %d errors\n", fail);
+    logstr(": failed: ");
+    logint(fail);
+    logstr(" errors\n");
   } else {
     logstr(": passed\n");
   }
@@ -1154,7 +1175,9 @@ void doCmdStep(char *params) {
     return;
   }
 
-  log0("Stepping %ld instructions\n", instructions);
+  logstr("Stepping ");
+  loglong(instructions);
+  logstr(" instructions\n");
 
   j = trace;
   for (i = 1; i <= instructions; i++) {
@@ -1162,7 +1185,9 @@ void doCmdStep(char *params) {
     hwCmd(CMD_STEP, 0);
     // Output any watch/breakpoint messages
     if (!pollForEvents()) {
-      log0("Interrupted after %ld instructions\n", i);
+      logstr("Interrupted after ");
+      loglong(i);
+      logstr(" instructions\n");
       i = instructions;
     }
     if (i == instructions || (trace && (--j == 0))) {
@@ -1330,8 +1355,18 @@ void doCmdSRec(char *params) {
 
       // If we have timed out, then exit
       if (timeout == 0) {
-        log0("recieved %d good records, %d bad records\n", good_rec, bad_rec);
-        log0("transferred %d bytes to 0x%04x - 0x%04x\n", total, addrlo, addrhi);
+        logstr("received ");
+        logint(good_rec);
+        logstr(" good records, ");
+        logint(bad_rec);
+        logstr(" bad records\n");
+        logstr("transferred 0x");
+        loghex4(total);
+        logstr(" bytes to 0x");
+        loghex4(addrlo);
+        logstr(" - 0x");
+        loghex4(addrhi);
+        logc('\n');
         return;
       }
 
@@ -1344,7 +1379,9 @@ void doCmdSRec(char *params) {
 
     // Skip to the next line
     if (c != '1') {
-      log0("skipping S%d\n", c);
+      logstr("skipping S");
+      logc(c);
+      logc('\n');
       continue;
     }
 
@@ -1399,7 +1436,7 @@ void doCmdSpecial(char *params) {
 }
 
 void doCmdTrace(char *params) {
-  long i;
+  long i = trace;
   sscanf(params, "%ld", &i);
   setTrace(i);
 }
@@ -1409,7 +1446,12 @@ void doCmdList(char *params) {
   uint8_t i;
   if (numbkpts) {
     for (i = 0; i < numbkpts; i++) {
-      log0("%d: %04X mask %04X: ", i, breakpoints[i], masks[i]);
+      logint(i);
+      logstr(": ");
+      loghex4(breakpoints[i]);
+      logstr(" mask ");
+      loghex4(masks[i]);
+      logstr(": ");
       logMode(modes[i]);
       logs(" (");
       logTrigger(triggers[i]);
@@ -1614,7 +1656,11 @@ void doCmdHistory(char *params) {
   for (uint8_t i = 1; i <= HISTORY_LENGTH; i++) {
     char *h = history[(last + i) & (HISTORY_LENGTH - 1)];
     if (*h) {
-      log0("[%d] %s\n", id++, h);
+      logc('[');
+      logint(id++);
+      logstr("] ");
+      logs(h);
+      logc('\n');
     }
   }
 }
