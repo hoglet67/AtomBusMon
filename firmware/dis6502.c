@@ -3,7 +3,7 @@
 
 enum
   {
-    IMP, IMPA, MARK2, BRA, IMM, ZP, ZPX, ZPY, INDX, INDY, IND, MARK3, ABS, ABSX, ABSY, IND16
+    IMP, IMPA, MARK2, BRA, IMM, ZP, ZPX, ZPY, INDX, INDY, MARK3, ABS, ABSX, ABSY, IND16
   };
 
 enum
@@ -167,77 +167,116 @@ static const unsigned char dopaddr[256] PROGMEM =
 /*F0*/ BRA, INDY,  IMP, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP
 };
 
-unsigned int disassemble(unsigned int addr)
+addr_t disassemble(addr_t addr)
 {
 
-  unsigned int temp;
-  unsigned int op = readMemByteInc();
-  int mode = pgm_read_byte(dopaddr + op);
-  unsigned int p1 = (mode > MARK2) ? readMemByteInc() : 0;
-  unsigned int p2 = (mode > MARK3) ? readMemByteInc() : 0;
+  char buffer[32];
+  uint8_t temp;
+  data_t op = readMemByteInc();
+  data_t p1 = 0;
+  data_t p2 = 0;
+  uint8_t mode = pgm_read_byte(dopaddr + op);
+  char *ptr;
 
-  int opIndex = pgm_read_byte(dopname + op) * 3;
-  log0("%04X : ", addr);
-  for (temp = 0; temp < 3; temp++) {
-    log0("%c", pgm_read_byte(opString + opIndex + temp));
+  // 012345678901234567890123456789
+  // AAAA : 11 22 33 : III MMMMMMMM
+
+  // Template
+  strfill(buffer, ' ', sizeof(buffer));
+  buffer[5] = ':';
+  buffer[16] = ':';
+
+  // Address
+  strhex4(buffer, addr++);
+
+  // Hex
+  strhex2(buffer + 7, op);
+
+  if (mode > MARK2) {
+    p1 = readMemByteInc();
+    strhex2(buffer + 10, p1);
+    addr++;
   }
-  log0(" ");
+
+  if (mode > MARK3) {
+    p2 = readMemByteInc();
+    strhex2(buffer + 13, p2);
+    addr++;
+  }
+
+  uint16_t opIndex = pgm_read_byte(dopname + op) * 3;
+
+  ptr = buffer + 18;
+  for (temp = 0; temp < 3; temp++) {
+    *ptr++ = pgm_read_byte(opString + opIndex + temp);
+  }
+  ptr++;
 
   switch (mode)
     {
     case IMP:
-      log0("        ");
       break;
     case IMPA:
-      log0("A       ");
+      *ptr++ = 'A';
       break;
     case BRA:
-      temp = addr + 2 + (signed char)p1;
-      log0("%04X    ", temp);
-      addr++;
+      ptr = strhex4(ptr, addr + (int8_t)p1);
       break;
     case IMM:
-      log0("#%02X     ", p1);
-      addr++;
-      break;
+      *ptr++ = '#';
+      // Fall through to
     case ZP:
-      log0("%02X      ", p1);
-      addr++;
+      ptr = strhex2(ptr, p1);
       break;
     case ZPX:
-      log0("%02X,X    ", p1);
-      addr++;
+      ptr = strhex2(ptr, p1);
+      *ptr++ = ',';
+      *ptr++ = 'X';
       break;
     case ZPY:
-      log0("%02X,Y    ", p1);
-      addr++;
+      ptr = strhex2(ptr, p1);
+      *ptr++ = ',';
+      *ptr++ = 'Y';
       break;
     case INDX:
-      log0("(%02X,X)  ", p1);
-      addr++;
+      *ptr++ = '(';
+      ptr = strhex2(ptr, p1);
+      *ptr++ = ',';
+      *ptr++ = 'X';
+      *ptr++ = ')';
       break;
     case INDY:
-      log0("(%02X),Y  ", p1);
-      addr++;
+      *ptr++ = '(';
+      ptr = strhex2(ptr, p1);
+      *ptr++ = ')';
+      *ptr++ = ',';
+      *ptr++ = 'Y';
       break;
     case ABS:
-      log0("%02X%02X    ", p2, p1);
-      addr += 2;
+      ptr = strhex2(ptr, p2);
+      ptr = strhex2(ptr, p1);
       break;
     case ABSX:
-      log0("%02X%02X,X  ", p2, p1);
-      addr += 2;
+      ptr = strhex2(ptr, p2);
+      ptr = strhex2(ptr, p1);
+      *ptr++ = ',';
+      *ptr++ = 'X';
       break;
     case ABSY:
-      log0("%02X%02X,Y  ", p2, p1);
-      addr += 2;
+      ptr = strhex2(ptr, p2);
+      ptr = strhex2(ptr, p1);
+      *ptr++ = ',';
+      *ptr++ = 'Y';
       break;
     case IND16:
-      log0("(%02X%02X)  ", p2, p1);
-      addr += 2;
+      *ptr++ = '(';
+      ptr = strhex2(ptr, p2);
+      ptr = strhex2(ptr, p1);
+      *ptr++ = ')';
       break;
     }
-  log0("\n");
-  addr++;
+  *ptr++ = '\n';
+  *ptr++ = '\0';
+  logs(buffer);
   return addr;
 }

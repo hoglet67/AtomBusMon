@@ -1,6 +1,17 @@
 #ifndef __ATOMBUSMON_DEFINES__
 #define __ATOMBUSMON_DEFINES__
 
+#include <stdio.h>
+
+typedef uint8_t  data_t;
+typedef uint16_t addr_t;
+typedef uint8_t  offset_t;
+typedef uint16_t modes_t;
+typedef uint8_t  trigger_t;
+typedef uint16_t cmd_t;
+typedef uint16_t param_t;
+typedef int16_t  bknum_t;
+
 #include "status.h"
 #include "dis.h"
 
@@ -17,15 +28,6 @@
           __builtin_avr_delay_cycles((unsigned long) ( F_CPU/1000.0 * __ms)+1);\
     else __builtin_avr_delay_cycles((unsigned long) ( F_CPU/1000.0 * __ms))
 
-
-typedef uint8_t  data_t;
-typedef uint16_t addr_t;
-typedef uint8_t  offset_t;
-typedef uint16_t modes_t;
-typedef uint8_t  trigger_t;
-typedef uint16_t cmd_t;
-typedef uint16_t param_t;
-typedef int16_t  bknum_t;
 
 uint8_t hwRead8(offset_t offset);
 uint16_t hwRead16(offset_t offset);

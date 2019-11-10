@@ -6,6 +6,6 @@
 #define PDC_DDR          DDRA
 #define PDC_DIN          PINA
 
-unsigned int disassemble(unsigned int addr);
+addr_t disassemble(addr_t addr);
 
 #endif

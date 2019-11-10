@@ -42,14 +42,18 @@ void logpgmstr(const char *s) {
   } while (c);
 }
 
-void loghex1(uint8_t i) {
+char hex1(uint8_t i) {
   i &= 0x0f;
   if (i < 10) {
     i += '0';
   } else {
     i += ('A' - 10);
   }
-  logc(i);
+  return i;
+}
+
+void loghex1(uint8_t i) {
+  logc(hex1(i));
 }
 
 void loghex2(uint8_t i) {
@@ -60,6 +64,30 @@ void loghex2(uint8_t i) {
 void loghex4(uint16_t i) {
   loghex2(i >> 8);
   loghex2(i);
+}
+
+char *strfill(char *buffer, char c, uint8_t i) {
+  while (i-- > 0) {
+    *buffer++ = c;
+  }
+  return buffer;
+}
+
+char *strhex1(char *buffer, uint8_t i) {
+  *buffer++ = hex1(i);
+  return buffer;
+}
+
+char *strhex2(char *buffer, uint8_t i) {
+  buffer = strhex1(buffer, i >> 4);
+  buffer = strhex1(buffer, i);
+  return buffer;
+}
+
+char *strhex4(char *buffer, uint16_t i) {
+  buffer = strhex2(buffer, i >> 8);
+  buffer = strhex2(buffer, i);
+  return buffer;
 }
 
 //void loglong(long i) {
