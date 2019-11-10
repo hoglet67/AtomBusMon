@@ -2,9 +2,9 @@
 #include "AtomBusMon.h"
 
 enum
-{
-  IMP, IMPA, MARK2, BRA, IMM, ZP, ZPX, ZPY, INDX, INDY, IND, MARK3, ABS, ABSX, ABSY, IND16, IND1X
-};
+  {
+    IMP, IMPA, MARK2, BRA, IMM, ZP, ZPX, ZPY, INDX, INDY, IND, MARK3, ABS, ABSX, ABSY, IND16, IND1X
+  };
 
 enum
   {
@@ -169,103 +169,103 @@ static const unsigned char dopname[256] PROGMEM =
 
 static const unsigned char dopaddr[256] PROGMEM =
 {
-/*00*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*10*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMPA,  IMP,  ABS,	  ABSX,	 ABSX, IMP,
-/*20*/ ABS, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*30*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMPA,  IMP,  ABSX,	  ABSX,	 ABSX, IMP,
-/*40*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*50*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABS,	  ABSX,	 ABSX, IMP,
-/*60*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMPA,  IMP,  IND16,  ABS,	 ABS,  IMP,
-/*70*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMP,   IMP,  IND1X,  ABSX,	 ABSX, IMP,
-/*80*/ BRA, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMP,   IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*90*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPY,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABS,	  ABSX,	 ABSX, IMP,
-/*A0*/ IMM, INDX,  IMM, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMP,   IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*B0*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPY,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABSX,	  ABSX,	 ABSY, IMP,
-/*C0*/ IMM, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMP,   IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*D0*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABS,	  ABSX,	 ABSX, IMP,
-/*E0*/ IMM, INDX,  IMP, IMP,  ZP,   ZP,	   ZP,	 IMP,	IMP,  IMM,   IMP,   IMP,  ABS,	  ABS,	 ABS,  IMP,
-/*F0*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,	 IMP,	IMP,  ABSY,  IMP,   IMP,  ABS,	  ABSX,	 ABSX, IMP
+/*00*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  ABS,    ABS,   ABS,  IMP,
+/*10*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMPA,  IMP,  ABS,    ABSX,  ABSX, IMP,
+/*20*/ ABS, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  ABS,    ABS,   ABS,  IMP,
+/*30*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMPA,  IMP,  ABSX,   ABSX,  ABSX, IMP,
+/*40*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  ABS,    ABS,   ABS,  IMP,
+/*50*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP,
+/*60*/ IMP, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  IND16,  ABS,   ABS,  IMP,
+/*70*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  IND1X,  ABSX,  ABSX, IMP,
+/*80*/ BRA, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMP,   IMP,  ABS,    ABS,   ABS,  IMP,
+/*90*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPY,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP,
+/*A0*/ IMM, INDX,  IMM, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMP,   IMP,  ABS,    ABS,   ABS,  IMP,
+/*B0*/ BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPY,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABSX,   ABSX,  ABSY, IMP,
+/*C0*/ IMM, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMP,   IMP,  ABS,    ABS,   ABS,  IMP,
+/*D0*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP,
+/*E0*/ IMM, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMP,   IMP,  ABS,    ABS,   ABS,  IMP,
+/*F0*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP
 };
 
 unsigned int disassemble(unsigned int addr)
 {
-  
-	unsigned int temp;
-	unsigned int op = readMemByteInc();
-        int mode = pgm_read_byte(dopaddr + op);
-	unsigned int p1 = (mode > MARK2) ? readMemByteInc() : 0;
-	unsigned int p2 = (mode > MARK3) ? readMemByteInc() : 0;
 
-	int opIndex = pgm_read_byte(dopname + op) * 3;
-	log0("%04X : ", addr);
-	for (temp = 0; temp < 3; temp++) {
-	  log0("%c", pgm_read_byte(opString + opIndex + temp));
-	}
-	log0(" ");
+  unsigned int temp;
+  unsigned int op = readMemByteInc();
+  int mode = pgm_read_byte(dopaddr + op);
+  unsigned int p1 = (mode > MARK2) ? readMemByteInc() : 0;
+  unsigned int p2 = (mode > MARK3) ? readMemByteInc() : 0;
 
-	switch (mode)
-	{
-	case IMP:
-		log0("        ");
-		break;
-	case IMPA:
-		log0("A       ");
-		break;
-	case BRA:
-		temp = addr + 2 + (signed char)p1;
-		log0("%04X    ", temp);
-		addr++;
-		break;
-	case IMM:
-		log0("#%02X     ", p1);
-		addr++;
-		break;
-	case ZP:
-		log0("%02X      ", p1);
-		addr++;
-		break;
-	case ZPX:
-		log0("%02X,X    ", p1);
-		addr++;
-		break;
-	case ZPY:
-		log0("%02X,Y    ", p1);
-		addr++;
-		break;
-	case IND:
-		log0("(%02X)    ", p1);
-		addr++;
-		break;
-	case INDX:
-		log0("(%02X,X)  ", p1);
-		addr++;
-		break;
-	case INDY:
-		log0("(%02X),Y  ", p1);
-		addr++;
-		break;
-	case ABS:
-		log0("%02X%02X    ", p2, p1);
-		addr += 2;
-		break;
-	case ABSX:
-		log0("%02X%02X,X  ", p2, p1);
-		addr += 2;
-		break;
-	case ABSY:
-		log0("%02X%02X,Y  ", p2, p1);
-		addr += 2;
-		break;
-	case IND16:
-		log0("(%02X%02X)  ", p2, p1);
-		addr += 2;
-		break;
-	case IND1X:
-		log0("(%02X%02X,X)", p2, p1);
-		addr += 2;
-		break;
-	}
-	log0("\n");
-	addr++;
-	return addr;
+  int opIndex = pgm_read_byte(dopname + op) * 3;
+  log0("%04X : ", addr);
+  for (temp = 0; temp < 3; temp++) {
+    log0("%c", pgm_read_byte(opString + opIndex + temp));
+  }
+  log0(" ");
+
+  switch (mode)
+    {
+    case IMP:
+      log0("        ");
+      break;
+    case IMPA:
+      log0("A       ");
+      break;
+    case BRA:
+      temp = addr + 2 + (signed char)p1;
+      log0("%04X    ", temp);
+      addr++;
+      break;
+    case IMM:
+      log0("#%02X     ", p1);
+      addr++;
+      break;
+    case ZP:
+      log0("%02X      ", p1);
+      addr++;
+      break;
+    case ZPX:
+      log0("%02X,X    ", p1);
+      addr++;
+      break;
+    case ZPY:
+      log0("%02X,Y    ", p1);
+      addr++;
+      break;
+    case IND:
+      log0("(%02X)    ", p1);
+      addr++;
+      break;
+    case INDX:
+      log0("(%02X,X)  ", p1);
+      addr++;
+      break;
+    case INDY:
+      log0("(%02X),Y  ", p1);
+      addr++;
+      break;
+    case ABS:
+      log0("%02X%02X    ", p2, p1);
+      addr += 2;
+      break;
+    case ABSX:
+      log0("%02X%02X,X  ", p2, p1);
+      addr += 2;
+      break;
+    case ABSY:
+      log0("%02X%02X,Y  ", p2, p1);
+      addr += 2;
+      break;
+    case IND16:
+      log0("(%02X%02X)  ", p2, p1);
+      addr += 2;
+      break;
+    case IND1X:
+      log0("(%02X%02X,X)", p2, p1);
+      addr += 2;
+      break;
+    }
+  log0("\n");
+  addr++;
+  return addr;
 }
