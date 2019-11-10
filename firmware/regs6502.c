@@ -12,18 +12,23 @@ char statusString[8] = "NV-BDIZC";
 void doCmdRegs(char *params) {
   int i;
   unsigned int p = hwRead8(OFFSET_REG_P);
-  log0("6502 Registers:\n  A=%02X X=%02X Y=%02X SP=01%02X PC=%04X\n",
-       hwRead8(OFFSET_REG_A),
-       hwRead8(OFFSET_REG_X),
-       hwRead8(OFFSET_REG_Y),
-       hwRead8(OFFSET_REG_SP),
-       hwRead16(OFFSET_REG_PC));
+  logstr("6502 Registers:\n  A=");
+  loghex2(hwRead8(OFFSET_REG_A));
+  logstr(" X=");
+  loghex2(hwRead8(OFFSET_REG_X));
+  logstr(" Y=");
+  loghex2(hwRead8(OFFSET_REG_Y));
+  logstr(" SP=01");
+  loghex2(hwRead8(OFFSET_REG_SP));
+  logstr(" PC=");
+  loghex4(hwRead16(OFFSET_REG_PC));
+  logc('\n');
   char *sp = statusString;
-  log0("  Status: ");
+  logstr("  Status: ");
   for (i = 0; i <= 7; i++) {
-    log0("%c",  ((p & 128) ? (*sp) : '-'));
+    logc(((p & 128) ? (*sp) : '-'));
     p <<= 1;
     sp++;
   }
-  log0("\n");
+  logc('\n');
 }
