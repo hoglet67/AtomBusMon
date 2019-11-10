@@ -34,20 +34,16 @@ void logpgmstr(const char *s);
 void loghex1(uint8_t i);
 void loghex2(uint8_t i);
 void loghex4(uint16_t i);
+void logint(int i);
+void loglong(long i);
 char *strfill(char *buffer, char c, uint8_t i);
 char *strhex1(char *buffer, uint8_t i);
 char *strhex2(char *buffer, uint8_t i);
 char *strhex4(char *buffer, uint16_t i);
+char *strint(char *buffer, int i);
+char *strlong(char *buffer, long i);
 
-//void loglong(long i);
-//void logint(int i);
-
-
-#ifdef SERIAL_STATUS
 #define log0(format,...) fprintf_P(&ser0stream,PSTR(format),##__VA_ARGS__)
-#else
-#define log0(format,...)
-#endif
 
 //
 // For stdio

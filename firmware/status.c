@@ -8,102 +8,10 @@
 
 */
 
-#include <avr/interrupt.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <stdlib.h>
 #include "terminalcodes.h"
 #include "status.h"
-
-
-/********************************************************
- * Simple string logger, as log0 is expensive
- ********************************************************/
-
-void logc(char c) {
-  Serial_TxByte0(c);
-  if (c == '\n') {
-    Serial_TxByte0('\r');
-  }
-}
-
-void logs(const char *s) {
-  while (*s) {
-    logc(*s++);
-  }
-}
-
-void logpgmstr(const char *s) {
-  char c;
-  do {
-    c = pgm_read_byte(s++);
-    if (c) {
-      logc(c);
-    }
-  } while (c);
-}
-
-char hex1(uint8_t i) {
-  i &= 0x0f;
-  if (i < 10) {
-    i += '0';
-  } else {
-    i += ('A' - 10);
-  }
-  return i;
-}
-
-void loghex1(uint8_t i) {
-  logc(hex1(i));
-}
-
-void loghex2(uint8_t i) {
-  loghex1(i >> 4);
-  loghex1(i);
-}
-
-void loghex4(uint16_t i) {
-  loghex2(i >> 8);
-  loghex2(i);
-}
-
-char *strfill(char *buffer, char c, uint8_t i) {
-  while (i-- > 0) {
-    *buffer++ = c;
-  }
-  return buffer;
-}
-
-char *strhex1(char *buffer, uint8_t i) {
-  *buffer++ = hex1(i);
-  return buffer;
-}
-
-char *strhex2(char *buffer, uint8_t i) {
-  buffer = strhex1(buffer, i >> 4);
-  buffer = strhex1(buffer, i);
-  return buffer;
-}
-
-char *strhex4(char *buffer, uint16_t i) {
-  buffer = strhex2(buffer, i >> 8);
-  buffer = strhex2(buffer, i);
-  return buffer;
-}
-
-//void loglong(long i) {
-//  char buffer[16];
-//  // ltoa adds 176 bytes
-//  logs(ltoa(i, buffer, 10));
-//}
-//
-//void logint(int i) {
-//  char buffer[16];
-//  // itoa adds 176 bytes
-//  logs(itoa(i, buffer, 10));
-//}
-
-
-#ifdef SERIAL_STATUS
 
 static int StdioSerial_TxByte0(char DataByte, FILE *Stream);
 
@@ -111,15 +19,12 @@ FILE ser0stream = FDEV_SETUP_STREAM(StdioSerial_TxByte0,NULL,_FDEV_SETUP_WRITE);
 
 void StdioSerial_TxByte(char DataByte)
 {
-	#ifdef COOKED_SERIAL
-		if((DataByte=='\r') || (DataByte=='\n'))
-		{
-          Serial_TxByte0('\r');
-          Serial_TxByte0('\n');
-		}
-		else
-	#endif
-          Serial_TxByte0(DataByte);
+  if((DataByte=='\r') || (DataByte=='\n')) {
+    Serial_TxByte0('\r');
+    Serial_TxByte0('\n');
+  } else {
+    Serial_TxByte0(DataByte);
+  }
 }
 
 int StdioSerial_TxByte0(char DataByte, FILE *Stream)
@@ -199,4 +104,94 @@ void Serial_Init(const uint32_t BaudRate0)
 	cls();
 }
 
-#endif
+/********************************************************
+ * Simple string logger, as log0 is expensive
+ ********************************************************/
+
+void logc(char c) {
+  StdioSerial_TxByte(c);
+}
+
+void logs(const char *s) {
+  while (*s) {
+    logc(*s++);
+  }
+}
+
+void logpgmstr(const char *s) {
+  char c;
+  do {
+    c = pgm_read_byte(s++);
+    if (c) {
+      logc(c);
+    }
+  } while (c);
+}
+
+char hex1(uint8_t i) {
+  i &= 0x0f;
+  if (i < 10) {
+    i += '0';
+  } else {
+    i += ('A' - 10);
+  }
+  return i;
+}
+
+void loghex1(uint8_t i) {
+  logc(hex1(i));
+}
+
+void loghex2(uint8_t i) {
+  loghex1(i >> 4);
+  loghex1(i);
+}
+
+void loghex4(uint16_t i) {
+  loghex2(i >> 8);
+  loghex2(i);
+}
+
+void logint(int i) {
+  char buffer[16];
+  strint(buffer, i);
+  logs(buffer);
+}
+
+void loglong(long i) {
+  char buffer[16];
+  strlong(buffer, i);
+  logs(buffer);
+}
+
+char *strfill(char *buffer, char c, uint8_t i) {
+  while (i-- > 0) {
+    *buffer++ = c;
+  }
+  return buffer;
+}
+
+char *strhex1(char *buffer, uint8_t i) {
+  *buffer++ = hex1(i);
+  return buffer;
+}
+
+char *strhex2(char *buffer, uint8_t i) {
+  buffer = strhex1(buffer, i >> 4);
+  buffer = strhex1(buffer, i);
+  return buffer;
+}
+
+char *strhex4(char *buffer, uint16_t i) {
+  buffer = strhex2(buffer, i >> 8);
+  buffer = strhex2(buffer, i);
+  return buffer;
+}
+
+char *strint(char *buffer, int i) {
+  return itoa(i, buffer, 10);
+}
+
+char *strlong(char *buffer, long i) {
+  return ltoa(i, buffer, 10);
+}
