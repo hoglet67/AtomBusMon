@@ -547,13 +547,6 @@ readCmd(
         Serial_TxByte0(c);
       }
     } else if (c == 13) {
-      // Handle return
-#if defined(COMMAND_HISTORY)
-      cmd[i] = 0;
-      Serial_TxByte0(10);
-      Serial_TxByte0(13);
-      return 0;
-#else
       // Return repeats the previous command
       if (i == 0) {
         while (cmd[i]) {
@@ -564,6 +557,9 @@ readCmd(
       }
       Serial_TxByte0(10);
       Serial_TxByte0(13);
+#if defined(COMMAND_HISTORY)
+      return 0;
+#else
       return;
 #endif
     } else if (c >= 32) {
