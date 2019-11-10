@@ -45,10 +45,8 @@ char *strhex4(char *buffer, uint16_t i);
 
 #ifdef SERIAL_STATUS
 #define log0(format,...) fprintf_P(&ser0stream,PSTR(format),##__VA_ARGS__)
-#define log1(format,...) fprintf_P(&ser1stream,PSTR(format),##__VA_ARGS__)
 #else
 #define log0(format,...)
-#define log1(format,...)
 #endif
 
 //
@@ -56,7 +54,6 @@ char *strhex4(char *buffer, uint16_t i);
 //
 
 extern FILE ser0stream;
-extern FILE ser1stream;
 
 /* Default baud rate if 0 passed to Serial_Init */
 
@@ -88,21 +85,8 @@ void Serial_TxByte0(const char DataByte);
 char Serial_RxByte0(void);
 uint8_t Serial_ByteRecieved0(void);
 
-void USART_Init1(const uint32_t BaudRate);
-void Serial_TxByte1(const char DataByte);
-char Serial_RxByte1(void);
-uint8_t Serial_ByteRecieved1(void);
+void Serial_Init(const uint32_t BaudRate0);
 
-void Serial_Init(const uint32_t BaudRate0,
-				 const uint32_t BaudRate1);
-
-void cls(uint8_t	Port);
-
-void HexDump(const uint8_t 	*Buff,
-				   uint16_t Length,
-				   uint8_t	Port);
-void HexDumpHead(const uint8_t 	*Buff,
-				       uint16_t Length,
-				       uint8_t	Port);
+void cls();
 
 #endif

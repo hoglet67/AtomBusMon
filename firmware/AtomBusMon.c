@@ -1547,7 +1547,7 @@ void initialize() {
   STATUS_DDR = MUXSEL_MASK;
   MUX_DDR = 0;
   CTRL_PORT = 0;
-  Serial_Init(57600,57600);
+  Serial_Init(57600);
   version();
   // Update the hardware copy of the breakpoints
   uploadBreakpoints();
