@@ -3,8 +3,10 @@
 // Version 350 of T80 exposes the registers in this order (bit 211..bit 0):
 // IFF2, IFF1, IM, IY, HL', DE', BC', IX, HL, DE, BC, PC, SP, R, I, F', A', F, A
 
-#define OFFSET_REG_AF  (32 + 0)
-#define OFFSET_REG_AFp (32 + 2)
+#define OFFSET_REG_A   (32 + 0)
+#define OFFSET_REG_F   (32 + 1)
+#define OFFSET_REG_Ap  (32 + 2)
+#define OFFSET_REG_Fp  (32 + 3)
 #define OFFSET_REG_I   (32 + 4)
 #define OFFSET_REG_R   (32 + 5)
 #define OFFSET_REG_SP  (32 + 6)
@@ -22,37 +24,52 @@
 char statusString[8] = "SZIH-P-C";
 
 void doCmdRegs(char *params) {
-  int i;
-  unsigned int p = hwRead16(OFFSET_REG_AF);
-  log0("Z80 Registers:\n");
-  log0("   AF=%04X  BC=%04X  DE=%04X  HL=%04X\n",
-       p,
-       hwRead16(OFFSET_REG_BC),
-       hwRead16(OFFSET_REG_DE),
-       hwRead16(OFFSET_REG_HL));
-  log0("  'AF=%04X 'BC=%04X 'DE=%04X 'HL=%04X\n",
-       hwRead16(OFFSET_REG_AFp),
-       hwRead16(OFFSET_REG_BCp),
-       hwRead16(OFFSET_REG_DEp),
-       hwRead16(OFFSET_REG_HLp));
+  uint8_t i;
+  uint8_t p = hwRead16(OFFSET_REG_F);
+  logstr("Z80 Registers:\n   AF=");
+  loghex2(hwRead8(OFFSET_REG_A));
+  loghex2(p);
+  logstr("  BC=");
+  loghex4(hwRead16(OFFSET_REG_BC));
+  logstr("  DE=");
+  loghex4(hwRead16(OFFSET_REG_DE));
+  logstr("  HL=");
+  loghex4(hwRead16(OFFSET_REG_HL));
+  logstr("\n  'AF=");
+  loghex2(hwRead8(OFFSET_REG_Ap));
+  loghex2(hwRead8(OFFSET_REG_Fp));
+  logstr(" 'BC=");
+  loghex4(hwRead16(OFFSET_REG_BCp));
+  logstr(" 'DE=");
+  loghex4(hwRead16(OFFSET_REG_DEp));
+  logstr(" 'HL=");
+  loghex4(hwRead16(OFFSET_REG_HLp));
   int iff2_iff1_im = hwRead8(OFFSET_REG_IFF) & 15;
-  log0("   IX=%04X  IY=%04X  PC=%04X  SP=%04X I=%02X R=%02X IM=%X IFF1=%X IFF2=%X\n",
-       hwRead16(OFFSET_REG_IX),
-       hwRead16(OFFSET_REG_IY),
-       hwRead16(OFFSET_REG_PC),
-       hwRead16(OFFSET_REG_SP),
-       hwRead8(OFFSET_REG_I),
-       hwRead8(OFFSET_REG_R),
-       (iff2_iff1_im & 3),
-       (iff2_iff1_im >> 2) & 1,
-       (iff2_iff1_im >> 3) & 1
-       );
+  logstr("\n   IX=");
+  loghex4(hwRead16(OFFSET_REG_IX));
+  logstr("  IY=");
+  loghex4(hwRead16(OFFSET_REG_IY));
+  logstr("  PC=");
+  loghex4(hwRead16(OFFSET_REG_PC));
+  logstr("  SP=");
+  loghex4(hwRead16(OFFSET_REG_SP));
+  logstr(" I=");
+  loghex2(hwRead8(OFFSET_REG_I));
+  logstr(" R=");
+  loghex2(hwRead8(OFFSET_REG_R));
+  logstr(" IM=");
+  loghex1((iff2_iff1_im & 3));
+  logstr(" IFF1=");
+  loghex1((iff2_iff1_im >> 2) & 1);
+  logstr(" IFF2=");
+  loghex1((iff2_iff1_im >> 3) & 1);
+  logc('\n');
   char *sp = statusString;
-  log0("  Status: ");
+  logstr("  Status: ");
   for (i = 0; i <= 7; i++) {
-    log0("%c",  ((p & 128) ? (*sp) : '-'));
+    logc(((p & 128) ? (*sp) : '-'));
     p <<= 1;
     sp++;
   }
-  log0("\n");
+  logc('\n');
 }
