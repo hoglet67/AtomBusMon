@@ -1201,12 +1201,16 @@ void doCmdReset(char *params) {
 // doCmdRegs is now in regs<cpu>.c
 
 void doCmdDis(char *params) {
-  uint8_t i;
-  sscanf(params, "%x", &memAddr);
+  uint8_t i = 0;
+  addr_t startAddr = memAddr;
+  addr_t endAddr = 0;
+  sscanf(params, "%x %x", &startAddr, &endAddr);
+  memAddr = startAddr;
   loadAddr(memAddr);
-  for (i = 0; i < 10; i++) {
+  do {
     memAddr = disassemble(memAddr);
-  }
+    i++;
+  } while ((!endAddr && i < 10) || (endAddr && memAddr > startAddr && memAddr <= endAddr));
 }
 
 void doCmdFill(char *params) {
