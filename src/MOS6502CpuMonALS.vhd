@@ -116,7 +116,7 @@ begin
         generic map (
             UseT65Core        => UseT65Core,
             UseAlanDCore      => UseAlanDCore,
-            ClkMult           => 8,
+            ClkMult           => 12,
             ClkDiv            => 25,
             ClkPer            => 20.000,
             num_comparators   => num_comparators,

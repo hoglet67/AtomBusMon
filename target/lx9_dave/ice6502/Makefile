@@ -11,7 +11,11 @@ PROJECT    = MOS6502CpuMonALS
 TARGET     = ice6502
 
 # Frequuency that the AVR runs at
-F_CPU      = 16000000
+F_CPU      = 24000000
+
+# Default Baud Rate of serial interface
+# Note: F_CPU / 16 / BAUD need to be close to an integer
+BAUD       = 115200
 
 # Common include files
 include $(COMMON)/Makefile_$(TARGET).inc

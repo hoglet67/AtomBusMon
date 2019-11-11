@@ -8,6 +8,10 @@ SHELL      := env PATH=$(PATH) /bin/bash
 # Frequency of the AVR CPU
 F_CPU       ?= 15855484
 
+# Default Baud Rate of serial interface
+# Note: F_CPU / 16 / BAUD need to be close to an integer
+BAUD        ?= 57600
+
 # Path of the back anotated block memory map file
 BMM_FILE    ?= memory_bd.bmm
 
@@ -18,7 +22,7 @@ OBJCOPY=avr-objcopy
 
 PROG = avr_progmem
 
-CFLAGS=$(CPU_CFLAGS) -DF_CPU=${F_CPU}UL -mmcu=$(MCU) -Wall -Os -mcall-prologues
+CFLAGS=$(CPU_CFLAGS) -DF_CPU=${F_CPU}UL -DBAUD=${BAUD} -mmcu=$(MCU) -Wall -Os -mcall-prologues
 
 OBJECTS=AtomBusMon.o status.o $(CPU_OBJECTS)
 

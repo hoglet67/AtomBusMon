@@ -127,7 +127,7 @@ begin
 
     wrapper : entity work.Z80CpuMon
         generic map (
-            ClkMult           => 8,
+            ClkMult           => 12,
             ClkDiv            => 25,
             ClkPer            => 20.000,
             num_comparators   => num_comparators,

@@ -99,7 +99,7 @@ begin
 
     wrapper : entity work.MC6809CpuMon
       generic map (
-          ClkMult           => 8,
+          ClkMult           => 12,
           ClkDiv            => 25,
           ClkPer            => 20.000,
           num_comparators   => num_comparators,
