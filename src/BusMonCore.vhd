@@ -151,6 +151,7 @@ architecture behavioral of BusMonCore is
     signal fifo_din        : std_logic_vector(fifo_width - 1 downto 0);
     signal fifo_dout       : std_logic_vector(fifo_width - 1 downto 0);
     signal fifo_empty      : std_logic;
+    signal fifo_full       : std_logic;
     signal fifo_not_empty1 : std_logic;
     signal fifo_not_empty2 : std_logic;
     signal fifo_rd         : std_logic;
@@ -175,6 +176,8 @@ architecture behavioral of BusMonCore is
     signal cmd_done        : std_logic;
 
     signal reset_counter   : std_logic_vector(9 downto 0);
+
+    signal dropped_counter : std_logic_vector(3 downto 0);
 
 begin
 
@@ -273,7 +276,7 @@ begin
         wr_en  => fifo_wr_en,
         rd_en  => fifo_rd_en,
         dout   => fifo_dout,
-        full   => open,
+        full   => fifo_full,
         empty  => fifo_empty
     );
     fifo_wr_en <= fifo_wr and busmon_clken;
@@ -284,7 +287,27 @@ begin
     -- DataWr1 is the data being written delayed by 1 cycle
     -- DataRd is the data being read, that is already one cycle late
     -- bw_state1(1) is 1 for writes, and 0 for reads
-    fifo_din <= cycleCount_inst & "0000" & bw_status1 & Data1 & Addr1 & addr_inst;
+    fifo_din <= cycleCount_inst & dropped_counter & bw_status1 & Data1 & Addr1 & addr_inst;
+
+    -- Implement a 4-bit saturating counter of the number of dropped events
+    process (busmon_clk)
+    begin
+        if rising_edge(busmon_clk) then
+            if busmon_clken = '1' then
+                if fifo_rst = '1' then
+                    dropped_counter <= x"0";
+                elsif fifo_wr_en = '1' then
+                    if fifo_full = '1' then
+                        if dropped_counter /= x"F" then
+                            dropped_counter <= dropped_counter + 1;
+                        end if;
+                    else
+                        dropped_counter <= x"0";
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process;
 
     led_trig0 <= trig(0);
     led_trig1 <= trig(1);

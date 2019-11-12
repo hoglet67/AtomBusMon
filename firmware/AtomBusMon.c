@@ -46,6 +46,7 @@ char *cmdStrings[] = {
   "step",
   "regs",
   "dis",
+  "flush",
   "fill",
   "crc",
   "mem",
@@ -89,6 +90,7 @@ void (*cmdFuncs[])(char *params) = {
   doCmdStep,
   doCmdRegs,
   doCmdDis,
+  doCmdFlush,
   doCmdFill,
   doCmdCrc,
   doCmdMem,
@@ -823,14 +825,29 @@ void logTrigger(trigger_t trigger) {
 }
 
 uint8_t logDetails() {
-  addr_t i_addr = hwRead16(OFFSET_BW_IAL);
-  addr_t b_addr = hwRead16(OFFSET_BW_BAL);
-  data_t b_data = hwRead8(OFFSET_BW_BD);
-  modes_t mode  = hwRead8(OFFSET_BW_M);
-  uint8_t watch = mode & 1;
+  addr_t   i_addr = hwRead16(OFFSET_BW_IAL);
+  addr_t   b_addr = hwRead16(OFFSET_BW_BAL);
+  data_t   b_data = hwRead8(OFFSET_BW_BD);
+  modes_t    mode = hwRead8(OFFSET_BW_M);
+  uint8_t   watch = mode & 1;
+
+  // Process the dropped counter
+  uint8_t dropped = mode >> 4;
+  if (dropped) {
+    logstr("          : ");
+    if (dropped == 15) {
+      logstr(">=");
+    }
+    logint(dropped);
+    logstr(" event");
+    if (dropped > 1) {
+      logc('s');
+    }
+    logstr(" dropped\n");
+  }
 
   // Convert from 4-bit compressed to 10 bit expanded mode representation
-  mode = 1 << mode;
+  mode = 1 << (mode & 0x0f);
 
   // Update the serial console
   if (mode & W_MASK) {
@@ -1211,6 +1228,11 @@ void doCmdDis(char *params) {
     memAddr = disassemble(memAddr);
     i++;
   } while ((!endAddr && i < 10) || (endAddr && memAddr > startAddr && memAddr <= endAddr));
+}
+
+void doCmdFlush(char *params) {
+  logstr("Flushing Event FIFO\n");
+  hwCmd(CMD_FIFO_RST, 0);
 }
 
 void doCmdFill(char *params) {
