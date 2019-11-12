@@ -220,6 +220,7 @@ addr_t disassemble(addr_t addr)
       *ptr++ = 'A';
       break;
     case BRA:
+      *ptr++ = '$';
       ptr = strhex4(ptr, addr + (int8_t)p1);
       break;
     case IMM:
