@@ -195,3 +195,10 @@ char *strint(char *buffer, int i) {
 char *strlong(char *buffer, long i) {
   return ltoa(i, buffer, 10);
 }
+
+char *strinsert(char *buffer, const char *s) {
+  while (*s) {
+    *buffer++ = *s++;
+  }
+  return buffer;
+}

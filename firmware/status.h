@@ -42,6 +42,7 @@ char *strhex2(char *buffer, uint8_t i);
 char *strhex4(char *buffer, uint16_t i);
 char *strint(char *buffer, int i);
 char *strlong(char *buffer, long i);
+char *strinsert(char *buffer, const char *s);
 
 #define log0(format,...) fprintf_P(&ser0stream,PSTR(format),##__VA_ARGS__)
 
