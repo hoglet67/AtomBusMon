@@ -894,17 +894,17 @@ addr_t disassemble(addr_t addr) {
   addr_t addr2 = addr;
 
   // 0123456789012345678901234567890123456789
-  // AAAA : HH HH HH HH HH : LD   RR,($XXXX)
+  // AAAA : HH HH HH HH : LD   RR,($XXXX)
 
   strfill(buffer, ' ', sizeof(buffer));
   buffer[5] = ':';
-  buffer[22] = ':';
+  buffer[19] = ':';
 
   // Address
   strhex4(buffer, addr);
 
   // Opcode
-  ptr = buffer + 24;
+  ptr = buffer + 21;
   if (PDC_DIN & 0x80) {
     strcpy_P(ptr, PSTR("**HALT**"));
   } else if (PDC_DIN & 0x40) {
