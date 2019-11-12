@@ -226,20 +226,24 @@ addr_t disassemble(addr_t addr)
       *ptr++ = '#';
       // Fall through to
     case ZP:
+      *ptr++ = '$';
       ptr = strhex2(ptr, p1);
       break;
     case ZPX:
+      *ptr++ = '$';
       ptr = strhex2(ptr, p1);
       *ptr++ = ',';
       *ptr++ = 'X';
       break;
     case ZPY:
+      *ptr++ = '$';
       ptr = strhex2(ptr, p1);
       *ptr++ = ',';
       *ptr++ = 'Y';
       break;
     case INDX:
       *ptr++ = '(';
+      *ptr++ = '$';
       ptr = strhex2(ptr, p1);
       *ptr++ = ',';
       *ptr++ = 'X';
@@ -247,22 +251,26 @@ addr_t disassemble(addr_t addr)
       break;
     case INDY:
       *ptr++ = '(';
+      *ptr++ = '$';
       ptr = strhex2(ptr, p1);
       *ptr++ = ')';
       *ptr++ = ',';
       *ptr++ = 'Y';
       break;
     case ABS:
+      *ptr++ = '$';
       ptr = strhex2(ptr, p2);
       ptr = strhex2(ptr, p1);
       break;
     case ABSX:
+      *ptr++ = '$';
       ptr = strhex2(ptr, p2);
       ptr = strhex2(ptr, p1);
       *ptr++ = ',';
       *ptr++ = 'X';
       break;
     case ABSY:
+      *ptr++ = '$';
       ptr = strhex2(ptr, p2);
       ptr = strhex2(ptr, p1);
       *ptr++ = ',';
@@ -270,6 +278,7 @@ addr_t disassemble(addr_t addr)
       break;
     case IND16:
       *ptr++ = '(';
+      *ptr++ = '$';
       ptr = strhex2(ptr, p2);
       ptr = strhex2(ptr, p1);
       *ptr++ = ')';
