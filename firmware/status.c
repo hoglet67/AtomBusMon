@@ -202,3 +202,82 @@ char *strinsert(char *buffer, const char *s) {
   }
   return buffer;
 }
+
+int8_t convhex(char c) {
+  // Make range continuous
+  if (c >= 'a' && c <= 'f') {
+    c -= 'a' - '9' - 1;
+  } else if (c >= 'A' && c <= 'F') {
+    c -= 'A' - '9' - 1;
+  }
+  if (c >= '0' && c <= '0' + 15) {
+    return c & 0x0F;
+  } else {
+    return -1;
+  }
+}
+
+int8_t convdec(char c) {
+  if (c >= '0' && c <= '0' + 9) {
+    return c & 0x0F;
+  } else {
+    return -1;
+  }
+}
+
+char *parselong(char *params, long *val) {
+  long ret = 0;
+  int8_t sign = 1;
+  // Skip any spaces
+  while (*params == ' ') {
+    params++;
+  }
+  // Note sign
+  if (*params == '-') {
+    sign = -1;
+    params++;
+  }
+  do {
+    int8_t c = convhex(*params);
+    if (c < 0) {
+      break;
+    }
+    ret *= 10;
+    ret += c;
+    if (val) {
+      *val = sign * ret;
+    }
+    params++;
+  } while (1);
+  return params;
+}
+
+char *parsehex4(char *params, uint16_t *val) {
+  uint16_t ret = 0;
+  // Skip any spaces
+  while (*params == ' ') {
+    params++;
+  }
+  do {
+    int8_t c = convhex(*params);
+    if (c < 0) {
+      break;
+    }
+    ret <<= 4;
+    ret += c;
+    if (val) {
+      *val = ret;
+    }
+    params++;
+  } while (1);
+  return params;
+}
+
+char *parsehex2(char *params, uint8_t *val) {
+  uint16_t tmp = 0xffff;
+  params = parsehex4(params, &tmp);
+  if (tmp != 0xffff) {
+    *val = (tmp & 0xff);
+  }
+  return params;
+}

@@ -712,7 +712,8 @@ void genericDump(char *params, data_t (*readFunc)()) {
   uint16_t i;
   uint16_t j;
   data_t row[16];
-  sscanf(params, "%x", &memAddr);
+
+  parsehex4(params, &memAddr);
   loadAddr(memAddr);
   for (i = 0; i < 0x100; i+= 16) {
     for (j = 0; j < 16; j++) {
@@ -737,7 +738,9 @@ void genericDump(char *params, data_t (*readFunc)()) {
 void genericWrite(char *params, void (*writeFunc)()) {
   data_t data;
   long count = 1;
-  sscanf(params, "%x %hhx %ld", &memAddr, &data, &count);
+  params = parsehex4(params, &memAddr);
+  params = parsehex2(params, &data);
+  params = parselong(params, &count);
   logstr("Wr: ");
   log_addr_data(memAddr, data);
   logc('\n');
@@ -754,7 +757,8 @@ void genericRead(char *params, data_t (*readFunc)()) {
   uint16_t data;
   uint16_t data2;
   long count = 1;
-  sscanf(params, "%x %ld", &memAddr, &count);
+  params = parsehex4(params, &memAddr);
+  params = parselong(params, &count);
   loadAddr(memAddr);
   data = (*readFunc)();
   logstr("Rd: ");
@@ -917,8 +921,8 @@ bknum_t lookupBreakpointN(addr_t n) {
 }
 
 bknum_t lookupBreakpoint(char *params) {
-  int addr = -1;
-  sscanf(params, "%x", &addr);
+  addr_t addr = 0xFFFF;
+  params = parsehex4(params, &addr);
   bknum_t n = lookupBreakpointN(addr);
   if (n < 0) {
     logstr("Breakpoint/watch not set at ");
@@ -1006,7 +1010,9 @@ void genericBreakpoint(char *params, unsigned int mode) {
   addr_t addr;
   addr_t mask = 0xFFFF;
   trigger_t trigger = TRIGGER_UNDEFINED;
-  sscanf(params, "%x %x %hhx", &addr, &mask, &trigger);
+  params = parsehex4(params, &addr);
+  params = parsehex4(params, &mask);
+  params = parsehex2(params, &trigger);
   // First, see if a breakpoint with this address already exists
   for (i = 0; i < numbkpts; i++) {
     if (breakpoints[i] == addr) {
@@ -1182,7 +1188,7 @@ void doCmdStep(char *params) {
   long instructions = 1;
   long i;
   long j;
-  sscanf(params, "%ld", &instructions);
+  params = parselong(params, &instructions);
   if (instructions <= 0) {
     logstr("Number of instuctions must be positive\n");
     return;
@@ -1221,7 +1227,8 @@ void doCmdDis(char *params) {
   uint8_t i = 0;
   addr_t startAddr = memAddr;
   addr_t endAddr = 0;
-  sscanf(params, "%x %x", &startAddr, &endAddr);
+  params = parsehex4(params, &startAddr);
+  params = parsehex4(params, &endAddr);
   memAddr = startAddr;
   loadAddr(memAddr);
   do {
@@ -1240,7 +1247,9 @@ void doCmdFill(char *params) {
   addr_t start;
   addr_t end;
   data_t data;
-  sscanf(params, "%x %x %hhx", &start, &end, &data);
+  params = parsehex4(params, &start);
+  params = parsehex4(params, &end);
+  params = parsehex2(params, &data);
   logstr("Wr: ");
   loghex4(start);
   logstr(" to ");
@@ -1262,7 +1271,8 @@ void doCmdCrc(char *params) {
   addr_t end;
   data_t data;
   uint32_t crc = 0;
-  sscanf(params, "%x %x", &start, &end);
+  params = parsehex4(params, &start);
+  params = parsehex4(params, &end);
   loadAddr(start);
   for (i = start; i <= end; i++) {
     data = readMemByteInc();
@@ -1310,9 +1320,11 @@ void doCmdWriteIO(char *params) {
 void doCmdTest(char *params) {
   addr_t start;
   addr_t end;
-  int data =-100;
+  long data =-100;
   int8_t i;
-  sscanf(params, "%x %x %d", &start, &end, &data);
+  params = parsehex4(params, &start);
+  params = parsehex4(params, &end);
+  params = parselong(params, &data);
   if (data == -100) {
     test(start, end, 0x55);
     test(start, end, 0xAA);
@@ -1329,10 +1341,11 @@ uint8_t crc;
 
 int getHex() {
   uint8_t i;
-  char hex[2];
+  char hex[3];
   hex[0] = Serial_RxByte0();
   hex[1] = Serial_RxByte0();
-  sscanf(hex, "%2hhx", &i);
+  hex[2] = 0;
+  parsehex2(hex, &i);
   crc += i;
   return i;
 }
@@ -1448,9 +1461,9 @@ void logSpecial(char *function, uint8_t value) {
 }
 
 void doCmdSpecial(char *params) {
-  int special = -1;
-  sscanf(params, "%x", &special);
-  if (special >= 0 && special <= 3) {
+  uint8_t special = 0xff;
+  parsehex2(params, &special);
+  if (special <= 3) {
     CTRL_PORT = (CTRL_PORT & ~SPECIAL_MASK) | (special << SPECIAL_0);
   }
   logSpecial("NMI", CTRL_PORT & (1 << SPECIAL_1));
@@ -1459,7 +1472,7 @@ void doCmdSpecial(char *params) {
 
 void doCmdTrace(char *params) {
   long i = trace;
-  sscanf(params, "%ld", &i);
+  parselong(params, &i);
   setTrace(i);
 }
 
@@ -1543,7 +1556,7 @@ void doCmdClear(char *params) {
 
 void doCmdTrigger(char *params) {
   trigger_t trigger = TRIGGER_UNDEFINED;
-  sscanf(params, "%*x %hhx", &trigger);
+  parsehex2(parsehex4(params, NULL), &trigger);
   if (trigger >= NUM_TRIGGERS) {
     logstr("Trigger Codes:\n");
     for (trigger = 0; trigger < NUM_TRIGGERS; trigger++) {
@@ -1583,7 +1596,7 @@ void doCmdNext(char *params) {
 
 void doCmdContinue(char *params) {
   uint8_t reset = 0;
-  sscanf(params, "%hhd", &reset);
+  parsehex2(params, &reset);
 
   // Disable single stepping
   setSingle(0);
