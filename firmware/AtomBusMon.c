@@ -6,6 +6,8 @@
 
 #define COMMAND_HISTORY
 
+#define EXTENDED_HELP
+
 #include "AtomBusMon.h"
 
 /********************************************************
@@ -130,6 +132,93 @@ void (*cmdFuncs[])(char *params) = {
   doCmdClear,
   doCmdTrigger
 };
+
+#ifdef EXTENDED_HELP
+
+static const char ARGS00[] PROGMEM = "<address>";
+static const char ARGS01[] PROGMEM = "[ <address> ]";
+static const char ARGS02[] PROGMEM = "[ <address> [ <count> ] ]";
+static const char ARGS03[] PROGMEM = "<address> <data> [ <count> ]";
+static const char ARGS04[] PROGMEM = "<address> [ <mask> [ <trigger> ] ]";
+static const char ARGS05[] PROGMEM = "[ <address> <trigger> ]";
+static const char ARGS06[] PROGMEM = "[ <instructions> ]";
+static const char ARGS07[] PROGMEM = "";
+static const char ARGS08[] PROGMEM = "[ <reset> ]";
+static const char ARGS09[] PROGMEM = "<start> <end>";
+static const char ARGS10[] PROGMEM = "[ <start> [ <end> ] ]";
+static const char ARGS11[] PROGMEM = "<start> <end> <data>";
+static const char ARGS12[] PROGMEM = "<start> <end> [ <test num> ]";
+static const char ARGS13[] PROGMEM = "<start> <end> <to>";
+static const char ARGS14[] PROGMEM = "[ <value> ]";
+
+static const char * const argsStrings[] PROGMEM = {
+  ARGS00,
+  ARGS01,
+  ARGS02,
+  ARGS03,
+  ARGS04,
+  ARGS05,
+  ARGS06,
+  ARGS07,
+  ARGS08,
+  ARGS09,
+  ARGS10,
+  ARGS11,
+  ARGS12,
+  ARGS13,
+  ARGS14
+};
+
+// Must be kept in step with cmdStrings (just above)
+static const uint8_t helpMeta[] PROGMEM = {
+#if defined(COMMAND_HISTORY)
+  16,  7, // history
+#endif
+  15,  7, // help
+   9,  8, // continue
+  21,  7, // next
+  29,  6, // step
+  24,  7, // regs
+  12, 10, // dis
+  14,  7, // flush
+  13, 11, // fill
+  11,  9, // crc
+  10, 13, // copy
+   8, 13, // compare
+  20,  1, // mem
+  23,  2, // rd
+  38,  3, // wr
+#if defined(CPU_Z80)
+  18,  1, // io
+  17,  2, // in
+  22,  3, // out
+#endif
+  30, 12, // test
+  19,  0, // load
+  26,  9, // save
+  28,  7, // srec
+  27, 14, // special
+  25,  7, // reset
+  31,  6, // trace
+   1,  7, // blist
+   6,  4, // breakx
+  37,  4, // watchx
+   4,  4, // breakr
+  35,  4, // watchr
+   5,  4, // breakw
+  36,  4, // watchw
+#if defined(CPU_Z80)
+   2,  4, // breaki
+  33,  4, // watchi
+   3,  4, // breako
+  34,  4, // watcho
+#endif
+   7,  0, // clear
+  32,  5, // trigger
+   0,  0
+};
+
+#endif
 
 /********************************************************
  * AVR Control Register Definitions
@@ -1185,6 +1274,44 @@ void resetCpu() {
  * User Commands
  *******************************************/
 
+#ifdef EXTENDED_HELP
+
+void doCmdHelp(char *params) {
+  uint8_t i;
+  uint8_t j;
+  uint8_t order;    // the order to list the commands in
+  uint8_t args;     // the type of arguments the command takes
+  uint8_t next = 0; // the next expected order value to search for
+  version();
+  logstr("Commands:\n");
+  for (i = 0; i < NUM_CMDS; i++) {
+    // Search for the help meta with the next order
+    do {
+      next++;
+      j = 0;
+      do {
+        order = pgm_read_byte(helpMeta + (j++));
+        args  = pgm_read_byte(helpMeta + (j++));
+      } while (order && order != next);
+    } while (order != next);
+    // Look up the argumeny
+    const char* ip = (PGM_P) pgm_read_word(argsStrings + args);
+    j = (j >> 1) - 1;
+    logstr("    ");
+    logs(cmdStrings[j]);
+    j = strlen(cmdStrings[j]);
+    while (j++ < 10) {
+      logc(' ');
+    }
+    while ((j = pgm_read_byte(ip++))) {
+      logc(j);
+    }
+    logc('\n');
+  }
+}
+
+#else
+
 void doCmdHelp(char *params) {
   uint8_t i;
   version();
@@ -1195,6 +1322,8 @@ void doCmdHelp(char *params) {
     logc('\n');
   }
 }
+
+#endif
 
 void doCmdStep(char *params) {
   long instructions = 1;
