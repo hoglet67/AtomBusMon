@@ -60,6 +60,8 @@ char *cmdStrings[] = {
   "wri",
 #endif
   "test",
+  "load",
+  "save",
   "srec",
   "special",
   "reset",
@@ -106,6 +108,8 @@ void (*cmdFuncs[])(char *params) = {
   doCmdWriteIO,
 #endif
   doCmdTest,
+  doCmdLoad,
+  doCmdSave,
   doCmdSRec,
   doCmdSpecial,
   doCmdReset,
@@ -638,6 +642,10 @@ void shiftBreakpointRegister(addr_t addr, addr_t mask, modes_t mode, trigger_t t
 /********************************************************
  * Host Memory/IO Access helpers
  ********************************************************/
+
+void log_send_file() {
+  logstr("Send file now...\n");
+}
 
 void log_char(uint8_t c) {
   if (c < 32 || c > 126) {
@@ -1364,6 +1372,55 @@ void doCmdWriteIO(char *params) {
 
 #endif
 
+void doCmdSave(char *params) {
+  long i;
+  addr_t start;
+  addr_t end;
+  data_t data;
+  params = parsehex4(params, &start);
+  params = parsehex4(params, &end);
+  logstr("Press any key to start transmission (and again at end)\n");
+  Serial_RxByte0();
+  loadAddr(start);
+  for (i = start; i <= end; i++) {
+    data = readMemByteInc();
+    Serial_TxByte0(data);
+  }
+  Serial_RxByte0();
+}
+
+void doCmdLoad(char *params) {
+  addr_t start;
+  addr_t addr;
+  data_t data;
+  uint16_t timeout;
+
+  params = parsehex4(params, &start);
+  addr = start;
+  log_send_file();
+  do {
+
+    data = Serial_RxByte0();
+    loadData(data);
+    loadAddr(addr++);
+    writeMemByte();
+
+    // Wait for next byte to appear, or a 1 second timeout
+    timeout = 1000;
+    while (timeout > 0 && !Serial_ByteRecieved0()) {
+      Delay_us(1000);
+      timeout--;
+    }
+
+  } while (timeout > 0);
+
+  logstr("Wrote ");
+  loghex4(start);
+  logstr(" to ");
+  loghex4(addr - 1);
+  logc('\n');
+}
+
 void doCmdTest(char *params) {
   addr_t start;
   addr_t end;
@@ -1419,8 +1476,7 @@ void doCmdSRec(char *params) {
   addr_t addrlo = 0xFFFF;
   addr_t addrhi = 0x0000;
 
-
-  logstr("Send file now...\n");
+  log_send_file();
 
   // Special case reading the first record, with no timeout
   c = Serial_RxByte0();

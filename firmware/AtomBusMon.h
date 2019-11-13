@@ -61,6 +61,7 @@ void doCmdHistory(char *params);
 #endif
 void doCmdIO(char *params);
 void doCmdList(char *params);
+void doCmdLoad(char *params);
 void doCmdMem(char *params);
 void doCmdNext(char *params);
 void doCmdReadIO(char *params);
@@ -69,6 +70,7 @@ void doCmdRegs(char *params);
 void doCmdReset(char *params);
 void doCmdStep(char *params);
 void doCmdTest(char *params);
+void doCmdSave(char *params);
 void doCmdSRec(char *params);
 void doCmdSpecial(char *params);
 void doCmdTrace(char *params);
