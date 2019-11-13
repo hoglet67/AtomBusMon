@@ -52,12 +52,12 @@ char *cmdStrings[] = {
   "copy",
   "compare",
   "mem",
-  "rdm",
-  "wrm",
+  "rd",
+  "wr",
 #if defined(CPU_Z80)
   "io",
-  "rdi",
-  "wri",
+  "in",
+  "out",
 #endif
   "test",
   "load",
