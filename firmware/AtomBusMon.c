@@ -49,6 +49,8 @@ char *cmdStrings[] = {
   "flush",
   "fill",
   "crc",
+  "copy",
+  "compare",
   "mem",
   "rdm",
   "wrm",
@@ -93,6 +95,8 @@ void (*cmdFuncs[])(char *params) = {
   doCmdFlush,
   doCmdFill,
   doCmdCrc,
+  doCmdCopy,
+  doCmdCompare,
   doCmdMem,
   doCmdReadMem,
   doCmdWriteMem,
@@ -645,7 +649,7 @@ void log_char(uint8_t c) {
 void log_addr_data(addr_t a, data_t d) {
   logc(' ');
   loghex4(a);
-  logstr(" = ");
+  logc(':');
   loghex2(d);
   logstr("  ");
   log_char(d);
@@ -1287,6 +1291,49 @@ void doCmdCrc(char *params) {
   logstr("crc: ");
   loghex4(crc);
   logc('\n');
+}
+
+void doCmdCopy(char *params) {
+  uint16_t i;
+  addr_t start;
+  addr_t end;
+  addr_t to;
+  data_t data;
+  params = parsehex4(params, &start);
+  params = parsehex4(params, &end);
+  params = parsehex4(params, &to);
+  for (i = 0; i <= end - start; i++) {
+    loadAddr(start + i);
+    data = readMemByte();
+    loadData(data);
+    loadAddr(to + i);
+    writeMemByte();
+  }
+}
+
+void doCmdCompare(char *params) {
+  uint16_t i;
+  addr_t start;
+  addr_t end;
+  addr_t with;
+  data_t data1;
+  data_t data2;
+  params = parsehex4(params, &start);
+  params = parsehex4(params, &end);
+  params = parsehex4(params, &with);
+  for (i = 0; i <= end - start; i++) {
+    loadAddr(start + i);
+    data1 = readMemByte();
+    loadAddr(with + i);
+    data2 = readMemByte();
+    if (data1 != data2) {
+      logstr("Compare failed:");
+      log_addr_data(start + i, data1);
+      logstr(" /=");
+      log_addr_data(with + i,  data2);
+      logc('\n');
+    }
+  }
 }
 
 void doCmdMem(char *params) {
