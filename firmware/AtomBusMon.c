@@ -150,6 +150,7 @@ static const char ARGS11[] PROGMEM = "<start> <end> <data>";
 static const char ARGS12[] PROGMEM = "<start> <end> [ <test num> ]";
 static const char ARGS13[] PROGMEM = "<start> <end> <to>";
 static const char ARGS14[] PROGMEM = "[ <value> ]";
+static const char ARGS15[] PROGMEM = "[ <command> ]";
 
 static const char * const argsStrings[] PROGMEM = {
   ARGS00,
@@ -166,7 +167,8 @@ static const char * const argsStrings[] PROGMEM = {
   ARGS11,
   ARGS12,
   ARGS13,
-  ARGS14
+  ARGS14,
+  ARGS15,
 };
 
 // Must be kept in step with cmdStrings (just above)
@@ -174,7 +176,7 @@ static const uint8_t helpMeta[] PROGMEM = {
 #if defined(COMMAND_HISTORY)
   16,  7, // history
 #endif
-  15,  7, // help
+  15, 15, // help
    9,  8, // continue
   21,  7, // next
   29,  6, // step
@@ -668,6 +670,38 @@ readCmd(
       i++;
     }
   }
+}
+
+uint8_t lookupCmd(char **cmdptr) {
+  char *cmd = *cmdptr;
+  char *cmdString;
+  uint8_t i;
+  uint8_t minLen;
+  uint8_t cmdStringLen;
+  uint8_t cmdLen = 0;
+  while (cmd[cmdLen] >= 'a' && cmd[cmdLen] <= 'z') {
+    cmdLen++;
+  }
+  for (i = 0; i < NUM_CMDS; i++) {
+    cmdString = cmdStrings[i];
+    cmdStringLen = strlen(cmdString);
+    minLen = cmdLen < cmdStringLen ? cmdLen : cmdStringLen;
+    if (strncmp(cmdString, cmd, minLen) == 0) {
+      cmd += cmdLen;
+      while (*cmd == ' ') {
+        cmd++;
+      }
+      *cmdptr = cmd;
+      return i;
+    }
+  }
+  return 0xFF;
+}
+
+void logIllegalCommand(char *c) {
+  logstr("Illegal command: ");
+  logs(c);
+  logc('\n');
 }
 
 /********************************************************
@@ -1276,37 +1310,50 @@ void resetCpu() {
 
 #ifdef EXTENDED_HELP
 
+void helpForCommand(uint8_t i) {
+  uint8_t args = pgm_read_byte(helpMeta + i + i + 1);
+  uint8_t tmp;
+  const char* ip = (PGM_P) pgm_read_word(argsStrings + args);
+  logstr("    ");
+  logs(cmdStrings[i]);
+  tmp = strlen(cmdStrings[i]);
+  while (tmp++ < 10) {
+    logc(' ');
+  }
+  while ((tmp = pgm_read_byte(ip++))) {
+    logc(tmp);
+  }
+  logc('\n');
+
+}
+
 void doCmdHelp(char *params) {
   uint8_t i;
   uint8_t j;
   uint8_t order;    // the order to list the commands in
-  uint8_t args;     // the type of arguments the command takes
   uint8_t next = 0; // the next expected order value to search for
-  version();
-  logstr("Commands:\n");
-  for (i = 0; i < NUM_CMDS; i++) {
-    // Search for the help meta with the next order
-    do {
-      next++;
-      j = 0;
+  if (*params) {
+    i = lookupCmd(&params);
+    if (i < NUM_CMDS) {
+      helpForCommand(i);
+    } else {
+      logIllegalCommand(params);
+    }
+  } else {
+    version();
+    logstr("Commands:\n");
+    for (i = 0; i < NUM_CMDS; i++) {
+      // Search for the help meta with the next order
       do {
-        order = pgm_read_byte(helpMeta + (j++));
-        args  = pgm_read_byte(helpMeta + (j++));
-      } while (order && order != next);
-    } while (order != next);
-    // Look up the argumeny
-    const char* ip = (PGM_P) pgm_read_word(argsStrings + args);
-    j = (j >> 1) - 1;
-    logstr("    ");
-    logs(cmdStrings[j]);
-    j = strlen(cmdStrings[j]);
-    while (j++ < 10) {
-      logc(' ');
+        next++;
+        j = -1;
+        do {
+          j++;
+          order = pgm_read_byte(helpMeta + j + j);
+        } while (order && order != next);
+      } while (order != next);
+      helpForCommand(j);
     }
-    while ((j = pgm_read_byte(ip++))) {
-      logc(j);
-    }
-    logc('\n');
   }
 }
 
@@ -1873,26 +1920,12 @@ void initialize() {
 }
 
 void dispatchCmd(char *cmd) {
-  char *cmdString;
-  uint8_t i;
-  uint8_t minLen;
-  uint8_t cmdStringLen;
-  uint8_t cmdLen = 0;
-  while (cmd[cmdLen] >= 'a' && cmd[cmdLen] <= 'z') {
-    cmdLen++;
+  uint8_t i = lookupCmd(&cmd);
+  if (i < NUM_CMDS) {
+    (*cmdFuncs[i])(cmd);
+  } else {
+    logIllegalCommand(cmd);
   }
-  for (i = 0; i < NUM_CMDS; i++) {
-    cmdString = cmdStrings[i];
-    cmdStringLen = strlen(cmdString);
-    minLen = cmdLen < cmdStringLen ? cmdLen : cmdStringLen;
-    if (strncmp(cmdString, cmd, minLen) == 0) {
-      (*cmdFuncs[i])(cmd + cmdLen);
-      return;
-    }
-  }
-  logstr("Unknown command ");
-  logs(cmd);
-  logc('\n');
 }
 
 void check_errors() {
