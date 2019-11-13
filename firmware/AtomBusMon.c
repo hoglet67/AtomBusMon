@@ -69,15 +69,15 @@ char *cmdStrings[] = {
   "blist",
   "breakx",
   "watchx",
-  "breakrm",
-  "watchrm",
-  "breakwm",
-  "watchwm",
+  "breakr",
+  "watchr",
+  "breakw",
+  "watchw",
 #if defined(CPU_Z80)
-  "breakri",
-  "watchri",
-  "breakwi",
-  "watchwi",
+  "breaki",
+  "watchi",
+  "breako",
+  "watcho",
 #endif
   "clear",
   "trigger"
