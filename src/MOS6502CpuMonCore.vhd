@@ -114,6 +114,7 @@ architecture behavioral of MOS6502CpuMonCore is
 
     signal exec          : std_logic;
     signal exec_held     : std_logic;
+    signal op3           : std_logic;
 
 begin
 
@@ -238,6 +239,31 @@ begin
         Addr_int(15 downto 0) <= std_logic_vector(cpu_addr_us);
     end generate;
 
+-- 00 IMP, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  ABS,    ABS,   ABS,  IMP,
+-- 10 BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMPA,  IMP,  ABS,    ABSX,  ABSX, IMP,
+-- 20 ABS, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  ABS,    ABS,   ABS,  IMP,
+-- 30 BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMPA,  IMP,  ABSX,   ABSX,  ABSX, IMP,
+-- 40 IMP, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  ABS,    ABS,   ABS,  IMP,
+-- 50 BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP,
+-- 60 IMP, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  IND16,  ABS,   ABS,  IMP,
+-- 70 BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  IND1X,  ABSX,  ABSX, IMP,
+-- 80 BRA, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMP,   IMP,  ABS,    ABS,   ABS,  IMP,
+-- 90 BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPY,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP,
+-- A0 IMM, INDX,  IMM, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMP,   IMP,  ABS,    ABS,   ABS,  IMP,
+-- B0 BRA, INDY,  IND, IMP,  ZPX,  ZPX,   ZPY,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABSX,   ABSX,  ABSY, IMP,
+-- C0 IMM, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMP,   IMP,  ABS,    ABS,   ABS,  IMP,
+-- D0 BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP,
+-- E0 IMM, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMP,   IMP,  ABS,    ABS,   ABS,  IMP,
+-- F0 BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP
+
+    -- Detect forced opcodes that are 3 bytes long
+    op3 <= '1' when memory_dout(7 downto 0) = "00100000" else
+           '1' when memory_dout(4 downto 0) =    "11011" else
+           '1' when memory_dout(3 downto 0) =     "1100" else
+           '1' when memory_dout(3 downto 0) =     "1101" else
+           '1' when memory_dout(3 downto 0) =     "1110" else
+           '0';
+
     Din_int <= memory_dout( 7 downto 0) when state = idle and Sync_int = '1' and exec_held = '1' else
                memory_addr( 7 downto 0) when state = exec1 else
                memory_addr(15 downto 8) when state = exec2 else
@@ -303,7 +329,11 @@ begin
                         state <= nop0;
                     -- exec1 is the LSB of a forced JMP
                     when exec1 =>
-                        state <= exec2;
+                        if op3 = '1' then
+                            state <= exec2;
+                        else
+                            state <= idle;
+                        end if;
                     -- exec2 is the MSB of a forced JMP
                     when exec2 =>
                         state <= idle;
@@ -333,7 +363,7 @@ begin
 
     -- Data is captured by the bus monitor on the rising edge of cpu_clk
     -- that sees done = 1.
-    memory_done <= '1' when state = rd or state = wr or state = exec2 else '0';
+    memory_done <= '1' when state = rd or state = wr or (op3 = '0' and state = exec1) or state = exec2 else '0';
 
     memory_din <= Din;
 

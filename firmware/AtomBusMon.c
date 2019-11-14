@@ -52,6 +52,7 @@ char *cmdStrings[] = {
   "fill",
 #if defined(CPU_6502) || defined(CPU_65C02)
   "go",
+  "exec",
 #endif
   "crc",
   "copy",
@@ -103,6 +104,7 @@ void (*cmdFuncs[])(char *params) = {
   doCmdFill,
 #if defined(CPU_6502) ||  defined(CPU_65C02)
   doCmdGo,
+  doCmdExec,
 #endif
   doCmdCrc,
   doCmdCopy,
@@ -157,6 +159,7 @@ static const char ARGS12[] PROGMEM = "<start> <end> [ <test num> ]";
 static const char ARGS13[] PROGMEM = "<start> <end> <to>";
 static const char ARGS14[] PROGMEM = "[ <value> ]";
 static const char ARGS15[] PROGMEM = "[ <command> ]";
+static const char ARGS16[] PROGMEM = "<op1> [ <op2> [ <op3> ] ]";
 
 static const char * const argsStrings[] PROGMEM = {
   ARGS00,
@@ -175,57 +178,59 @@ static const char * const argsStrings[] PROGMEM = {
   ARGS13,
   ARGS14,
   ARGS15,
+  ARGS16
 };
 
 // Must be kept in step with cmdStrings (just above)
 static const uint8_t helpMeta[] PROGMEM = {
 #if defined(COMMAND_HISTORY)
-  17,  7, // history
+  18,  7, // history
 #endif
-  16, 15, // help
+  17, 15, // help
    9,  8, // continue
-  22,  7, // next
-  30,  6, // step
-  25,  7, // regs
+  23,  7, // next
+  31,  6, // step
+  26,  7, // regs
   12, 10, // dis
-  15,  7, // flush
+  16,  7, // flush
   13, 11, // fill
 #if defined(CPU_6502) || defined(CPU_65C02)
   14,  0, // go
+  15, 16, // exec
 #endif
   11,  9, // crc
   10, 13, // copy
    8, 13, // compare
-  21,  1, // mem
-  24,  2, // rd
-  39,  3, // wr
+  22,  1, // mem
+  25,  2, // rd
+  40,  3, // wr
 #if defined(CPU_Z80)
-  19,  1, // io
-  18,  2, // in
-  23,  3, // out
+  20,  1, // io
+  19,  2, // in
+  24,  3, // out
 #endif
-  31, 12, // test
-  20,  0, // load
-  27,  9, // save
-  29,  7, // srec
-  28, 14, // special
-  26,  7, // reset
-  32,  6, // trace
+  32, 12, // test
+  21,  0, // load
+  28,  9, // save
+  30,  7, // srec
+  29, 14, // special
+  27,  7, // reset
+  33,  6, // trace
    1,  7, // blist
    6,  4, // breakx
-  38,  4, // watchx
+  39,  4, // watchx
    4,  4, // breakr
-  36,  4, // watchr
+  37,  4, // watchr
    5,  4, // breakw
-  37,  4, // watchw
+  38,  4, // watchw
 #if defined(CPU_Z80)
    2,  4, // breaki
-  33,  4, // watchi
+  35,  4, // watchi
    3,  4, // breako
-  35,  4, // watcho
+  36,  4, // watcho
 #endif
    7,  0, // clear
-  33,  5, // trigger
+  34,  5, // trigger
    0,  0
 };
 
@@ -1472,6 +1477,27 @@ void doCmdGo(char *params) {
   loadData(0x4C);
   loadAddr(addr);
   hwCmd(CMD_EXEC_GO, 0);
+  logAddr();
+}
+
+void doCmdExec(char *params) {
+  data_t op1 = 0;
+  data_t op2 = 0;
+  data_t op3 = 0;
+  params = parsehex2(params, &op1);
+  params = parsehex2(params, &op2);
+  params = parsehex2(params, &op3);
+  // Read the current PC value
+  addr_t  addr = hwRead16(OFFSET_IAL);
+  // Execute the specifed opcode
+  loadData(op1);
+  loadAddr(op2 + (op3 << 8));
+  hwCmd(CMD_EXEC_GO, 0);
+  // JMP back to the original PC value
+  loadData(0x4C);
+  loadAddr(addr);
+  hwCmd(CMD_EXEC_GO, 0);
+  // Log where we are
   logAddr();
 }
 

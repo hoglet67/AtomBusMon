@@ -450,7 +450,7 @@ begin
     -- 10101 Read IO and Auto Inc Address
     -- 10110 Write IO
     -- 10111 Write IO and Auto Inc Address
-    -- 11000 Exec Go
+    -- 11000 Execute 6502 instruction
     -- 111xx Unused
     -- 11x1x Unused
     -- 11xx1 Unused
