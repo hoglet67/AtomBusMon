@@ -259,11 +259,10 @@ static const uint8_t helpMeta[] PROGMEM = {
 // 10001 Read Memory and Auto Inc Address
 // 10010 Write Memory
 // 10011 Write Memory and Auto Inc Address
-// 10000 Read Memory
-// 10001 Read Memory and Auto Inc Address
-// 10010 Write Memory
-// 10011 Write Memory and Auto Inc Address
-// 1x1xx Unused
+// 10100 Read IO
+// 10101 Read IO and Auto Inc Address
+// 10110 Write IO
+// 10111 Write IO and Auto Inc Address
 // 11xxx Unused
 
 #define CMD_SINGLE_ENABLE 0x00
