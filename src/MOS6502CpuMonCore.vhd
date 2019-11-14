@@ -73,12 +73,13 @@ end MOS6502CpuMonCore;
 
 architecture behavioral of MOS6502CpuMonCore is
 
-    type state_type is (idle, nop0, nop1, rd, wr);
+    type state_type is (idle, nop0, nop1, rd, wr, exec1, exec2);
 
     signal state  : state_type;
 
     signal cpu_clken_ss  : std_logic;
     signal Data          : std_logic_vector(7 downto 0);
+    signal Din_int       : std_logic_vector(7 downto 0);
     signal Dout_int      : std_logic_vector(7 downto 0);
     signal R_W_n_int     : std_logic;
     signal Rd_n_int      : std_logic;
@@ -110,6 +111,9 @@ architecture behavioral of MOS6502CpuMonCore is
 
     signal NMI_n_masked  : std_logic;
     signal IRQ_n_masked  : std_logic;
+
+    signal exec          : std_logic;
+    signal exec_held     : std_logic;
 
 begin
 
@@ -151,6 +155,7 @@ begin
         WrMemOut     => memory_wr,
         RdIOOut      => open,
         WrIOOut      => open,
+        ExecOut      => exec,
         AddrOut      => memory_addr,
         DataOut      => memory_dout,
         DataIn       => memory_din,
@@ -192,7 +197,7 @@ begin
     Regs1( 63 downto 48) <= last_PC;
     Regs1(255 downto 64) <= (others => '0');
 
-    cpu_clken_ss <= '1' when Rdy = '1' and (state = idle) and cpu_clken = '1' else '0';
+    cpu_clken_ss <= '1' when Rdy = '1' and (state = idle or state = exec1 or state = exec2) and cpu_clken = '1' else '0';
 
     GenT65Core: if UseT65Core generate
         inst_t65: entity work.T65 port map (
@@ -208,7 +213,7 @@ begin
             R_W_n           => R_W_n_int,
             Sync            => Sync_int,
             A               => Addr_int,
-            DI              => Din,
+            DI              => Din_int,
             DO              => Dout_int,
             Regs            => Regs
         );
@@ -221,7 +226,7 @@ begin
             enable   => cpu_clken_ss,
             nmi_n    => NMI_n_masked,
             irq_n    => IRQ_n_masked,
-            di       => unsigned(Din),
+            di       => unsigned(Din_int),
             do       => cpu_dout_us,
             addr     => cpu_addr_us,
             nwe      => R_W_n_int,
@@ -232,6 +237,11 @@ begin
         Dout_int <= std_logic_vector(cpu_dout_us);
         Addr_int(15 downto 0) <= std_logic_vector(cpu_addr_us);
     end generate;
+
+    Din_int <= memory_dout( 7 downto 0) when state = idle and Sync_int = '1' and exec_held = '1' else
+               memory_addr( 7 downto 0) when state = exec1 else
+               memory_addr(15 downto 8) when state = exec2 else
+                                   Din;
 
     men_access_machine : process(cpu_clk, cpu_reset_n)
     begin
@@ -255,12 +265,21 @@ begin
             elsif state = wr then
                 memory_wr1 <= '0';
             end if;
+            if exec = '1' then
+                exec_held <= '1';
+            elsif state = exec1 then
+                exec_held <= '0';
+            end if;
             if cpu_clken = '1' and Rdy = '1' then
                 case state is
                     -- idle is when the CPU is running normally
                     when idle =>
-                        if Sync_int = '1' and SS_Single = '1' then
-                            state <= nop0;
+                        if Sync_int = '1' then
+                            if exec_held = '1' then
+                                state <= exec1;
+                            elsif SS_Single = '1' then
+                                state <= nop0;
+                            end if;
                         end if;
                     -- nop0 is the first state entered when the CPU is paused
                     when nop0 =>
@@ -268,7 +287,7 @@ begin
                             state <= rd;
                         elsif memory_wr1 = '1' then
                             state <= wr;
-                        elsif SS_Step_held = '1' then
+                        elsif SS_Step_held = '1' or exec_held = '1' then
                             state <= idle;
                         else
                             state <= nop1;
@@ -282,6 +301,12 @@ begin
                     -- wr is a monitor initiated write cycle
                     when wr =>
                         state <= nop0;
+                    -- exec1 is the LSB of a forced JMP
+                    when exec1 =>
+                        state <= exec2;
+                    -- exec2 is the MSB of a forced JMP
+                    when exec2 =>
+                        state <= idle;
                 end case;
             end if;
         end if;
@@ -289,7 +314,7 @@ begin
 
     -- Only count cycles when the 6502 is actually running
     -- TODO: Should this be qualified with cpu_clken and rdy?
-    CountCycle <= '1' when state = idle else '0';
+    CountCycle <= '1' when state = idle or state = exec1 or state = exec2 else '0';
 
     R_W_n <= R_W_n_int when state = idle else
              '0'       when state = wr   else
@@ -308,7 +333,7 @@ begin
 
     -- Data is captured by the bus monitor on the rising edge of cpu_clk
     -- that sees done = 1.
-    memory_done <= '1' when state = rd or state = wr else '0';
+    memory_done <= '1' when state = rd or state = wr or state = exec2 else '0';
 
     memory_din <= Din;
 

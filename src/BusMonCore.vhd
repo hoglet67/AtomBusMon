@@ -65,6 +65,7 @@ entity BusMonCore is
         WrMemOut         : out std_logic;
         RdIOOut          : out std_logic;
         WrIOOut          : out std_logic;
+        ExecOut          : out std_logic;
         AddrOut          : out std_logic_vector(15 downto 0);
         DataOut          : out std_logic_vector(7 downto 0);
         DataIn           : in std_logic_vector(7 downto 0);
@@ -164,6 +165,7 @@ architecture behavioral of BusMonCore is
     signal memory_wr       : std_logic;
     signal io_rd           : std_logic;
     signal io_wr           : std_logic;
+    signal exec            : std_logic;
     signal addr_dout_reg   : std_logic_vector(23 downto 0);
     signal din_reg         : std_logic_vector(7 downto 0);
 
@@ -448,7 +450,10 @@ begin
     -- 10101 Read IO and Auto Inc Address
     -- 10110 Write IO
     -- 10111 Write IO and Auto Inc Address
-    -- 11xxx Unused
+    -- 11000 Exec Go
+    -- 111xx Unused
+    -- 11x1x Unused
+    -- 11xx1 Unused
 
     cpuProcess: process (busmon_clk)
     begin
@@ -471,6 +476,7 @@ begin
                 memory_wr <= '0';
                 io_rd     <= '0';
                 io_wr     <= '0';
+                exec      <= '0';
                 SS_Step   <= '0';
                 if (cmd_edge2 /= cmd_edge1) then
                     if (cmd(4 downto 1) = "0000") then
@@ -519,6 +525,10 @@ begin
                     if (cmd(4 downto 1) = "1011") then
                         io_wr <= '1';
                         auto_inc  <= cmd(0);
+                    end if;
+
+                    if (cmd(4 downto 0) = "11000") then
+                        exec <= '1';
                     end if;
 
                     -- Acknowlege certain commands immediately
@@ -595,6 +605,7 @@ begin
     AddrOut <= addr_dout_reg(23 downto 8);
     DataOut <= addr_dout_reg(7 downto 0);
     SS_Single <= single;
+    ExecOut <= exec;
 
     -- Reset Logic
     -- Generate a short (~1ms @ 1MHz) power up reset pulse

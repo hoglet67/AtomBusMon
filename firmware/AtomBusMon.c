@@ -50,6 +50,9 @@ char *cmdStrings[] = {
   "dis",
   "flush",
   "fill",
+#if defined(CPU_6502) || defined(CPU_65C02)
+  "go",
+#endif
   "crc",
   "copy",
   "compare",
@@ -98,6 +101,9 @@ void (*cmdFuncs[])(char *params) = {
   doCmdDis,
   doCmdFlush,
   doCmdFill,
+#if defined(CPU_6502) ||  defined(CPU_65C02)
+  doCmdGo,
+#endif
   doCmdCrc,
   doCmdCopy,
   doCmdCompare,
@@ -174,49 +180,52 @@ static const char * const argsStrings[] PROGMEM = {
 // Must be kept in step with cmdStrings (just above)
 static const uint8_t helpMeta[] PROGMEM = {
 #if defined(COMMAND_HISTORY)
-  16,  7, // history
+  17,  7, // history
 #endif
-  15, 15, // help
+  16, 15, // help
    9,  8, // continue
-  21,  7, // next
-  29,  6, // step
-  24,  7, // regs
+  22,  7, // next
+  30,  6, // step
+  25,  7, // regs
   12, 10, // dis
-  14,  7, // flush
+  15,  7, // flush
   13, 11, // fill
+#if defined(CPU_6502) || defined(CPU_65C02)
+  14,  0, // go
+#endif
   11,  9, // crc
   10, 13, // copy
    8, 13, // compare
-  20,  1, // mem
-  23,  2, // rd
-  38,  3, // wr
+  21,  1, // mem
+  24,  2, // rd
+  39,  3, // wr
 #if defined(CPU_Z80)
-  18,  1, // io
-  17,  2, // in
-  22,  3, // out
+  19,  1, // io
+  18,  2, // in
+  23,  3, // out
 #endif
-  30, 12, // test
-  19,  0, // load
-  26,  9, // save
-  28,  7, // srec
-  27, 14, // special
-  25,  7, // reset
-  31,  6, // trace
+  31, 12, // test
+  20,  0, // load
+  27,  9, // save
+  29,  7, // srec
+  28, 14, // special
+  26,  7, // reset
+  32,  6, // trace
    1,  7, // blist
    6,  4, // breakx
-  37,  4, // watchx
+  38,  4, // watchx
    4,  4, // breakr
-  35,  4, // watchr
+  36,  4, // watchr
    5,  4, // breakw
-  36,  4, // watchw
+  37,  4, // watchw
 #if defined(CPU_Z80)
    2,  4, // breaki
   33,  4, // watchi
    3,  4, // breako
-  34,  4, // watcho
+  35,  4, // watcho
 #endif
    7,  0, // clear
-  32,  5, // trigger
+  33,  5, // trigger
    0,  0
 };
 
@@ -263,7 +272,10 @@ static const uint8_t helpMeta[] PROGMEM = {
 // 10101 Read IO and Auto Inc Address
 // 10110 Write IO
 // 10111 Write IO and Auto Inc Address
-// 11xxx Unused
+// 11000 Exec Go
+// 11xx1 Unused
+// 11x1x Unused
+// 111xx Unused
 
 #define CMD_SINGLE_ENABLE 0x00
 #define CMD_BRKPT_ENABLE  0x02
@@ -281,6 +293,7 @@ static const uint8_t helpMeta[] PROGMEM = {
 #define CMD_RD_IO_INC     0x15
 #define CMD_WR_IO         0x16
 #define CMD_WR_IO_INC     0x17
+#define CMD_EXEC_GO       0x18
 
 /********************************************************
  * AVR Status Register Definitions
@@ -1450,6 +1463,19 @@ void doCmdFill(char *params) {
     writeMemByteInc();
   }
 }
+
+#if defined(CPU_6502) || defined(CPU_65C02)
+
+void doCmdGo(char *params) {
+  addr_t addr;
+  params = parsehex4(params, &addr);
+  loadData(0x4C);
+  loadAddr(addr);
+  hwCmd(CMD_EXEC_GO, 0);
+  logAddr();
+}
+
+#endif
 
 void doCmdCrc(char *params) {
   long i;
