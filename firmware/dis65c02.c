@@ -190,7 +190,7 @@ static const unsigned char dopaddr[256] PROGMEM =
 addr_t disassemble(addr_t addr)
 {
 
-  char buffer[32];
+  char buffer[40];
   uint8_t temp;
   data_t op = readMemByteInc();
   data_t p1 = 0;
