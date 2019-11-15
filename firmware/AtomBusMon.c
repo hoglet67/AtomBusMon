@@ -1584,17 +1584,34 @@ static const uint8_t palette4bpp[] PROGMEM = {
   0x70, 0x61, 0x52, 0x43, 0x34, 0x25, 0x16, 0x07
 };
 
+static const uint8_t soundinit[] PROGMEM = {
+  0x9F, 0x82, 0x3F, 0xBF, 0xA1, 0x3F, 0xDF, 0xC0, 0x3F, 0xFF, 0xE0
+};
+
 void writeReg(addr_t addr, data_t data) {
   loadData(data);
   loadAddr(addr);
   writeMemByte();
 }
 
+void writeSoundByte(data_t data) {
+  writeReg(0xfe43, 0xff);
+  writeReg(0xfe4f, data);
+  writeReg(0xfe40, 0x00);
+  writeReg(0xfe40, 0x08);
+}
+
+void writeSoundTriple(data_t data1, data_t data2, data_t data3) {
+  writeSoundByte(data1);
+  writeSoundByte(data2);
+  writeSoundByte(data3);
+}
+
 
 void doCmdMode(char *params) {
   uint8_t mode = 7;
   params = parsehex2(params, &mode);
-  uint8_t reg = 0;
+  uint8_t i = 0;
   const uint8_t *reg_data;
   const uint8_t *pal_data = NULL;
 
@@ -1630,14 +1647,31 @@ void doCmdMode(char *params) {
   default:
     reg_data = mode7;
   }
-  for (reg = 0; reg <= 15; reg++) {
-    writeReg(0xfe00, reg);
+  // Initialize System VIA
+  writeReg(0xfe42, 0x0f);
+  // Initialize addressable latch
+  for (i = 15; i >= 8 ; i--) {
+    writeReg(0xfe40, i);
+  }
+  // Initialize SN76489
+  for (i = 0; i < sizeof(soundinit); i++) {
+    writeSoundByte(pgm_read_byte(soundinit + i));
+  }
+  // Initialize 6845
+  for (i = 0; i <= 15; i++) {
+    writeReg(0xfe00, i);
     writeReg(0xfe01, pgm_read_byte(reg_data++));
   }
+  // Initialize Video ULA
   writeReg(0xfe20, pgm_read_byte(video_ula + mode));
-  for (reg = 0; reg <= 15; reg++) {
+  // Initialize Palette
+  for (i = 0; i <= 15; i++) {
     writeReg(0xfe21, pgm_read_byte(pal_data++));
   }
+  // Generate a ^G beep
+  writeSoundTriple(0x92, 0x8f, 0x0e);
+  Delay_ms(500);
+  writeSoundTriple(0x9f, 0x9f, 0x9f);
 }
 
 #endif
