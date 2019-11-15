@@ -229,53 +229,78 @@ char *parselong(char *params, long *val) {
   long ret = 0;
   int8_t sign = 1;
   // Skip any spaces
-  while (*params == ' ') {
-    params++;
-  }
-  // Note sign
-  if (*params == '-') {
-    sign = -1;
-    params++;
-  }
-  do {
-    int8_t c = convhex(*params);
-    if (c < 0) {
-      break;
+  if (params) {
+    while (*params == ' ') {
+      params++;
     }
-    ret *= 10;
-    ret += c;
-    if (val) {
-      *val = sign * ret;
+    // Note sign
+    if (*params == '-') {
+      sign = -1;
+      params++;
     }
-    params++;
-  } while (1);
+    do {
+      int8_t c = convhex(*params);
+      if (c < 0) {
+        break;
+      }
+      ret *= 10;
+      ret += c;
+      if (val) {
+        *val = sign * ret;
+      }
+      params++;
+    } while (1);
+  }
+  return params;
+}
+
+static char *parsehex4common(char *params, uint16_t *val, uint8_t required) {
+  uint16_t ret = 0;
+  if (params) {
+    // Skip any spaces
+    while (*params == ' ') {
+      params++;
+    }
+    char *tmp = params;
+    do {
+      int8_t c = convhex(*params);
+      if (c < 0) {
+        break;
+      }
+      ret <<= 4;
+      ret += c;
+      if (val) {
+        *val = ret;
+      }
+      params++;
+    } while (1);
+    if (required && params == tmp) {
+      return 0;
+    }
+  }
   return params;
 }
 
 char *parsehex4(char *params, uint16_t *val) {
-  uint16_t ret = 0;
-  // Skip any spaces
-  while (*params == ' ') {
-    params++;
-  }
-  do {
-    int8_t c = convhex(*params);
-    if (c < 0) {
-      break;
-    }
-    ret <<= 4;
-    ret += c;
-    if (val) {
-      *val = ret;
-    }
-    params++;
-  } while (1);
-  return params;
+  return parsehex4common(params, val, 0);
+}
+
+char *parsehex4required(char *params, uint16_t *val) {
+  return parsehex4common(params, val, 1);
 }
 
 char *parsehex2(char *params, uint8_t *val) {
   uint16_t tmp = 0xffff;
-  params = parsehex4(params, &tmp);
+  params = parsehex4common(params, &tmp, 0);
+  if (tmp != 0xffff) {
+    *val = (tmp & 0xff);
+  }
+  return params;
+}
+
+char *parsehex2required(char *params, uint8_t *val) {
+  uint16_t tmp = 0xffff;
+  params = parsehex4common(params, &tmp, 1);
   if (tmp != 0xffff) {
     *val = (tmp & 0xff);
   }

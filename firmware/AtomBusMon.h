@@ -60,6 +60,7 @@ void doCmdGo(char *params);
 void doCmdHelp(char *params);
 #if defined(COMMAND_HISTORY)
 void doCmdHistory(char *params);
+void helpForCommand(uint8_t i);
 #endif
 void doCmdIO(char *params);
 void doCmdList(char *params);

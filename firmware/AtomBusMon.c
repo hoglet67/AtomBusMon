@@ -141,7 +141,7 @@ void (*cmdFuncs[])(char *params) = {
   doCmdTrigger
 };
 
-#ifdef EXTENDED_HELP
+#if defined(EXTENDED_HELP)
 
 static const char ARGS00[] PROGMEM = "<address>";
 static const char ARGS01[] PROGMEM = "[ <address> ]";
@@ -596,6 +596,9 @@ long trace;
 // Bit 1 indicates memory access timeout errors
 uint8_t error_flag = 0;
 
+// Index of the current command
+uint8_t cmd_id = 0xff;
+
 #define MASK_CLOCK_ERROR   1
 #define MASK_TIMEOUT_ERROR 2
 
@@ -719,6 +722,20 @@ void logIllegalCommand(char *c) {
   logstr("Illegal command: ");
   logs(c);
   logc('\n');
+}
+
+uint8_t checkargs(char *params) {
+  if (!params) {
+#if defined(EXTENDED_HELP)
+    logstr("usage:\n");
+    helpForCommand(cmd_id);
+#else
+    logstr("syntax error\n");
+#endif
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 /********************************************************
@@ -890,8 +907,11 @@ void genericDump(char *params, data_t (*readFunc)()) {
 void genericWrite(char *params, void (*writeFunc)()) {
   data_t data;
   long count = 1;
-  params = parsehex4(params, &memAddr);
-  params = parsehex2(params, &data);
+  params = parsehex4required(params, &memAddr);
+  params = parsehex2required(params, &data);
+  if (checkargs(params)) {
+    return;
+  }
   params = parselong(params, &count);
   logstr("Wr: ");
   log_addr_data(memAddr, data);
@@ -1075,6 +1095,9 @@ bknum_t lookupBreakpointN(addr_t n) {
 bknum_t lookupBreakpoint(char *params) {
   addr_t addr = 0xFFFF;
   params = parsehex4(params, &addr);
+  if (checkargs(params)) {
+    return -1;
+  }
   bknum_t n = lookupBreakpointN(addr);
   if (n < 0) {
     logstr("Breakpoint/watch not set at ");
@@ -1162,7 +1185,10 @@ void genericBreakpoint(char *params, unsigned int mode) {
   addr_t addr;
   addr_t mask = 0xFFFF;
   trigger_t trigger = TRIGGER_UNDEFINED;
-  params = parsehex4(params, &addr);
+  params = parsehex4required(params, &addr);
+  if (checkargs(params)) {
+    return;
+  }
   params = parsehex4(params, &mask);
   params = parsehex2(params, &trigger);
   // First, see if a breakpoint with this address already exists
@@ -1325,16 +1351,16 @@ void resetCpu() {
  * User Commands
  *******************************************/
 
-#ifdef EXTENDED_HELP
+#if defined(EXTENDED_HELP)
 
 void helpForCommand(uint8_t i) {
   uint8_t args = pgm_read_byte(helpMeta + i + i + 1);
   uint8_t tmp;
   const char* ip = (PGM_P) pgm_read_word(argsStrings + args);
-  logstr("    ");
+  logstr("   ");
   logs(cmdStrings[i]);
   tmp = strlen(cmdStrings[i]);
-  while (tmp++ < 10) {
+  while (tmp++ < 9) {
     logc(' ');
   }
   while ((tmp = pgm_read_byte(ip++))) {
@@ -1452,9 +1478,12 @@ void doCmdFill(char *params) {
   addr_t start;
   addr_t end;
   data_t data;
-  params = parsehex4(params, &start);
-  params = parsehex4(params, &end);
-  params = parsehex2(params, &data);
+  params = parsehex4required(params, &start);
+  params = parsehex4required(params, &end);
+  params = parsehex2required(params, &data);
+  if (checkargs(params)) {
+    return;
+  }
   logstr("Wr: ");
   loghex4(start);
   logstr(" to ");
@@ -1473,7 +1502,10 @@ void doCmdFill(char *params) {
 
 void doCmdGo(char *params) {
   addr_t addr;
-  params = parsehex4(params, &addr);
+  params = parsehex4required(params, &addr);
+  if (checkargs(params)) {
+    return;
+  }
   loadData(0x4C);
   loadAddr(addr);
   hwCmd(CMD_EXEC_GO, 0);
@@ -1484,7 +1516,10 @@ void doCmdExec(char *params) {
   data_t op1 = 0;
   data_t op2 = 0;
   data_t op3 = 0;
-  params = parsehex2(params, &op1);
+  params = parsehex2required(params, &op1);
+  if (checkargs(params)) {
+    return;
+  }
   params = parsehex2(params, &op2);
   params = parsehex2(params, &op3);
   // Read the current PC value
@@ -1510,8 +1545,11 @@ void doCmdCrc(char *params) {
   addr_t end;
   data_t data;
   uint32_t crc = 0;
-  params = parsehex4(params, &start);
-  params = parsehex4(params, &end);
+  params = parsehex4required(params, &start);
+  params = parsehex4required(params, &end);
+  if (checkargs(params)) {
+    return;
+  }
   loadAddr(start);
   for (i = start; i <= end; i++) {
     data = readMemByteInc();
@@ -1534,9 +1572,12 @@ void doCmdCopy(char *params) {
   addr_t end;
   addr_t to;
   data_t data;
-  params = parsehex4(params, &start);
-  params = parsehex4(params, &end);
-  params = parsehex4(params, &to);
+  params = parsehex4required(params, &start);
+  params = parsehex4required(params, &end);
+  params = parsehex4required(params, &to);
+  if (checkargs(params)) {
+    return;
+  }
   for (i = 0; i <= end - start; i++) {
     loadAddr(start + i);
     data = readMemByte();
@@ -1553,9 +1594,12 @@ void doCmdCompare(char *params) {
   addr_t with;
   data_t data1;
   data_t data2;
-  params = parsehex4(params, &start);
-  params = parsehex4(params, &end);
-  params = parsehex4(params, &with);
+  params = parsehex4required(params, &start);
+  params = parsehex4required(params, &end);
+  params = parsehex4required(params, &with);
+  if (checkargs(params)) {
+    return;
+  }
   for (i = 0; i <= end - start; i++) {
     loadAddr(start + i);
     data1 = readMemByte();
@@ -1604,8 +1648,11 @@ void doCmdSave(char *params) {
   addr_t start;
   addr_t end;
   data_t data;
-  params = parsehex4(params, &start);
-  params = parsehex4(params, &end);
+  params = parsehex4required(params, &start);
+  params = parsehex4required(params, &end);
+  if (checkargs(params)) {
+    return;
+  }
   logstr("Press any key to start transmission (and again at end)\n");
   Serial_RxByte0();
   loadAddr(start);
@@ -1622,7 +1669,10 @@ void doCmdLoad(char *params) {
   data_t data;
   uint16_t timeout;
 
-  params = parsehex4(params, &start);
+  params = parsehex4required(params, &start);
+  if (checkargs(params)) {
+    return;
+  }
   addr = start;
   log_send_file();
   do {
@@ -1653,8 +1703,11 @@ void doCmdTest(char *params) {
   addr_t end;
   long data =-100;
   int8_t i;
-  params = parsehex4(params, &start);
-  params = parsehex4(params, &end);
+  params = parsehex4required(params, &start);
+  params = parsehex4required(params, &end);
+  if (checkargs(params)) {
+    return;
+  }
   params = parselong(params, &data);
   if (data == -100) {
     test(start, end, 0x55);
@@ -1978,6 +2031,7 @@ void dispatchCmd(char *cmd) {
   } else
 #endif
   if (i < NUM_CMDS) {
+    cmd_id = i;
     (*cmdFuncs[i])(cmd);
   } else {
     logIllegalCommand(cmd);

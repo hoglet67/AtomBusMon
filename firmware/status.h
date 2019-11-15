@@ -45,6 +45,8 @@ char *strlong(char *buffer, long i);
 char *strinsert(char *buffer, const char *s);
 
 char *parselong(char *params,     long *val);
+char *parsehex2required(char *params,  uint8_t *val);
+char *parsehex4required(char *params, uint16_t *val);
 char *parsehex2(char *params,  uint8_t *val);
 char *parsehex4(char *params, uint16_t *val);
 
