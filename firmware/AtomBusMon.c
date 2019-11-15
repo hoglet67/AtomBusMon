@@ -1972,6 +1972,11 @@ void initialize() {
 
 void dispatchCmd(char *cmd) {
   uint8_t i = lookupCmd(&cmd);
+#if defined(EXTENDED_HELP)
+  if (*cmd == '?') {
+    helpForCommand(i);
+  } else
+#endif
   if (i < NUM_CMDS) {
     (*cmdFuncs[i])(cmd);
   } else {
