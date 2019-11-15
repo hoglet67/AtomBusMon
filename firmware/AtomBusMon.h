@@ -66,6 +66,7 @@ void doCmdIO(char *params);
 void doCmdList(char *params);
 void doCmdLoad(char *params);
 void doCmdMem(char *params);
+void doCmdMode(char *params);
 void doCmdNext(char *params);
 void doCmdReadIO(char *params);
 void doCmdReadMem(char *params);

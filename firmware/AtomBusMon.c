@@ -50,10 +50,6 @@ char *cmdStrings[] = {
   "dis",
   "flush",
   "fill",
-#if defined(CPU_6502) || defined(CPU_65C02)
-  "go",
-  "exec",
-#endif
   "crc",
   "copy",
   "compare",
@@ -64,6 +60,11 @@ char *cmdStrings[] = {
   "io",
   "in",
   "out",
+#endif
+#if defined(CPU_6502) || defined(CPU_65C02)
+  "go",
+  "exec",
+  "mode",
 #endif
   "test",
   "load",
@@ -102,10 +103,6 @@ void (*cmdFuncs[])(char *params) = {
   doCmdDis,
   doCmdFlush,
   doCmdFill,
-#if defined(CPU_6502) ||  defined(CPU_65C02)
-  doCmdGo,
-  doCmdExec,
-#endif
   doCmdCrc,
   doCmdCopy,
   doCmdCompare,
@@ -116,6 +113,11 @@ void (*cmdFuncs[])(char *params) = {
   doCmdIO,
   doCmdReadIO,
   doCmdWriteIO,
+#endif
+#if defined(CPU_6502) ||  defined(CPU_65C02)
+  doCmdGo,
+  doCmdExec,
+  doCmdMode,
 #endif
   doCmdTest,
   doCmdLoad,
@@ -188,49 +190,50 @@ static const uint8_t helpMeta[] PROGMEM = {
 #endif
   17, 15, // help
    9,  8, // continue
-  23,  7, // next
-  31,  6, // step
-  26,  7, // regs
+  24,  7, // next
+  32,  6, // step
+  27,  7, // regs
   12, 10, // dis
   16,  7, // flush
   13, 11, // fill
-#if defined(CPU_6502) || defined(CPU_65C02)
-  14,  0, // go
-  15, 16, // exec
-#endif
   11,  9, // crc
   10, 13, // copy
    8, 13, // compare
   22,  1, // mem
-  25,  2, // rd
-  40,  3, // wr
+  26,  2, // rd
+  41,  3, // wr
 #if defined(CPU_Z80)
   20,  1, // io
   19,  2, // in
-  24,  3, // out
+  25,  3, // out
 #endif
-  32, 12, // test
+#if defined(CPU_6502) || defined(CPU_65C02)
+  14,  0, // go
+  15, 16, // exec
+  23, 14, // mode
+#endif
+  33, 12, // test
   21,  0, // load
-  28,  9, // save
-  30,  7, // srec
-  29, 14, // special
-  27,  7, // reset
-  33,  6, // trace
+  29,  9, // save
+  31,  7, // srec
+  30, 14, // special
+  28,  7, // reset
+  34,  6, // trace
    1,  7, // blist
    6,  4, // breakx
-  39,  4, // watchx
+  40,  4, // watchx
    4,  4, // breakr
-  37,  4, // watchr
+  38,  4, // watchr
    5,  4, // breakw
-  38,  4, // watchw
+  39,  4, // watchw
 #if defined(CPU_Z80)
    2,  4, // breaki
-  35,  4, // watchi
+  36,  4, // watchi
    3,  4, // breako
-  36,  4, // watcho
+  37,  4, // watcho
 #endif
    7,  0, // clear
-  34,  5, // trigger
+  35,  5, // trigger
    0,  0
 };
 
@@ -1534,6 +1537,107 @@ void doCmdExec(char *params) {
   hwCmd(CMD_EXEC_GO, 0);
   // Log where we are
   logAddr();
+}
+
+
+static const uint8_t mode012[] PROGMEM = {
+  0x7F, 0x50, 0x62, 0x28, 0x26, 0x00, 0x20, 0x23,
+  0x01, 0x07, 0x67, 0x08, 0x06, 0x00, 0x06, 0x00
+};
+
+static const uint8_t mode3[] PROGMEM = {
+  0x7F, 0x50, 0x62, 0x28, 0x1E, 0x02, 0x19, 0x1C,
+  0x01, 0x09, 0x67, 0x09, 0x08, 0x00, 0x08, 0x00
+};
+
+static const uint8_t mode45[] PROGMEM = {
+  0x3F, 0x28, 0x31, 0x24, 0x26, 0x00, 0x20, 0x23,
+  0x01, 0x07, 0x67, 0x08, 0x0B, 0x00, 0x0B, 0x00
+};
+
+static const uint8_t mode6[] PROGMEM = {
+  0x3F, 0x28, 0x31, 0x24, 0x1E, 0x02, 0x19, 0x1C,
+  0x01, 0x09, 0x67, 0x09, 0x0C, 0x00, 0x0C, 0x00
+};
+
+static const uint8_t mode7[] PROGMEM = {
+  0x3F, 0x28, 0x33, 0x24, 0x1E, 0x02, 0x19, 0x1C,
+  0x93, 0x12, 0x72, 0x13, 0x28, 0x00, 0x28, 0x00
+};
+
+static const uint8_t video_ula[] PROGMEM = {
+  0x9c, 0xd8, 0xf4, 0x9c, 0x88, 0xc4, 0x88, 0x4b
+};
+
+static const uint8_t palette1bpp[] PROGMEM = {
+  0x80, 0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0,
+  0x07, 0x17, 0x27, 0x37, 0x47, 0x57, 0x67, 0x77
+};
+
+static const uint8_t palette2bpp[] PROGMEM = {
+  0xA0, 0xB0, 0xE0, 0xF0, 0x84, 0x94, 0xC4, 0xD4,
+  0x26, 0x36, 0x66, 0x76, 0x07, 0x17, 0x47, 0x57
+};
+
+static const uint8_t palette4bpp[] PROGMEM = {
+  0xF8, 0xE9, 0xDA, 0xCB, 0xBC, 0xAD, 0x9E, 0x8F,
+  0x70, 0x61, 0x52, 0x43, 0x34, 0x25, 0x16, 0x07
+};
+
+void writeReg(addr_t addr, data_t data) {
+  loadData(data);
+  loadAddr(addr);
+  writeMemByte();
+}
+
+
+void doCmdMode(char *params) {
+  uint8_t mode = 7;
+  params = parsehex2(params, &mode);
+  uint8_t reg = 0;
+  const uint8_t *reg_data;
+  const uint8_t *pal_data = NULL;
+
+  switch (mode) {
+  case 0:
+    reg_data = mode012;
+    pal_data = palette1bpp;
+    break;
+  case 1:
+    reg_data = mode012;
+    pal_data = palette2bpp;
+    break;
+  case 2:
+    reg_data = mode012;
+    pal_data = palette4bpp;
+    break;
+  case 3:
+    reg_data = mode3;
+    pal_data = palette1bpp;
+    break;
+  case 4:
+    reg_data = mode45;
+    pal_data = palette1bpp;
+    break;
+  case 5:
+    reg_data = mode45;
+    pal_data = palette2bpp;
+    break;
+  case 6:
+    reg_data = mode6;
+    pal_data = palette1bpp;
+    break;
+  default:
+    reg_data = mode7;
+  }
+  for (reg = 0; reg <= 15; reg++) {
+    writeReg(0xfe00, reg);
+    writeReg(0xfe01, pgm_read_byte(reg_data++));
+  }
+  writeReg(0xfe20, pgm_read_byte(video_ula + mode));
+  for (reg = 0; reg <= 15; reg++) {
+    writeReg(0xfe21, pgm_read_byte(pal_data++));
+  }
 }
 
 #endif
