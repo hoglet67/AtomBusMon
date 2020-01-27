@@ -104,7 +104,25 @@ architecture behavioral of MOS6502CpuMonALS is
     signal led_trig0    : std_logic;
     signal led_trig1    : std_logic;
 
+
+    signal int_Phi0_div : unsigned(4 downto 0); -- internal Phi0 clock divider
+    signal int_Phi0     : std_logic;            -- internal Phi0 clock
+
 begin
+
+    -- Hack to use an internal 1MHz clock instead of Phi0
+    -- from the 50MHz clock on the EEPIZZA board
+    process(clock)
+    begin
+        if rising_edge(clock) then
+            if int_Phi0_div = 24 then
+                int_Phi0 <= not int_Phi0; -- toggle int_Phi2 every 25 cycles
+                int_Phi0_div <= (others => '0');
+            else
+                int_Phi0_div <= int_Phi0_div + 1;
+            end if;
+        end if;
+    end process;
 
     sw_reset_cpu <= not sw1;
     sw_reset_avr <= not sw2;
@@ -126,7 +144,7 @@ begin
             clock             => clock,
 
             -- 6502 Signals
-            Phi0              => PhiIn,
+            Phi0              => int_Phi0, -- hack to use internal Phi0
             Phi1              => Phi1Out,
             Phi2              => Phi2Out,
             IRQ_n             => IRQ_n,
@@ -175,7 +193,7 @@ begin
     OERW_n <= not (BE);
     OEAH_n <= not (BE);
     OEAL_n <= not (BE);
-    OED_n  <= not (BE and PhiIn); -- TODO: might need to use a slightly delayed version of Phi2 here
+    OED_n  <= not (BE and int_Phi0); -- hack to use interal Phi0
     DIRD   <= R_W_n_int;
 
 end behavioral;
