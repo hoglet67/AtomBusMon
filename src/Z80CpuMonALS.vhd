@@ -95,6 +95,7 @@ architecture behavioral of Z80CpuMonALS is
     signal HALT_n_int   : std_logic;
     signal BUSAK_n_int  : std_logic;
     signal tristate_n   : std_logic;
+    signal tristate_ad_n: std_logic;
 
     signal sw_reset_cpu : std_logic;
     signal sw_reset_avr : std_logic;
@@ -121,9 +122,9 @@ begin
     BUSAK_n <= BUSAK_n_int;
 
     OEC_n   <= not tristate_n;
-    OEA1_n  <= not tristate_n;
-    OEA2_n  <= not tristate_n;
-    OED_n   <= not tristate_n;
+    OEA1_n  <= not tristate_ad_n;
+    OEA2_n  <= not tristate_ad_n;
+    OED_n   <= not tristate_ad_n;
 
     wrapper : entity work.Z80CpuMon
         generic map (
@@ -157,6 +158,7 @@ begin
             -- Buffer Control Signals
             DIRD              => DIRD,
             tristate_n        => tristate_n,
+            tristate_ad_n     => tristate_ad_n,
 
             -- Mode jumper, tie low to generate NOPs when paused
             mode              => mode,

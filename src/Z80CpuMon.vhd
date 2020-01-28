@@ -52,6 +52,7 @@ entity Z80CpuMon is
         -- Buffer Control Signals
         DIRD            : out   std_logic;
         tristate_n      : out   std_logic;
+        tristate_ad_n   : out   std_logic;
 
         -- Mode jumper, tie low to generate NOPs when paused
         mode            : in    std_logic;
@@ -414,6 +415,11 @@ begin
     tristate_n <= BUSAK_n_int when state = idle else mon_busak_n1;
 
     BUSAK_n    <= BUSAK_n_int when state = idle else mon_busak_n;
+
+    -- Force the address and databus to tristate when reset is asserted
+    tristate_ad_n <= '0'         when RESET_n = '0' else
+                     BUSAK_n_int when state = idle  else
+                     mon_busak_n1;
 
 -- The Acorn Z80 Second Processor needs ~10ns of address hold time following M1
 -- and MREQ being released at the start of T3. Otherwise, the ROM switching

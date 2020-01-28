@@ -94,6 +94,7 @@ architecture behavioral of Z80CpuMonLX9 is
     signal Addr_int     : std_logic_vector(15 downto 0);
 
     signal tristate_n   : std_logic;
+    signal tristate_ad_n: std_logic;
 
 begin
 
@@ -108,7 +109,7 @@ begin
     IORQ_n <= 'Z'             when tristate_n = '0' else IORQ_n_int;
     RD_n   <= 'Z'             when tristate_n = '0' else RD_n_int;
     WR_n   <= 'Z'             when tristate_n = '0' else WR_n_int;
-    Addr   <= (others => 'Z') when tristate_n = '0' else Addr_int;
+    Addr   <= (others => 'Z') when tristate_ad_n = '0' else Addr_int;
 
     wrapper : entity work.Z80CpuMon
         generic map (
@@ -141,6 +142,7 @@ begin
 
             -- Buffer Control Signals
             tristate_n      =>  tristate_n,
+            tristate_ad_n   =>  tristate_ad_n,
             DIRD            =>  open,
 
             -- Mode jumper, tie low to generate NOPs when paused
