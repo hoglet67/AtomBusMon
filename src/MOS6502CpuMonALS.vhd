@@ -104,6 +104,11 @@ architecture behavioral of MOS6502CpuMonALS is
     signal led_trig0    : std_logic;
     signal led_trig1    : std_logic;
 
+    signal PhiIn1       : std_logic;
+    signal PhiIn2       : std_logic;
+    signal PhiIn3       : std_logic;
+    signal PhiIn4       : std_logic;
+
 begin
 
     sw_reset_cpu <= not sw1;
@@ -171,11 +176,22 @@ begin
     ML_n   <= '1';
     VP_n   <= '1';
 
+    process(clock)
+    begin
+        if rising_edge(clock) then
+            PhiIn1 <= PhiIn;
+            PhiIn2 <= PhiIn1;
+            PhiIn3 <= PhiIn2;
+            PhiIn4 <= PhiIn3;
+        end if;
+
+    end process;
+
     -- Level Shifter Controls
-    OERW_n <= not (BE);
-    OEAH_n <= not (BE);
-    OEAL_n <= not (BE);
-    OED_n  <= not (BE and PhiIn); -- TODO: might need to use a slightly delayed version of Phi2 here
+    OERW_n <= '0'; -- not (BE);
+    OEAH_n <= '0'; -- not (BE);
+    OEAL_n <= '0'; -- not (BE);
+    OED_n  <= not (BE and PhiIn and PhiIn4); -- TODO: might need to use a slightly delayed version of Phi2 here
     DIRD   <= R_W_n_int;
 
 end behavioral;
