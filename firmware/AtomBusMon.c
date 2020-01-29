@@ -14,7 +14,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.981"
+#define VERSION "0.981 (custom for Bram)"
 
 #if defined(CPU_Z80)
   #define NAME "ICE-Z80"
@@ -70,6 +70,7 @@ char *cmdStrings[] = {
   "load",
   "save",
   "srec",
+  "ihex",
   "special",
   "reset",
   "trace",
@@ -123,6 +124,7 @@ void (*cmdFuncs[])(char *params) = {
   doCmdLoad,
   doCmdSave,
   doCmdSRec,
+  doCmdIHex,
   doCmdSpecial,
   doCmdReset,
   doCmdTrace,
@@ -190,50 +192,51 @@ static const uint8_t helpMeta[] PROGMEM = {
 #endif
   17, 15, // help
    9,  8, // continue
-  24,  7, // next
-  32,  6, // step
-  27,  7, // regs
+  25,  7, // next
+  33,  6, // step
+  28,  7, // regs
   12, 10, // dis
   16,  7, // flush
   13, 11, // fill
   11,  9, // crc
   10, 13, // copy
    8, 13, // compare
-  22,  1, // mem
-  26,  2, // rd
-  41,  3, // wr
+  23,  1, // mem
+  27,  2, // rd
+  42,  3, // wr
 #if defined(CPU_Z80)
-  20,  1, // io
-  19,  2, // in
-  25,  3, // out
+  21,  1, // io
+  20,  2, // in
+  26,  3, // out
 #endif
 #if defined(CPU_6502) || defined(CPU_65C02)
   14,  0, // go
   15, 16, // exec
-  23, 14, // mode
+  24, 14, // mode
 #endif
-  33, 12, // test
-  21,  0, // load
-  29,  9, // save
-  31,  7, // srec
-  30, 14, // special
-  28,  7, // reset
-  34,  6, // trace
+  34, 12, // test
+  22,  0, // load
+  30,  9, // save
+  32,  7, // srec
+  19,  7, // ihex
+  31, 14, // special
+  29,  7, // reset
+  35,  6, // trace
    1,  7, // blist
    6,  4, // breakx
-  40,  4, // watchx
+  41,  4, // watchx
    4,  4, // breakr
-  38,  4, // watchr
+  39,  4, // watchr
    5,  4, // breakw
-  39,  4, // watchw
+  40,  4, // watchw
 #if defined(CPU_Z80)
    2,  4, // breaki
-  36,  4, // watchi
+  37,  4, // watchi
    3,  4, // breako
-  37,  4, // watcho
+  38,  4, // watcho
 #endif
    7,  0, // clear
-  35,  5, // trigger
+  36,  5, // trigger
    0,  0
 };
 
@@ -1970,6 +1973,10 @@ void doCmdSRec(char *params) {
       good_rec++;
     }
   }
+}
+
+void doCmdIHex(char *params) {
+   logstr("TODO: implement intel hex command\n");
 }
 
 void logSpecial(char *function, uint8_t value) {

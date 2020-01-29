@@ -62,6 +62,7 @@ void doCmdHelp(char *params);
 void doCmdHistory(char *params);
 void helpForCommand(uint8_t i);
 #endif
+void doCmdIHex(char *params);
 void doCmdIO(char *params);
 void doCmdList(char *params);
 void doCmdLoad(char *params);
