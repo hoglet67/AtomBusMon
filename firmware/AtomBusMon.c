@@ -1053,6 +1053,9 @@ uint8_t logDetails() {
 }
 
 void logAddr() {
+  // Delay works around a race condition with slow CPUs
+  // (really the STEP and RESET commands should be synchronous)
+  Delay_us(100);
   memAddr = hwRead16(OFFSET_IAL);
   // Update the serial console
   logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
