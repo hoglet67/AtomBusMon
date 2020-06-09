@@ -101,6 +101,7 @@ architecture behavioral of MC6809CpuMon is
     signal Addr_int       : std_logic_vector(15 downto 0);
     signal Din            : std_logic_vector(7 downto 0);
     signal Dout           : std_logic_vector(7 downto 0);
+    signal Dbusmon        : std_logic_vector(7 downto 0);
     signal Sync_int       : std_logic;
     signal hold           : std_logic;
 
@@ -176,7 +177,7 @@ begin
         cpu_clk      => cpu_clk,
         cpu_clken    => '1',
         Addr         => Addr_int,
-        Data         => Data,
+        Data         => Dbusmon,
         Rd_n         => not R_W_n_int,
         Wr_n         => R_W_n_int,
         RdIO_n       => '1',
@@ -338,6 +339,13 @@ begin
     Data       <= memory_dout when TSC = '0' and data_wr = '1' and memory_wr1 = '1' else
                          Dout when TSC = '0' and data_wr = '1' and R_W_n_int = '0' and memory_rd1 = '0' else
                   (others => 'Z');
+
+    -- Version of data seen by the Bus Mon need to use Din rather than the
+    -- external bus value as by the rising edge of cpu_clk we will have stopped driving
+    -- the external bus. On the ALS version we get away way this, but on the GODIL
+    -- version, due to the pullups, we don't. So all write watch breakpoints see
+    -- the data bus as 0xFF.
+    Dbusmon   <= Din when R_W_n_int = '1' else Dout;
 
     memory_done <= memory_rd1 or memory_wr1;
 
