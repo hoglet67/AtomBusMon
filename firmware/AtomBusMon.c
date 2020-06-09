@@ -190,7 +190,7 @@ static const uint8_t helpMeta[] PROGMEM = {
 #endif
   17, 15, // help
    9,  8, // continue
-  24,  7, // next
+  24,  1, // next
   32,  6, // step
   27,  7, // regs
   12, 10, // dis
@@ -2113,8 +2113,13 @@ void doCmdNext(char *params) {
     logTooManyBreakpoints();
     return;
   }
+  addr_t addr = 0xFFFF;
+  params = parsehex4(params, &addr);
+  if (addr == 0xFFFF) {
+     addr = nextAddr;
+  }
   numbkpts++;
-  setBreakpoint(numbkpts - 1, nextAddr, 0xffff, (1 << BRKPT_EXEC) | (1 << TRANSIENT), TRIGGER_ALWAYS);
+  setBreakpoint(numbkpts - 1, addr, 0xffff, (1 << BRKPT_EXEC) | (1 << TRANSIENT), TRIGGER_ALWAYS);
   doCmdContinue(params);
 }
 
