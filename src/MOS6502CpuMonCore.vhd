@@ -82,8 +82,10 @@ architecture behavioral of MOS6502CpuMonCore is
     signal Din_int       : std_logic_vector(7 downto 0);
     signal Dout_int      : std_logic_vector(7 downto 0);
     signal R_W_n_int     : std_logic;
-    signal Rd_n_int      : std_logic;
-    signal Wr_n_int      : std_logic;
+    signal Rd_n_mon      : std_logic;
+    signal Wr_n_mon      : std_logic;
+    signal Sync_mon      : std_logic;
+    signal Done_mon      : std_logic;
     signal Sync_int      : std_logic;
     signal Addr_int      : std_logic_vector(23 downto 0);
 
@@ -131,11 +133,11 @@ begin
         cpu_clken    => cpu_clken,
         Addr         => Addr_int(15 downto 0),
         Data         => Data,
-        Rd_n         => Rd_n_int,
-        Wr_n         => Wr_n_int,
+        Rd_n         => Rd_n_mon,
+        Wr_n         => Wr_n_mon,
         RdIO_n       => '1',
         WrIO_n       => '1',
-        Sync         => Sync_int,
+        Sync         => Sync_mon,
         Rdy          => open,
         nRSTin       => Res_n,
         nRSTout      => cpu_reset_n,
@@ -160,13 +162,16 @@ begin
         AddrOut      => memory_addr,
         DataOut      => memory_dout,
         DataIn       => memory_din,
-        Done         => memory_done,
+        Done         => Done_mon,
         Special      => special,
         SS_Step      => SS_Step,
         SS_Single    => SS_Single
     );
-    Wr_n_int <= R_W_n_int;
-    Rd_n_int <= not R_W_n_int;
+    Wr_n_mon <= Rdy and R_W_n_int;
+    Rd_n_mon <= Rdy and not R_W_n_int;
+    Sync_mon <= Rdy and Sync_int;
+    Done_mon <= Rdy and memory_done;
+
     Data <= Din when R_W_n_int = '1' else Dout_int;
     NMI_n_masked <= NMI_n or special(1);
     IRQ_n_masked <= IRQ_n or special(0);
