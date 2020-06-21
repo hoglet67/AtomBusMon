@@ -118,7 +118,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal SS_Step        : std_logic;
     signal SS_Step_held   : std_logic;
     signal CountCycle     : std_logic;
-    signal special        : std_logic_vector(1 downto 0);
+    signal special        : std_logic_vector(2 downto 0);
     signal skipNextOpcode : std_logic;
 
     signal Regs           : std_logic_vector(255 downto 0);

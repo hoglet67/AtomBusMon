@@ -4,6 +4,8 @@ TIMESPEC TS_clk_period_49 = PERIOD "clk_period_grp_49" 20.345ns HIGH;
 NET "Phi0" TNM_NET = clk_period_grp_phi0;
 TIMESPEC TS_clk_period_phi0 = PERIOD "clk_period_grp_phi0" 125ns LOW;
 
+NET "trig<0>" CLOCK_DEDICATED_ROUTE = FALSE;
+
 NET "clock49"    LOC="P89" | IOSTANDARD = LVCMOS33                           ; # 49.152 MHz Oscillator
 #NET "VSS"       LOC="P16" | IOSTANDARD = LVCMOS33                           ; # 6502 pin 1
 NET "Rdy"        LOC="P95" | IOSTANDARD = LVCMOS33                           ; # 6502 pin 2

@@ -124,7 +124,7 @@ architecture behavioral of MC6809CpuMon is
     signal SS_Single      : std_logic;
     signal SS_Step        : std_logic;
     signal CountCycle     : std_logic;
-    signal special        : std_logic_vector(1 downto 0);
+    signal special        : std_logic_vector(2 downto 0);
 
     signal LIC_int        : std_logic;
 
@@ -212,8 +212,8 @@ begin
         SS_Single    => SS_Single
     );
 
+    FIRQ_n_masked <= FIRQ_n or special(2);
     NMI_n_masked  <= NMI_n  or special(1);
-    FIRQ_n_masked <= FIRQ_n or special(1);
     IRQ_n_masked  <= IRQ_n  or special(0);
 
     -- The CPU is slightly pipelined and the register update of the last

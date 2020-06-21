@@ -87,7 +87,8 @@ char *cmdStrings[] = {
   "watcho",
 #endif
   "clear",
-  "trigger"
+  "trigger",
+  "timermode"
 };
 
 // Must be kept in step with cmdStrings (just above)
@@ -140,7 +141,8 @@ void (*cmdFuncs[])(char *params) = {
   doCmdWatchWrIO,
 #endif
   doCmdClear,
-  doCmdTrigger
+  doCmdTrigger,
+  doCmdTimerMode
 };
 
 #if defined(EXTENDED_HELP)
@@ -201,7 +203,7 @@ static const uint8_t helpMeta[] PROGMEM = {
    8, 13, // compare
   22,  1, // mem
   26,  2, // rd
-  41,  3, // wr
+  42,  3, // wr
 #if defined(CPU_Z80)
   20,  1, // io
   19,  2, // in
@@ -218,22 +220,23 @@ static const uint8_t helpMeta[] PROGMEM = {
   31,  7, // srec
   30, 14, // special
   28,  7, // reset
-  34,  6, // trace
+  35,  6, // trace
    1,  7, // blist
    6,  4, // breakx
-  40,  4, // watchx
+  41,  4, // watchx
    4,  4, // breakr
-  38,  4, // watchr
+  39,  4, // watchr
    5,  4, // breakw
-  39,  4, // watchw
+  40,  4, // watchw
 #if defined(CPU_Z80)
    2,  4, // breaki
-  36,  4, // watchi
+  37,  4, // watchi
    3,  4, // breako
-  37,  4, // watcho
+  38,  4, // watcho
 #endif
    7,  0, // clear
-  35,  5, // trigger
+  36,  5, // trigger
+  34, 14, // timer
    0,  0
 };
 
@@ -248,42 +251,42 @@ static const uint8_t helpMeta[] PROGMEM = {
 #define CTRL_DDR          DDRB
 #define CTRL_DIN          PINB
 
-// A 0->1 transition on bit 5 actually sends a command
-#define CMD_EDGE          0x20
+// A 0->1 transition on bit 6 actually sends a command
+#define CMD_EDGE          0x40
 
-// Commands are placed on bits 4..0
-#define CMD_MASK          0x1F
-
-// Bits 7..6 are the special function output bits
-// On the 6502, these are used to mask IRQ and NMI
-#define SPECIAL_0            6
-#define SPECIAL_1            7
-#define SPECIAL_MASK      ((1<<SPECIAL_0) | (1<<SPECIAL_1))
+// Commands are placed on bits 5..0
+#define CMD_MASK          0x3F
 
 // Hardware Commands:
 //
-// 0000x Enable/Disable single strpping
-// 0001x Enable/Disable breakpoints / watches
-// 0010x Load breakpoint / watch register
-// 0011x Reset CPU
-// 01000 Singe Step CPU
-// 01001 Read FIFO
-// 01010 Reset FIFO
-// 01011 Unused
-// 0110x Load address/data register
-// 0111x Unused
-// 10000 Read Memory
-// 10001 Read Memory and Auto Inc Address
-// 10010 Write Memory
-// 10011 Write Memory and Auto Inc Address
-// 10100 Read IO
-// 10101 Read IO and Auto Inc Address
-// 10110 Write IO
-// 10111 Write IO and Auto Inc Address
-// 11000 Exec Go
-// 11xx1 Unused
-// 11x1x Unused
-// 111xx Unused
+// 00000x Enable/Disable single strpping
+// 00001x Enable/Disable breakpoints / watches
+// 00010x Load breakpoint / watch register
+// 00011x Reset CPU
+// 001000 Singe Step CPU
+// 001001 Read FIFO
+// 001010 Reset FIFO
+// 001011 Unused
+// 00110x Load address/data register
+// 00111x Unused
+// 010000 Read Memory
+// 010001 Read Memory and Auto Inc Address
+// 010010 Write Memory
+// 010011 Write Memory and Auto Inc Address
+// 010100 Read IO
+// 010101 Read IO and Auto Inc Address
+// 010110 Write IO
+// 010111 Write IO and Auto Inc Address
+// 011000 Exec Go
+// 011xx1 Unused
+// 011x1x Unused
+// 0111xx Unused
+// 100xxx Special
+// 1010xx Timer Mode
+//     00 - count cpu cycles where clken = 1 and CountCycle = 1
+//     01 - count cpu cycles where clken = 1 (ignoring CountCycle)
+//     10 - free running timer, using busmon_clk as the source
+//     11 - free running timer, using trig0 as the source
 
 #define CMD_SINGLE_ENABLE 0x00
 #define CMD_BRKPT_ENABLE  0x02
@@ -302,6 +305,8 @@ static const uint8_t helpMeta[] PROGMEM = {
 #define CMD_WR_IO         0x16
 #define CMD_WR_IO_INC     0x17
 #define CMD_EXEC_GO       0x18
+#define CMD_SPECIAL       0x20
+#define CMD_TIMER_MODE    0x28
 
 /********************************************************
  * AVR Status Register Definitions
@@ -474,6 +479,21 @@ static const char *modeStrings[NUM_MODES] = {
   MODE10
 };
 
+// The number of different timer sources
+#define NUM_TIMERS   4
+
+static const char TIMER0[] PROGMEM = "Normal Cycles";
+static const char TIMER1[] PROGMEM = "All Cycles";
+static const char TIMER2[] PROGMEM = "Internal Timer";
+static const char TIMER3[] PROGMEM = "External Timer";
+
+static const char *timerStrings[NUM_TIMERS] = {
+  TIMER0,
+  TIMER1,
+  TIMER2,
+  TIMER3
+};
+
 // For convenience, several masks are defined that group similar types of breakpoint/watch
 
 // Mask for all breakpoint types
@@ -604,6 +624,12 @@ uint8_t cmd_id = 0xff;
 
 #define MASK_CLOCK_ERROR   1
 #define MASK_TIMEOUT_ERROR 2
+
+// Current special setting
+uint8_t special = 0x00;
+
+// Current timer mode setting
+uint8_t timer_mode = 0x00;
 
 /********************************************************
  * User Command Processor
@@ -1366,7 +1392,7 @@ void helpForCommand(uint8_t i) {
   logstr("   ");
   logs(cmdStrings[i]);
   tmp = strlen(cmdStrings[i]);
-  while (tmp++ < 9) {
+  while (tmp++ < 10) {
     logc(' ');
   }
   while ((tmp = pgm_read_byte(ip++))) {
@@ -1985,13 +2011,32 @@ void logSpecial(char *function, uint8_t value) {
 }
 
 void doCmdSpecial(char *params) {
-  uint8_t special = 0xff;
-  parsehex2(params, &special);
-  if (special <= 3) {
-    CTRL_PORT = (CTRL_PORT & ~SPECIAL_MASK) | (special << SPECIAL_0);
+  uint8_t tmp = 0xff;
+  parsehex2(params, &tmp);
+#if defined(CPU_6809)
+  if (tmp <= 7) {
+#else
+  if (tmp <= 3) {
+#endif
+    special = tmp;
+    hwCmd(CMD_SPECIAL, special);
   }
-  logSpecial("NMI", CTRL_PORT & (1 << SPECIAL_1));
-  logSpecial("IRQ", CTRL_PORT & (1 << SPECIAL_0));
+#if defined(CPU_6809)
+  logSpecial("FIRQ", special & 4);
+#endif
+  logSpecial("NMI", special & 2);
+  logSpecial("IRQ", special & 1);
+}
+
+void doCmdTimerMode(char *params) {
+  uint8_t tmp = 0xff;
+  parsehex2(params, &tmp);
+  if (tmp <= NUM_TIMERS) {
+    timer_mode = tmp;
+    hwCmd(CMD_TIMER_MODE, timer_mode);
+  }
+  logpgmstr(timerStrings[timer_mode]);
+  logstr("\n");
 }
 
 void doCmdTrace(char *params) {

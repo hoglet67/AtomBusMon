@@ -3,6 +3,8 @@ TIMESPEC TS_clk_period_50 = PERIOD "clk_period_grp_50" 20.00ns HIGH;
 
 NET "E" CLOCK_DEDICATED_ROUTE = FALSE;
 
+NET "trig<0>" CLOCK_DEDICATED_ROUTE = FALSE;
+
 NET "clock"          LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
 
 #NET "VSS"           LOC="P"    | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 1

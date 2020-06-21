@@ -72,7 +72,7 @@ entity BusMonCore is
         Done             : in std_logic;
 
         -- Special outputs (function is CPU specific)
-        Special          : out std_logic_vector(1 downto 0);
+        Special          : out std_logic_vector(2 downto 0);
 
         -- Single Step interface
         SS_Single        : out std_logic;
@@ -124,15 +124,18 @@ architecture behavioral of BusMonCore is
     signal cmd_ack         : std_logic;
     signal cmd_ack1        : std_logic;
     signal cmd_ack2        : std_logic;
-    signal cmd             : std_logic_vector(4 downto 0);
+    signal cmd             : std_logic_vector(5 downto 0);
 
     signal addr_sync       : std_logic_vector(15 downto 0);
     signal addr_inst       : std_logic_vector(15 downto 0);
     signal Addr1           : std_logic_vector(15 downto 0);
     signal Data1           : std_logic_vector(7 downto 0);
 
+    signal ext_clk         : std_logic;
+    signal timer0Count     : std_logic_vector(23 downto 0);
+    signal timer1Count     : std_logic_vector(23 downto 0);
     signal cycleCount      : std_logic_vector(23 downto 0);
-    signal cycleCount_inst : std_logic_vector(23 downto 0);
+    signal instrCount      : std_logic_vector(23 downto 0);
 
     signal single          : std_logic;
     signal reset           : std_logic;
@@ -181,6 +184,8 @@ architecture behavioral of BusMonCore is
 
     signal dropped_counter : std_logic_vector(3 downto 0);
 
+    signal timer_mode      : std_logic_vector(1 downto 0);
+
 begin
 
     inst_oho_dy1 : entity work.Oho_Dy1 port map (
@@ -224,9 +229,9 @@ begin
         portbout(2)          => cmd(2),
         portbout(3)          => cmd(3),
         portbout(4)          => cmd(4),
-        portbout(5)          => cmd_edge,
-        portbout(6)          => Special(0),
-        portbout(7)          => Special(1),
+        portbout(5)          => cmd(5),
+        portbout(6)          => cmd_edge,
+        portbout(7)          => open,
 
         -- Status Port
         portdin(0)           => '0',
@@ -289,7 +294,7 @@ begin
     -- DataWr1 is the data being written delayed by 1 cycle
     -- DataRd is the data being read, that is already one cycle late
     -- bw_state1(1) is 1 for writes, and 0 for reads
-    fifo_din <= cycleCount_inst & dropped_counter & bw_status1 & Data1 & Addr1 & addr_inst;
+    fifo_din <= instrCount & dropped_counter & bw_status1 & Data1 & Addr1 & addr_inst;
 
     -- Implement a 4-bit saturating counter of the number of dropped events
     process (busmon_clk)
@@ -325,9 +330,9 @@ begin
     mux <= addr_inst(7 downto 0)            when muxsel = 0 else
            addr_inst(15 downto 8)           when muxsel = 1 else
            din_reg                          when muxsel = 2 else
-           cycleCount(23 downto 16)         when muxsel = 3 else
-           cycleCount(7 downto 0)           when muxsel = 4 else
-           cycleCount(15 downto 8)          when muxsel = 5 else
+           instrCount(23 downto 16)         when muxsel = 3 else
+           instrCount(7 downto 0)           when muxsel = 4 else
+           instrCount(15 downto 8)          when muxsel = 5 else
 
            fifo_dout(7 downto 0)            when muxsel = 6 else
            fifo_dout(15 downto 8)           when muxsel = 7 else
@@ -432,40 +437,55 @@ begin
     end process;
 
     -- CPU Control Commands
-    -- 0000x Enable/Disable single stepping
-    -- 0001x Enable/Disable breakpoints / watches
-    -- 0010x Load breakpoint / watch register
-    -- 0011x Reset CPU
-    -- 01000 Singe Step CPU
-    -- 01001 Read FIFO
-    -- 01010 Reset FIFO
-    -- 01011 Unused
-    -- 0110x Load address/data register
-    -- 0111x Unused
-    -- 10000 Read Memory
-    -- 10001 Read Memory and Auto Inc Address
-    -- 10010 Write Memory
-    -- 10011 Write Memory and Auto Inc Address
-    -- 10100 Read IO
-    -- 10101 Read IO and Auto Inc Address
-    -- 10110 Write IO
-    -- 10111 Write IO and Auto Inc Address
-    -- 11000 Execute 6502 instruction
-    -- 111xx Unused
-    -- 11x1x Unused
-    -- 11xx1 Unused
+    -- 00000x Enable/Disable single stepping
+    -- 00001x Enable/Disable breakpoints / watches
+    -- 00010x Load breakpoint / watch register
+    -- 00011x Reset CPU
+    -- 001000 Singe Step CPU
+    -- 001001 Read FIFO
+    -- 001010 Reset FIFO
+    -- 001011 Unused
+    -- 00110x Load address/data register
+    -- 00111x Unused
+    -- 010000 Read Memory
+    -- 010001 Read Memory and Auto Inc Address
+    -- 010010 Write Memory
+    -- 010011 Write Memory and Auto Inc Address
+    -- 010100 Read IO
+    -- 010101 Read IO and Auto Inc Address
+    -- 010110 Write IO
+    -- 010111 Write IO and Auto Inc Address
+    -- 011000 Execute 6502 instruction
+    -- 0111xx Unused
+    -- 011x1x Unused
+    -- 011xx1 Unused
+    -- 100xxx Special
+    -- 1010xx Timer Mode
+    --     00 - count cpu cycles where clken = 1 and CountCycle = 1
+    --     01 - count cpu cycles where clken = 1 (ignoring CountCycle)
+    --     10 - free running timer, using busmon_clk as the source
+    --     11 - free running timer, using trig0 as the source
+
+    -- Use trig0 to drive a free running counter for absolute timings
+    ext_clk <= trig(0);
+    timer1Process: process (ext_clk)
+    begin
+        if rising_edge(ext_clk) then
+            timer1Count <= timer1Count + 1;
+        end if;
+    end process;
 
     cpuProcess: process (busmon_clk)
     begin
         if rising_edge(busmon_clk) then
+            timer0Count <= timer0Count + 1;
             if busmon_clken = '1' then
-                -- Cycle counter, wraps every 16s at 1MHz
+                -- Cycle counter
                 if (cpu_reset_n = '0') then
                     cycleCount <= (others => '0');
-                elsif (CountCycle = '1') then
+                elsif (CountCycle = '1' or timer_mode(0) = '1') then
                     cycleCount <= cycleCount + 1;
                 end if;
-
                 -- Command processing
                 cmd_edge1 <= cmd_edge;
                 cmd_edge2 <= cmd_edge1;
@@ -479,60 +499,68 @@ begin
                 exec      <= '0';
                 SS_Step   <= '0';
                 if (cmd_edge2 /= cmd_edge1) then
-                    if (cmd(4 downto 1) = "0000") then
+                    if (cmd(5 downto 1) = "00000") then
                         single <= cmd(0);
                     end if;
 
-                    if (cmd(4 downto 1) = "0001") then
+                    if (cmd(5 downto 1) = "00001") then
                         brkpt_enable <= cmd(0);
                     end if;
 
-                    if (cmd(4 downto 1) = "0010") then
+                    if (cmd(5 downto 1) = "00010") then
                         brkpt_reg <= cmd(0) & brkpt_reg(brkpt_reg'length - 1 downto 1);
                     end if;
 
-                    if (cmd(4 downto 1) = "0110") then
+                    if (cmd(5 downto 1) = "00110") then
                         addr_dout_reg <= cmd(0) & addr_dout_reg(addr_dout_reg'length - 1 downto 1);
                     end if;
 
-                    if (cmd(4 downto 1) = "0011") then
+                    if (cmd(5 downto 1) = "00011") then
                         reset <= cmd(0);
                     end if;
 
-                    if (cmd(4 downto 0) = "01001") then
+                    if (cmd(5 downto 0) = "01001") then
                         fifo_rd <= '1';
                     end if;
 
-                    if (cmd(4 downto 0) = "01010") then
+                    if (cmd(5 downto 0) = "01010") then
                         fifo_rst <= '1';
                     end if;
 
-                    if (cmd(4 downto 1) = "1000") then
+                    if (cmd(5 downto 1) = "01000") then
                         memory_rd <= '1';
                         auto_inc  <= cmd(0);
                     end if;
 
-                    if (cmd(4 downto 1) = "1001") then
+                    if (cmd(5 downto 1) = "01001") then
                         memory_wr <= '1';
                         auto_inc  <= cmd(0);
                     end if;
 
-                    if (cmd(4 downto 1) = "1010") then
+                    if (cmd(5 downto 1) = "01010") then
                         io_rd <= '1';
                         auto_inc  <= cmd(0);
                     end if;
 
-                    if (cmd(4 downto 1) = "1011") then
+                    if (cmd(5 downto 1) = "01011") then
                         io_wr <= '1';
                         auto_inc  <= cmd(0);
                     end if;
 
-                    if (cmd(4 downto 0) = "11000") then
+                    if (cmd(5 downto 0) = "011000") then
                         exec <= '1';
                     end if;
 
+                    if (cmd(5 downto 3) = "100") then
+                        Special <= cmd(2 downto 0);
+                    end if;
+
+                    if (cmd(5 downto 2) = "1010") then
+                        timer_mode <= cmd(1 downto 0);
+                    end if;
+
                     -- Acknowlege certain commands immediately
-                    if cmd(4) = '0' then
+                    if cmd(5 downto 4) /= "01" then
                         cmd_ack <= not cmd_ack;
                     end if;
 
@@ -552,7 +580,7 @@ begin
                     single <= '1';
                 end if;
 
-                if ((single = '0') or (cmd_edge2 /= cmd_edge1 and cmd = "01000")) then
+                if ((single = '0') or (cmd_edge2 /= cmd_edge1 and cmd = "001000")) then
                     Rdy_int <= (not brkpt_active);
                     SS_Step <= (not brkpt_active);
                 else
@@ -562,7 +590,13 @@ begin
                 -- Latch instruction address for the whole cycle
                 if (Sync = '1') then
                     addr_inst <= Addr;
-                    cycleCount_inst <= cycleCount;
+                    if timer_mode = "10" then
+                        instrCount <= timer0Count;
+                    elsif timer_mode = "11" then
+                        instrCount <= timer1Count;
+                    else
+                        instrCount <= cycleCount;
+                    end if;
                 end if;
 
                 -- Breakpoints and Watches written to the FIFO

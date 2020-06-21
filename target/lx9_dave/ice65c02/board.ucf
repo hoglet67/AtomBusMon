@@ -6,6 +6,8 @@ TIMESPEC TS_clk_period_phi = PERIOD "clk_period_grp_phi" 250ns LOW;
 
 NET "PhiIn" CLOCK_DEDICATED_ROUTE = FALSE;
 
+NET "trig<0>" CLOCK_DEDICATED_ROUTE = FALSE;
+
 NET "clock"    LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
 
 NET "VP_n"     LOC="P35"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 1

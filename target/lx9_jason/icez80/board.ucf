@@ -6,6 +6,8 @@ NET "CLK_n" CLOCK_DEDICATED_ROUTE = FALSE;
 
 NET "clock"    LOC="P50"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.00ns        ; # 50.00 MHz Oscillator
 
+NET "trig<0>" CLOCK_DEDICATED_ROUTE = FALSE;
+
 NET "Addr<11>" LOC="P94"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 1
 NET "Addr<12>" LOC="P95"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 2
 NET "Addr<13>" LOC="P98"  | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8 ; # dip pin 3

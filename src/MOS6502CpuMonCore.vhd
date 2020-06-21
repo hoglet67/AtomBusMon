@@ -100,7 +100,7 @@ architecture behavioral of MOS6502CpuMonCore is
     signal SS_Step       : std_logic;
     signal SS_Step_held  : std_logic;
     signal CountCycle    : std_logic;
-    signal special       : std_logic_vector(1 downto 0);
+    signal special       : std_logic_vector(2 downto 0);
 
     signal memory_rd     : std_logic;
     signal memory_rd1    : std_logic;
