@@ -164,6 +164,7 @@ static const char ARGS13[] PROGMEM = "<start> <end> <to>";
 static const char ARGS14[] PROGMEM = "[ <value> ]";
 static const char ARGS15[] PROGMEM = "[ <command> ]";
 static const char ARGS16[] PROGMEM = "<op1> [ <op2> [ <op3> ] ]";
+static const char ARGS17[] PROGMEM = "[ <source> [ <prescale> [ <reset address> ] ] ]";
 
 static const char * const argsStrings[] PROGMEM = {
   ARGS00,
@@ -182,7 +183,8 @@ static const char * const argsStrings[] PROGMEM = {
   ARGS13,
   ARGS14,
   ARGS15,
-  ARGS16
+  ARGS16,
+  ARGS17,
 };
 
 // Must be kept in step with cmdStrings (just above)
@@ -236,7 +238,7 @@ static const uint8_t helpMeta[] PROGMEM = {
 #endif
    7,  0, // clear
   36,  5, // trigger
-  34, 14, // timer
+  34, 17, // timermode
    0,  0
 };
 
@@ -630,6 +632,9 @@ uint8_t special = 0x00;
 
 // Current timer mode setting
 uint8_t timer_mode = 0x00;
+uint8_t timer_prescale = 0x01;
+addr_t  timer_resetaddr = 0xffff;
+unsigned long timer_offset = 0;
 
 /********************************************************
  * User Command Processor
@@ -983,8 +988,9 @@ void genericRead(char *params, data_t (*readFunc)()) {
  * Logging Helpers
  ********************************************************/
 
-void logCycleCount(int offsetLow, int offsetHigh) {
-  unsigned long count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow);
+void logCycleCount(int offsetLow, int offsetHigh, uint8_t clear) {
+  unsigned long original_count = (((unsigned long) hwRead8(offsetHigh)) << 16) | hwRead16(offsetLow);
+  unsigned long count = ((original_count - timer_offset) & 0xFFFFFF) / timer_prescale;
   char buffer[16];
   uint8_t i;
   // count is 24 bits so a maximum of 16777215
@@ -1002,6 +1008,11 @@ void logCycleCount(int offsetLow, int offsetHigh) {
     }
   }
   logs(" : ");
+  // Deal with clearing the counter
+  if (clear) {
+    logs("\n00.000000 : ");
+    timer_offset = original_count;
+  }
 }
 
 void logMode(modes_t mode) {
@@ -1038,6 +1049,8 @@ uint8_t logDetails() {
 
   // Process the dropped counter
   uint8_t dropped = mode >> 4;
+  // Whether to clear timer
+  uint8_t clear = i_addr == timer_resetaddr;
   if (dropped) {
     logstr("          : ");
     if (dropped == 15) {
@@ -1056,7 +1069,7 @@ uint8_t logDetails() {
 
   // Update the serial console
   if (mode & W_MASK) {
-    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
+    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH, clear);
   }
   logMode(mode);
   logstr(" hit at ");
@@ -1072,7 +1085,7 @@ uint8_t logDetails() {
   logc('\n');
   if (mode & B_RDWR_MASK) {
     // It's only safe to do this for brkpts, as it makes memory accesses
-    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH);
+    logCycleCount(OFFSET_BW_CNTL, OFFSET_BW_CNTH, clear);
     disMem(i_addr);
   }
   return watch;
@@ -1084,7 +1097,7 @@ void logAddr() {
   Delay_us(100);
   memAddr = hwRead16(OFFSET_IAL);
   // Update the serial console
-  logCycleCount(OFFSET_CNTL, OFFSET_CNTH);
+  logCycleCount(OFFSET_CNTL, OFFSET_CNTH, memAddr == timer_resetaddr);
   nextAddr = disMem(memAddr);
   return;
 }
@@ -2029,13 +2042,29 @@ void doCmdSpecial(char *params) {
 }
 
 void doCmdTimerMode(char *params) {
-  uint8_t tmp = 0xff;
-  parsehex2(params, &tmp);
-  if (tmp <= NUM_TIMERS) {
-    timer_mode = tmp;
+  uint8_t      mode = 0xff;
+  uint8_t  prescale = 0xff;
+  addr_t       addr = 0xffff;
+
+  params = parsehex2(params, &mode);
+  params = parsehex2(params, &prescale);
+  params = parsehex4(params, &addr);
+  if (mode <= NUM_TIMERS) {
+    timer_mode = mode;
     hwCmd(CMD_TIMER_MODE, timer_mode);
   }
+  if (prescale < 0xff) {
+    timer_prescale = prescale;
+  }
+  if (addr < 0xffff) {
+    timer_resetaddr = addr;
+  }
+  logstr("mode: ");
   logpgmstr(timerStrings[timer_mode]);
+  logstr("; prescale=");
+  loghex4(timer_prescale);
+  logstr("; reset address=");
+  loghex4(timer_resetaddr);
   logstr("\n");
 }
 
