@@ -22,7 +22,7 @@
 --    devices, or systems.  Use in such applications are expressly            --
 --    prohibited.                                                             --
 --                                                                            --
---    (c) Copyright 1995-2017 Xilinx, Inc.                                    --
+--    (c) Copyright 1995-2020 Xilinx, Inc.                                    --
 --    All rights reserved.                                                    --
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ END COMPONENT;
       c_axis_type => 0,
       c_common_clock => 1,
       c_count_type => 0,
-      c_data_count_width => 10,
+      c_data_count_width => 13,
       c_default_value => "BlankString",
       c_din_width => 72,
       c_din_width_axis => 1,
@@ -179,7 +179,7 @@ END COMPONENT;
       c_overflow_low => 0,
       c_preload_latency => 0,
       c_preload_regs => 1,
-      c_prim_fifo_type => "512x72",
+      c_prim_fifo_type => "4kx9",
       c_prog_empty_thresh_assert_val => 4,
       c_prog_empty_thresh_assert_val_axis => 1022,
       c_prog_empty_thresh_assert_val_rach => 1022,
@@ -195,14 +195,14 @@ END COMPONENT;
       c_prog_empty_type_wach => 0,
       c_prog_empty_type_wdch => 0,
       c_prog_empty_type_wrch => 0,
-      c_prog_full_thresh_assert_val => 511,
+      c_prog_full_thresh_assert_val => 4095,
       c_prog_full_thresh_assert_val_axis => 1023,
       c_prog_full_thresh_assert_val_rach => 1023,
       c_prog_full_thresh_assert_val_rdch => 1023,
       c_prog_full_thresh_assert_val_wach => 1023,
       c_prog_full_thresh_assert_val_wdch => 1023,
       c_prog_full_thresh_assert_val_wrch => 1023,
-      c_prog_full_thresh_negate_val => 510,
+      c_prog_full_thresh_negate_val => 4094,
       c_prog_full_type => 0,
       c_prog_full_type_axis => 0,
       c_prog_full_type_rach => 0,
@@ -211,10 +211,10 @@ END COMPONENT;
       c_prog_full_type_wdch => 0,
       c_prog_full_type_wrch => 0,
       c_rach_type => 0,
-      c_rd_data_count_width => 10,
-      c_rd_depth => 512,
+      c_rd_data_count_width => 13,
+      c_rd_depth => 4096,
       c_rd_freq => 1,
-      c_rd_pntr_width => 9,
+      c_rd_pntr_width => 12,
       c_rdch_type => 0,
       c_reg_slice_mode_axis => 0,
       c_reg_slice_mode_rach => 0,
@@ -242,8 +242,8 @@ END COMPONENT;
       c_wach_type => 0,
       c_wdch_type => 0,
       c_wr_ack_low => 0,
-      c_wr_data_count_width => 10,
-      c_wr_depth => 512,
+      c_wr_data_count_width => 13,
+      c_wr_depth => 4096,
       c_wr_depth_axis => 1024,
       c_wr_depth_rach => 16,
       c_wr_depth_rdch => 1024,
@@ -251,7 +251,7 @@ END COMPONENT;
       c_wr_depth_wdch => 1024,
       c_wr_depth_wrch => 16,
       c_wr_freq => 1,
-      c_wr_pntr_width => 9,
+      c_wr_pntr_width => 12,
       c_wr_pntr_width_axis => 10,
       c_wr_pntr_width_rach => 4,
       c_wr_pntr_width_rdch => 10,
