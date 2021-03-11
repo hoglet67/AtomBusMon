@@ -1,6 +1,6 @@
 -- -----------------------------------------------------------------------
 --
--- This is a table driven 65Cx2 core by A.Daly 
+-- This is a table driven 65Cx2 core by A.Daly
 -- This is a derivative of the excellent FPGA64 core see below
 --
 -- -----------------------------------------------------------------------
@@ -15,7 +15,7 @@ use ieee.numeric_std.ALL;
 
 entity R65C02 is
 	port (
-		
+
 		reset : in std_logic;
 		clk : in std_logic;
 		enable : in std_logic;
@@ -64,7 +64,7 @@ architecture Behavioral of R65C02 is
 		cyclePreRead,     -- Cycle before read while doing zeropage indexed addressing.
 		cycleRead,        -- Read cycle
 		cycleRead2,       -- Second read cycle after page-boundary crossing.
-		cycleRmw,         -- Calculate ALU output for read-modify-write instr.		
+		cycleRmw,         -- Calculate ALU output for read-modify-write instr.
 		cyclePreWrite,    -- Cycle before write when doing indexed addressing.
 		cycleWrite,       -- Write cycle for zeropage or absolute addressing.
 		cycleStack1,
@@ -112,7 +112,7 @@ architecture Behavioral of R65C02 is
 	constant opcRti        : integer := 24;
 	constant opcIRQ        : integer := 25;
 
-	
+
 	constant opcInA        : integer := 26;
 	constant opcInBrk      : integer := 27;
 	constant opcInX        : integer := 28;
@@ -121,11 +121,11 @@ architecture Behavioral of R65C02 is
 	constant opcInT        : integer := 31;
 	constant opcInH        : integer := 32;
 	constant opcInClear    : integer := 33;
-	
+
 	constant aluMode1From  : integer := 34;
 	--
 	constant aluMode1To    : integer := 37;
-	
+
 	constant aluMode2From  : integer := 38;
 	--
 	constant aluMode2To    : integer := 40;
@@ -133,7 +133,7 @@ architecture Behavioral of R65C02 is
 	constant opcInCmp      : integer := 41;
 	constant opcInCpx      : integer := 42;
 	constant opcInCpy      : integer := 43;
-	
+
 
 	subtype addrDef is unsigned(0 to 15);
 	--
@@ -177,15 +177,15 @@ architecture Behavioral of R65C02 is
 	constant writeInd  : addrDef := "1001000000010000";
 	--                               |AZI||JBXY|WM||
 	-- Absolute
-	constant readAbs   : addrDef := "1100000000000000";	
-	constant writeAbs  : addrDef := "1100000000010000";	
-	constant rmwAbs    : addrDef := "1100000000001000";	
-	constant readAbsX  : addrDef := "1100000010000000";	
-	constant writeAbsX : addrDef := "1100000010010000";	
-	constant rmwAbsX   : addrDef := "1100000010001000";	
-	constant readAbsY  : addrDef := "1100000001000000";	
-	constant writeAbsY : addrDef := "1100000001010000";	
-	constant rmwAbsY   : addrDef := "1100000001001000";	
+	constant readAbs   : addrDef := "1100000000000000";
+	constant writeAbs  : addrDef := "1100000000010000";
+	constant rmwAbs    : addrDef := "1100000000001000";
+	constant readAbsX  : addrDef := "1100000010000000";
+	constant writeAbsX : addrDef := "1100000010010000";
+	constant rmwAbsX   : addrDef := "1100000010001000";
+	constant readAbsY  : addrDef := "1100000001000000";
+	constant writeAbsY : addrDef := "1100000001010000";
+	constant rmwAbsY   : addrDef := "1100000001001000";
 	-- PHA PHP
 	constant push      : addrDef := "0000010000000000";
 	-- PLA PLP
@@ -203,13 +203,13 @@ architecture Behavioral of R65C02 is
 --	constant irq       : addrDef := "0000111000000001";
 --	constant        : unsigned(0 to 0) := "0";
 	constant xxxxxxxx  : addrDef := "----------0---00";
-	
+
 	-- A = accu
 	-- X = index X
 	-- Y = index Y
 	-- S = Stack pointer
 	-- H = indexH
-	-- 
+	--
 	--                                       AEXYSTHc
 	constant aluInA   : unsigned(0 to 7) := "10000000";
 	constant aluInBrk : unsigned(0 to 7) := "01000000";
@@ -220,7 +220,7 @@ architecture Behavioral of R65C02 is
 	constant aluInClr : unsigned(0 to 7) := "00000001";
 	constant aluInSet : unsigned(0 to 7) := "00000000";
 	constant aluInXXX : unsigned(0 to 7) := "--------";
-	
+
 	-- Most of the aluModes are just like the opcodes.
 	-- aluModeInp -> input is output. calculate N and Z
 	-- aluModeCmp -> Compare for CMP, CPX, CPY
@@ -271,7 +271,7 @@ architecture Behavioral of R65C02 is
 	constant aluRor  : aluMode := aluModeRor & aluModePss & "---";
 	constant aluLsr  : aluMode := aluModeLsr & aluModePss & "---";
 	constant aluRol  : aluMode := aluModeRol & aluModePss & "---";
-	constant aluAsl  : aluMode := aluModeAsl & aluModePss & "---"; 
+	constant aluAsl  : aluMode := aluModeAsl & aluModePss & "---";
    constant aluTSB  : aluMode := aluModeTSB & aluModePss & "---";
 	constant aluTRB  : aluMode := aluModeTRB & aluModePss & "---";
 	constant aluCmp  : aluMode := aluModeInp & aluModeCmp & "100";
@@ -282,7 +282,7 @@ architecture Behavioral of R65C02 is
 	constant aluAnd  : aluMode := aluModeInp & aluModeAnd & "---";
 	constant aluOra  : aluMode := aluModeInp & aluModeOra & "---";
 	constant aluEor  : aluMode := aluModeInp & aluModeEor & "---";
-	
+
 	constant aluXXX  : aluMode := (others => '-');
 
 
@@ -299,11 +299,11 @@ architecture Behavioral of R65C02 is
 	-- ||+----- Update register Y
 	-- |||+---- Update register S
 	-- ||||       +-- Update Flags
-	-- ||||       |   
-	-- ||||      _|__ 
+	-- ||||       |
+	-- ||||      _|__
 	-- ||||     /    \
 	-- AXYS     NVDIZC    addressing  aluInput  aluMode
-	-- AXYS     NVDIZC    addressing  aluInput  aluMode  
+	-- AXYS     NVDIZC    addressing  aluInput  aluMode
 	  "0000" & "001100" & brk       & aluInBrk & aluP,   -- 00 BRK
 	  "1000" & "100010" & readIndX  & aluInT   & aluOra, -- 01 ORA (zp,x)
 	  "0000" & "000000" & immediate & aluInXXX & aluXXX, -- 02 NOP ------- 65C02
@@ -322,9 +322,9 @@ architecture Behavioral of R65C02 is
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 0F NOP ------- 65C02
 	  "0000" & "000000" & relative  & aluInXXX & aluXXX, -- 10 BPL
 	  "1000" & "100010" & readIndY  & aluInT   & aluOra, -- 11 ORA (zp),y
-	  "1000" & "100010" & readInd   & aluInT   & aluOra, -- 12 ORA (zp) --------- 65C02  
+	  "1000" & "100010" & readInd   & aluInT   & aluOra, -- 12 ORA (zp) --------- 65C02
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 13 NOP ------- 65C02
-	  "0000" & "000010" & rmwZp     & aluInT   & aluTRB, -- 14 TRB zp ~---------- 65C02 
+	  "0000" & "000010" & rmwZp     & aluInT   & aluTRB, -- 14 TRB zp ~---------- 65C02
 	  "1000" & "100010" & readZpX   & aluInT   & aluOra, -- 15 ORA zp,x
 	  "0000" & "100011" & rmwZpX    & aluInT   & aluAsl, -- 16 ASL zp,x
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 17 NOP ------- 65C02
@@ -332,7 +332,7 @@ architecture Behavioral of R65C02 is
 	  "1000" & "100010" & readAbsY  & aluInT   & aluOra, -- 19 ORA abs,y
 	  "1000" & "100010" & implied   & aluInA   & aluInc, -- 1A INC accu --------- 65C02
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 1B NOP ------- 65C02
-	  "0000" & "000010" & rmwAbs    & aluInT   & aluTRB, -- 1C TRB abs ~----- --- 65C02 
+	  "0000" & "000010" & rmwAbs    & aluInT   & aluTRB, -- 1C TRB abs ~----- --- 65C02
 	  "1000" & "100010" & readAbsX  & aluInT   & aluOra, -- 1D ORA abs,x
 	  "0000" & "100011" & rmwAbsX   & aluInT   & aluAsl, -- 1E ASL abs,x
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 1F NOP ------- 65C02
@@ -355,7 +355,7 @@ architecture Behavioral of R65C02 is
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 2F NOP ------- 65C02
 	  "0000" & "000000" & relative  & aluInXXX & aluXXX, -- 30 BMI
 	  "1000" & "100010" & readIndY  & aluInT   & aluAnd, -- 31 AND (zp),y
-	  "1000" & "100010" & readInd   & aluInT   & aluAnd, -- 32 AND (zp) -------- 65C02 
+	  "1000" & "100010" & readInd   & aluInT   & aluAnd, -- 32 AND (zp) -------- 65C02
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 33 NOP ------- 65C02
 	  "0000" & "110010" & readZpX   & aluInT   & aluBit, -- 34 BIT zp,x -------- 65C02
 	  "1000" & "100010" & readZpX   & aluInT   & aluAnd, -- 35 AND zp,x
@@ -388,7 +388,7 @@ architecture Behavioral of R65C02 is
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 4F NOP ------- 65C02
 	  "0000" & "000000" & relative  & aluInXXX & aluXXX, -- 50 BVC
 	  "1000" & "100010" & readIndY  & aluInT   & aluEor, -- 51 EOR (zp),y
-	  "1000" & "100010" & readInd   & aluInT   & aluEor, -- 52 EOR (zp) -------- 65C02 
+	  "1000" & "100010" & readInd   & aluInT   & aluEor, -- 52 EOR (zp) -------- 65C02
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 53 NOP ------- 65C02
 	  "0000" & "000000" & immediate & aluInXXX & aluXXX, -- 54 NOP ------- 65C02
 	  "1000" & "100010" & readZpX   & aluInT   & aluEor, -- 55 EOR zp,x
@@ -421,7 +421,7 @@ architecture Behavioral of R65C02 is
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 6F NOP ------ 65C02
 	  "0000" & "000000" & relative  & aluInXXX & aluXXX, -- 70 BVS
 	  "1000" & "110011" & readIndY  & aluInT   & aluAdc, -- 71 ADC (zp),y
-	  "1000" & "110011" & readInd   & aluInT   & aluAdc, -- 72 ADC (zp) -------- 65C02 
+	  "1000" & "110011" & readInd   & aluInT   & aluAdc, -- 72 ADC (zp) -------- 65C02
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 73 NOP ------ 65C02
 	  "0000" & "000000" & writeZpX  & aluInClr & aluInp, -- 74 STZ zp,x -------- 65C02
 	  "1000" & "110011" & readZpX   & aluInT   & aluAdc, -- 75 ADC zp,x
@@ -455,7 +455,7 @@ architecture Behavioral of R65C02 is
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 8F NOP ----- 65C02
 	  "0000" & "000000" & relative  & aluInXXX & aluXXX, -- 90 BCC
 	  "0000" & "000000" & writeIndY & aluInA   & aluInp, -- 91 STA (zp),y
-	  "0000" & "000000" & writeInd  & aluInA   & aluInp, -- 92 STA (zp) ------ 65C02 
+	  "0000" & "000000" & writeInd  & aluInA   & aluInp, -- 92 STA (zp) ------ 65C02
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 93 NOP ----- 65C02
 	  "0000" & "000000" & writeZpX  & aluInY   & aluInp, -- 94 STY zp,x
 	  "0000" & "000000" & writeZpX  & aluInA   & aluInp, -- 95 STA zp,x
@@ -488,7 +488,7 @@ architecture Behavioral of R65C02 is
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- AF NOP ----- 65C02
 	  "0000" & "000000" & relative  & aluInXXX & aluXXX, -- B0 BCS
 	  "1000" & "100010" & readIndY  & aluInT   & aluInp, -- B1 LDA (zp),y
-	  "1000" & "100010" & readInd   & aluInT   & aluInp, -- B2 LDA (zp) ------ 65C02 
+	  "1000" & "100010" & readInd   & aluInT   & aluInp, -- B2 LDA (zp) ------ 65C02
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- B3 NOP ----- 65C02
 	  "0010" & "100010" & readZpX   & aluInT   & aluInp, -- B4 LDY zp,x
 	  "1000" & "100010" & readZpX   & aluInT   & aluInp, -- B5 LDA zp,x
@@ -521,7 +521,7 @@ architecture Behavioral of R65C02 is
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- CF NOP ----- 65C02
 	  "0000" & "000000" & relative  & aluInXXX & aluXXX, -- D0 BNE
 	  "0000" & "100011" & readIndY  & aluInT   & aluCmp, -- D1 CMP (zp),y
-	  "0000" & "100011" & readInd   & aluInT   & aluCmp, -- D2 CMP (zp) ------ 65C02 
+	  "0000" & "100011" & readInd   & aluInT   & aluCmp, -- D2 CMP (zp) ------ 65C02
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- D3 NOP ----- 65C02
 	  "0000" & "000000" & immediate & aluInXXX & aluXXX, -- D4 NOP ----- 65C02
 	  "0000" & "100011" & readZpX   & aluInT   & aluCmp, -- D5 CMP zp,x
@@ -554,7 +554,7 @@ architecture Behavioral of R65C02 is
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- EF NOP ----- 65C02
 	  "0000" & "000000" & relative  & aluInXXX & aluXXX, -- F0 BEQ
 	  "1000" & "110011" & readIndY  & aluInT   & aluSbc, -- F1 SBC (zp),y
-	  "1000" & "110011" & readInd   & aluInT   & aluSbc, -- F2 SBC (zp) ------ 65C02 
+	  "1000" & "110011" & readInd   & aluInT   & aluSbc, -- F2 SBC (zp) ------ 65C02
 	  "0000" & "000000" & implied   & aluInXXX & aluXXX, -- F3 NOP ----- 65C02
 	  "0000" & "000000" & immediate & aluInXXX & aluXXX, -- F4 NOP ----- 65C02
 	  "1000" & "110011" & readZpX   & aluInT   & aluSbc, -- F5 SBC zp,x
@@ -641,7 +641,7 @@ processAluInput: process(clk, opcInfo, A, X, Y, T, S)
 		variable temp : unsigned(7 downto 0);
 	begin
 		temp := (others => '1');
-		
+
 		if opcInfo(opcInA) = '1' then
 			temp := temp and A;
 		end if;
@@ -663,7 +663,7 @@ processAluInput: process(clk, opcInfo, A, X, Y, T, S)
 		if opcInfo(opcInClear) = '1' then
 			temp := (others => '0');
 		end if;
-	
+
 		aluInput <= temp;
 
 	end process;
@@ -681,35 +681,35 @@ processCmpInput: process(clk, opcInfo, A, X, Y)
 		if opcInfo(opcInCpy) = '1' then
 			temp := temp and Y;
 		end if;
-	
+
 		aluCmpInput <= temp;
 	end process;
 
 	-- ALU consists of two parts
-	-- Read-Modify-Write or index instructions: INC/DEC/ASL/LSR/ROR/ROL 
+	-- Read-Modify-Write or index instructions: INC/DEC/ASL/LSR/ROR/ROL
 	-- Accumulator instructions: ADC, SBC, EOR, AND, EOR, ORA
 	-- Some instructions are both RMW and accumulator so for most
 	-- instructions the rmw results are routed through accu alu too.
-	
+
 --	The B flag
 ------------
---No actual "B" flag exists inside the 6502's processor status register. The B 
---flag only exists in the status flag byte pushed to the stack. Naturally, 
+--No actual "B" flag exists inside the 6502's processor status register. The B
+--flag only exists in the status flag byte pushed to the stack. Naturally,
 --when the flags are restored (via PLP or RTI), the B bit is discarded.
 --
---Depending on the means, the B status flag will be pushed to the stack as 
+--Depending on the means, the B status flag will be pushed to the stack as
 --either 0 or 1.
 --
 --software instructions BRK & PHP will push the B flag as being 1.
 --hardware interrupts IRQ & NMI will push the B flag as being 0.
 
-	
+
 processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, D, I, Z, C)
 		variable lowBits: unsigned(5 downto 0);
 		variable nineBits: unsigned(8 downto 0);
 		variable rmwBits: unsigned(8 downto 0);
 		variable tsxBits: unsigned(8 downto 0);
-		
+
 		variable varC : std_logic;
 		variable varZ : std_logic;
 		variable varV : std_logic;
@@ -720,7 +720,7 @@ processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, 
 		rmwBits := (others => '-');
 		tsxBits := (others => '-');
 		R <= '1';
-	
+
 
 		-- Shift unit
 		case opcInfo(aluMode1From to aluMode1To) is
@@ -739,7 +739,7 @@ processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, 
 		when aluModeRoR =>			rmwBits := aluInput(0) & C & aluInput(7 downto 1);
 		when others =>					rmwBits := C & aluInput;
 		end case;
-		
+
 		-- ALU
 		case opcInfo(aluMode2From to aluMode2To) is
 		when aluModeAdc =>			lowBits := ("0" & A(3 downto 0) & rmwBits(8)) + ("0" & rmwBits(3 downto 0) & "1");
@@ -754,10 +754,10 @@ processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, 
 		when others =>			      ninebits := rmwBits;
 		end case;
 
-		
+
 		varV := aluInput(6); -- Default for BIT / PLP / RTI
-		
-				
+
+
 		if (opcInfo(aluMode1From to aluMode1To) = aluModeFlg) then
 			varZ := rmwBits(1);
 		elsif (opcInfo(aluMode1From to aluMode1To) = aluModeTSB) or (opcInfo(aluMode1From to aluMode1To) = aluModeTRB) then
@@ -771,22 +771,22 @@ processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, 
 		else
 			varZ := '0';
 		end if;
-		
+
 		if (opcInfo(aluMode1From to aluMode1To) = aluModeBit) or (opcInfo(aluMode1From to aluMode1To) = aluModeFlg) then
 			varN := rmwBits(7);
 				  	else
 			varN := nineBits(7);
 		end if;
-		
+
 		varC := ninebits(8);
-			
+
 		case opcInfo(aluMode2From to aluMode2To) is
 		--		Flags Affected: n v — — — — z c
 		--		n Set if most significant bit of result is set; else cleared.
 		--		v Set if signed overflow; cleared if valid signed result.
 		--		z Set if result is zero; else cleared.
 		--		c Set if unsigned overflow; cleared if valid unsigned result
-		
+
 		when aluModeAdc =>
 			-- decimal mode low bits correction, is done after setting Z flag.
 			if D = '1' then
@@ -808,9 +808,9 @@ processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, 
 				if ninebits(8 downto 4) > 9 then
 					ninebits(8 downto 4) := ninebits(8 downto 4) + 6;
 					varC := '1';
-				end if;	
+				end if;
 			end if;
-		
+
 		when aluModeSbc =>
 			varV := (A(7) xor ninebits(7)) and ((not rmwBits(7)) xor ninebits(7));
 			if D = '1' then
@@ -834,7 +834,7 @@ processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, 
 					varZ := '1';
 				else
 					varZ := '0';
-				end if;	
+				end if;
                 varN := ninebits(7);
 			end if;
 		when aluModeSbc =>
@@ -843,14 +843,14 @@ processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, 
 					varZ := '1';
 				else
 					varZ := '0';
-				end if;	
+				end if;
                 varN := ninebits(7);
 			end if;
 		when others =>			null;
-		end case;	
+		end case;
 
--- DMB Remove Pipelining        		
---	if rising_edge(clk) then	
+-- DMB Remove Pipelining
+--	if rising_edge(clk) then
 		aluRmwOut <= rmwBits(7 downto 0);
 		aluRegisterOut <= ninebits(7 downto 0);
 		aluC <= varC;
@@ -858,7 +858,7 @@ processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, 
 		aluV <= varV;
 		aluN <= varN;
 --		end if;
-		
+
 	end process;
 
 calcInterrupt: process(clk)
@@ -867,7 +867,7 @@ calcInterrupt: process(clk)
 			if enable = '1' then
 				if theCpuCycle = cycleStack4 or reset = '0' then
 					nmiReg <= '1';
-				end if;            
+				end if;
 				if nextCpuCycle /= cycleBranchTaken	and nextCpuCycle /= opcodeFetch then
                     irqReg <= irq_n;
 					nmiEdge <= nmi_n;
@@ -877,11 +877,11 @@ calcInterrupt: process(clk)
 				end if;
 				-- The 'or opcInfo(opcSetI)' prevents NMI immediately after BRK or IRQ.
 				-- Presumably this is done in the real 6502/6510 to prevent a double IRQ.
-				processIrq <= not ((nmiReg and (irqReg or I)) or opcInfo(opcIRQ));                    
+				processIrq <= not ((nmiReg and (irqReg or I)) or opcInfo(opcIRQ));
 			end if;
 		end if;
 	end process;
-	
+
 --pipeirq: process(clk)
 --	begin
 --		if rising_edge(clk) then
@@ -900,7 +900,7 @@ calcNextOpcode: process(clk, di, reset, processIrq)
 	begin
 		-- Next opcode is read from input unless a reset or IRQ is pending.
 		myNextOpcode := di;
-	   		
+
 		if reset = '0' then
 			myNextOpcode := X"4C";
 		elsif processIrq = '1' then
@@ -910,8 +910,8 @@ calcNextOpcode: process(clk, di, reset, processIrq)
 	end process;
 
 	nextOpcInfo <= opcodeInfoTable(to_integer(nextOpcode));
-	
--- DMB Remove Pipelining        		
+
+-- DMB Remove Pipelining
 --	process(clk)
 --	begin
 --		if rising_edge(clk) then
@@ -933,7 +933,7 @@ calcOpcInfo: process(clk)
 	end process;
 
 calcTheOpcode:	process(clk)
-	begin	
+	begin
 		if rising_edge(clk) then
 			if enable = '1' then
 				if theCpuCycle = opcodeFetch then
@@ -947,7 +947,7 @@ calcTheOpcode:	process(clk)
 			end if;
 		end if;
 	end process;
-	
+
 -- -----------------------------------------------------------------------
 -- State machine
 -- -----------------------------------------------------------------------
@@ -973,8 +973,8 @@ calcTheOpcode:	process(clk)
 			end if;
 			if reset = '0' then
 				theCpuCycle <= cycle2;
-			end if;				
-		end if;			
+			end if;
+		end if;
 	end process;
 
 	-- Determine the next cpu cycle. After the last cycle we always
@@ -1005,24 +1005,24 @@ calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, indexOut, T, N, V, C,
 														nextCpuCycle <= cycle3;
 													elsif opcInfo(opcIndirect) = '1' then
 															if opcInfo(indexX) = '1' then
-																	nextCpuCycle <= cyclePreIndirect;			
+																	nextCpuCycle <= cyclePreIndirect;
 																else
 																	nextCpuCycle <= cycleIndirect;
-															end if;					
+															end if;
 													elsif opcInfo(opcZeroPage) = '1' then
 															if opcInfo(opcWrite) = '1' then
 																	if (opcInfo(indexX) = '1')	or (opcInfo(indexY) = '1') then
 																			nextCpuCycle <= cyclePreWrite;
-																		else						
+																		else
 																			nextCpuCycle <= cycleWrite;
-																	end if;						
+																	end if;
 															else
 																	if (opcInfo(indexX) = '1')	or (opcInfo(indexY) = '1') then
 																			nextCpuCycle <= cyclePreRead;
-																		else						
+																		else
 																			nextCpuCycle <= cycleRead2;
-																	end if;						
-															end if;					
+																	end if;
+															end if;
 													elsif opcInfo(opcJump) = '1' then
 																nextCpuCycle <= cycleJump;
 													end if;
@@ -1030,14 +1030,14 @@ calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, indexOut, T, N, V, C,
 														if opcInfo(opcWrite) = '1' then
 																if (opcInfo(indexX) = '1')	or (opcInfo(indexY) = '1') then
 																		nextCpuCycle <= cyclePreWrite;
-																	else						
+																	else
 																		nextCpuCycle <= cycleWrite;
-																end if;					
+																end if;
 														end if;
 														if (opcInfo(opcIndirect) = '1')	and (opcInfo(indexX) = '1') then
 																	if opcInfo(opcWrite) = '1' then
 																			nextCpuCycle <= cycleWrite;
-																		else					
+																		else
 																			nextCpuCycle <= cycleRead2;
 																	end if;
 														end if;
@@ -1059,16 +1059,16 @@ calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, indexOut, T, N, V, C,
 														if opcInfo(indexX) = '1' or opcInfo(indexY) = '1' then
 															nextCpuCycle <= cycleRead2;
 														end if;
-												end if;											
+												end if;
 		when cycleRead2 => 			if opcInfo(opcRmw) = '1' then
 												nextCpuCycle <= cycleRmw;
-											end if;											
+											end if;
 		when cycleRmw =>				nextCpuCycle <= cycleWrite;
 		when cyclePreWrite =>		nextCpuCycle <= cycleWrite;
 		when cycleStack1 =>			nextCpuCycle <= cycleRead;
 											if opcInfo(opcStackAddr) = '1' then
 												nextCpuCycle <= cycleStack2;
-											end if;				
+											end if;
 		when cycleStack2 =>			nextCpuCycle <= cycleStack3;
 											if opcInfo(opcRti) = '1' then
 												nextCpuCycle <= cycleRead;
@@ -1080,15 +1080,15 @@ calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, indexOut, T, N, V, C,
 											if opcInfo(opcStackData) = '0' or opcInfo(opcStackUp) = '1' then
 												nextCpuCycle <= cycleJump;
 											elsif opcInfo(opcStackAddr) = '1' then
-												nextCpuCycle <= cycleStack4;				
+												nextCpuCycle <= cycleStack4;
 											end if;
 		when cycleStack4 =>			nextCpuCycle <= cycleRead;
 		when cycleJump =>				if opcInfo(opcIncrAfter) = '1' then
 												nextCpuCycle <= cycleEnd;
-											end if;				
+											end if;
 		when others =>					null;
 		end case;
-	end process;		
+	end process;
 
 -- -----------------------------------------------------------------------
 -- T register
@@ -1106,12 +1106,12 @@ calcT: process(clk)
 							else
 								T <= di;
 							end if;
-					end if;											
+					end if;
 				when cycleIndirect | cycleRead | cycleRead2 =>			T <= di;
-				when others =>														null;					
+				when others =>														null;
 				end case;
 			end if;
-		end if;		
+		end if;
 	end process;
 
 -- -----------------------------------------------------------------------
@@ -1123,7 +1123,7 @@ calcT: process(clk)
 			if updateRegisters then
 				if opcInfo(opcUpdateA) = '1' then
 					A <= aluRegisterOut;
-				end if;					
+				end if;
 			end if;
 		end if;
 	end process;
@@ -1137,7 +1137,7 @@ calcT: process(clk)
 			if updateRegisters then
 				if opcInfo(opcUpdateX) = '1' then
 					X <= aluRegisterOut;
-				end if;					
+				end if;
 			end if;
 		end if;
 	end process;
@@ -1151,7 +1151,7 @@ calcT: process(clk)
 			if updateRegisters then
 				if opcInfo(opcUpdateY) = '1' then
 					Y <= aluRegisterOut;
-				end if;					
+				end if;
 			end if;
 		end if;
 	end process;
@@ -1198,7 +1198,7 @@ calcT: process(clk)
 				end if;
 			end if;
 		end if;
-	end process;	
+	end process;
 -- -----------------------------------------------------------------------
 -- D flag
 -- -----------------------------------------------------------------------
@@ -1256,40 +1256,40 @@ calcT: process(clk)
 				sIncDec := S + 1;
 			else
 				sIncDec := S - 1;
-			end if;	
-			
+			end if;
+
 			if enable = '1' then
-				updateFlag := false;			
+				updateFlag := false;
 				case nextCpuCycle is
 				when cycleStack1 =>
 												if (opcInfo(opcStackUp) = '1') or (opcInfo(opcStackData) = '1') then
-															updateFlag := true;			
-												end if;
-												
-				when cycleStack2 =>					updateFlag := true;
-				when cycleStack3 =>					updateFlag := true;			
-				when cycleStack4 =>					updateFlag := true;
-				when cycleRead =>			if opcInfo(opcRti) = '1' then							
 															updateFlag := true;
-												end if;						
+												end if;
+
+				when cycleStack2 =>					updateFlag := true;
+				when cycleStack3 =>					updateFlag := true;
+				when cycleStack4 =>					updateFlag := true;
+				when cycleRead =>			if opcInfo(opcRti) = '1' then
+															updateFlag := true;
+												end if;
 				when cycleWrite =>		if opcInfo(opcStackData) = '1' then
 															updateFlag := true;
-												end if;						
-				when others =>				null;					
+												end if;
+				when others =>				null;
 				end case;
-				
+
 				if updateFlag then
 					S <= sIncDec;
-				end if;					
-			
+				end if;
+
 			end if;
-			
+
 			if updateRegisters then
 				if opcInfo(opcUpdateS) = '1' then
 					S <= aluRegisterOut;
-				end if;					
+				end if;
 			end if;
-		
+
 		end if;
 	end process;
 
@@ -1311,11 +1311,11 @@ calcDo: process(clk)
 				when cycleRmw =>					doReg <= di; -- Read-modify-write write old value first.
 				when others => null;
 				end case;
-			end if;			
+			end if;
 		end if;
 	end process;
 	do <= doReg;
-	
+
 
 
 -- -----------------------------------------------------------------------
@@ -1325,7 +1325,7 @@ calcWe: process(clk)
 	begin
 		if rising_edge(clk) then
 			if enable = '1' then
-				theWe <= '1'; 
+				theWe <= '1';
 				case nextCpuCycle is
 				when cycleStack1 =>
 								if opcInfo(opcStackUp) = '0' and ((opcInfo(opcStackAddr) = '0') or (opcInfo(opcStackData) = '1')) then
@@ -1333,14 +1333,14 @@ calcWe: process(clk)
 								end if;
 				when cycleStack2 | cycleStack3 | cycleStack4 =>
 								if opcInfo(opcStackUp) = '0' then
-										theWe <= '0';	
-								end if;						
-				when cycleRmw =>				theWe <= '0';	
-				when cycleWrite =>			theWe <= '0';	
+										theWe <= '0';
+								end if;
+				when cycleRmw =>				theWe <= '0';
+				when cycleWrite =>			theWe <= '0';
 				when others =>					null;
-				end case;				
+				end case;
 			end if;
-		end if;	
+		end if;
 		--nwe <= theWe;
 	end process;
 	nwe <= theWe;
@@ -1357,19 +1357,19 @@ calcPC: process(clk)
 				when cycle2 =>					if irqActive = '0' then
 														if opcInfo(opcSecondByte) = '1' then
 															PC <= myAddrIncr;
-														else							
+														else
 															PC <= myAddr;
-														end if;							
-													end if;						
+														end if;
+													end if;
 				when cycle3 =>					if opcInfo(opcAbsolute) = '1' then
-														PC <= myAddrIncr;					
+														PC <= myAddrIncr;
 													end if;
 				when others =>					null;
 				end case;
 			end if;
 		end if;
 	end process;
-	
+
 
 -- -----------------------------------------------------------------------
 -- Address generation
@@ -1393,15 +1393,15 @@ calcNextAddr: process(theCpuCycle, opcInfo, indexOut, T, reset)
 											end if;
 		when cycle3 =>					if (opcInfo(opcIndirect) = '1')	and (opcInfo(indexX) = '1') then
 												nextAddr <= nextAddrAbs;
-											else		
+											else
 												nextAddr <= nextAddrAbsIndexed;
-											end if;				
+											end if;
 		when cyclePreIndirect => 			nextAddr <= nextAddrZPIndexed;
 		when cycleIndirect =>				nextAddr <= nextAddrIncrL;
 		when cycleBranchTaken =>			nextAddr <= nextAddrRelative;
 		when cycleBranchPage => 	if T(7) = '0' then
 													nextAddr <= nextAddrIncrH;
-											else				
+											else
 													nextAddr <= nextAddrDecrH;
 											end if;
 		when cyclePreRead =>					nextAddr <= nextAddrZPIndexed;
@@ -1410,7 +1410,7 @@ calcNextAddr: process(theCpuCycle, opcInfo, indexOut, T, reset)
 													-- Emulate 6510 bug, jmp(xxFF) fetches from same page.
 													-- Replace with nextAddrIncr if emulating 65C02 or later cpu.
 													nextAddr <= nextAddrIncr;
-													--nextAddr <= nextAddrIncrL;	
+													--nextAddr <= nextAddrIncrL;
 											elsif indexOut(8) = '1' then
 													nextAddr <= nextAddrIncrH;
 											elsif opcInfo(opcRmw) = '1' then
@@ -1420,45 +1420,45 @@ calcNextAddr: process(theCpuCycle, opcInfo, indexOut, T, reset)
 											if opcInfo(opcRmw) = '1' then
 												nextAddr <= nextAddrHold;
 											end if;
-		when cycleRmw =>				nextAddr <= nextAddrHold;			
-		when cyclePreWrite =>		nextAddr <= nextAddrHold;			
+		when cycleRmw =>				nextAddr <= nextAddrHold;
+		when cyclePreWrite =>		nextAddr <= nextAddrHold;
 											if opcInfo(opcZeroPage) = '1' then
 												nextAddr <= nextAddrZPIndexed;
 											elsif indexOut(8) = '1' then
 												nextAddr <= nextAddrIncrH;
-											end if;							
-		when cycleWrite =>			nextAddr <= nextAddrPc;			
+											end if;
+		when cycleWrite =>			nextAddr <= nextAddrPc;
 		when cycleStack1 =>			nextAddr <= nextAddrStack;
 		when cycleStack2 =>			nextAddr <= nextAddrStack;
 		when cycleStack3 =>			nextAddr <= nextAddrStack;
 											if opcInfo(opcStackData) = '0' then
 												nextAddr <= nextAddrPc;
-											end if;				
+											end if;
 		when cycleStack4 =>			nextAddr <= nextAddrIrq;
-		when cycleJump =>				nextAddr <= nextAddrAbs; 
-										
-		
+		when cycleJump =>				nextAddr <= nextAddrAbs;
+
+
 		when others =>					null;
-		end case;										
-		
+		end case;
+
 		if reset = '0' then
 			nextAddr <= nextAddrReset;
 		end if;
-		
+
 	end process;
-	
-	
-	
-	
-	
-	
+
+
+
+
+
+
 indexAlu: process(opcInfo, myAddr, T, X, Y)
 	begin
 		if opcInfo(indexX) = '1' then
 			indexOut <= (B"0" & T) + (B"0" & X);
 		elsif opcInfo(indexY) = '1' then
-				indexOut <= (B"0" & T) + (B"0" & Y);	
-		elsif opcInfo(opcBranch) = '1' then			
+				indexOut <= (B"0" & T) + (B"0" & Y);
+		elsif opcInfo(opcBranch) = '1' then
 			indexOut <= (B"0" & T) + (B"0" & myAddr(7 downto 0));
 		else
 			indexOut <= B"0" & T;
@@ -1494,38 +1494,36 @@ calcAddr: process(clk)
 				when others => null;
 				end case;
 			end if;
-		end if;							
-	end process;	
+		end if;
+	end process;
 
 	myAddrIncr <= myAddr + 1;
 	myAddrIncrH <= myAddr(15 downto 8) + 1;
 	myAddrDecrH <= myAddr(15 downto 8) - 1;
 	addr <= myAddr;
-	
+
 -- DMB This looked plain broken and inferred a latch
---    
+--
 --	calcsync: process(clk)
 --	begin
---		
+--
 --			if enable = '1' then
 --				case theCpuCycle is
 --				when opcodeFetch =>			sync <= '1';
---				when others =>					sync <= '0';			
+--				when others =>					sync <= '0';
 --				end case;
 --			end if;
 --	end process;
 
    sync <= '1' when theCpuCycle = opcodeFetch else '0';
-	
+
    sync_irq <= irqActive;
 
    Regs <= std_logic_vector(myAddr) &
-           "00000001" & std_logic_vector(S)& 
-           N & V & R & B & D & I & Z & C & 
-           std_logic_vector(Y) & 
-           std_logic_vector(X) & 
+           "00000001" & std_logic_vector(S)&
+           N & V & R & B & D & I & Z & C &
+           std_logic_vector(Y) &
+           std_logic_vector(X) &
            std_logic_vector(A);
-	
+
 end architecture;
-
-
