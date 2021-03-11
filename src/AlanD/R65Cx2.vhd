@@ -979,12 +979,17 @@ calcTheOpcode:	process(clk)
 
 	-- Determine the next cpu cycle. After the last cycle we always
 	-- go to opcodeFetch to get the next opcode.
-calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, indexOut, T, N, V, C, Z)
+calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, nextOpcode, indexOut, T, N, V, C, Z)
 	begin
 		nextCpuCycle <= opcodeFetch;
 
 		case theCpuCycle is
-		when opcodeFetch =>		nextCpuCycle <= cycle2;
+		when opcodeFetch =>
+            if nextOpcode(1 downto 0) = "11" then
+                nextCpuCycle <= opcodeFetch;
+            else
+                nextCpuCycle <= cycle2;
+            end if;
 		when cycle2 =>							if opcInfo(opcBranch) = '1' then
 														if (N = theOpcode(5) and theOpcode(7 downto 6) = "00")
 															or (V = theOpcode(5) and theOpcode(7 downto 6) = "01")
