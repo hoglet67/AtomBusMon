@@ -15,20 +15,19 @@ use ieee.numeric_std.ALL;
 
 entity R65C02 is
     port (
-
-        reset : in std_logic;
-        clk : in std_logic;
-        enable : in std_logic;
-        nmi_n : in std_logic;
-        irq_n : in std_logic;
-        di : in unsigned(7 downto 0);
-        do : out unsigned(7 downto 0);
-        addr : out unsigned(15 downto 0);
-        nwe : out std_logic;
-        sync : out std_logic;
+        reset    : in std_logic;
+        clk      : in std_logic;
+        enable   : in std_logic;
+        nmi_n    : in std_logic;
+        irq_n    : in std_logic;
+        di       : in unsigned(7 downto 0);
+        do       : out unsigned(7 downto 0);
+        addr     : out unsigned(15 downto 0);
+        nwe      : out std_logic;
+        sync     : out std_logic;
         sync_irq : out std_logic;
         -- 6502 registers (MSB) PC, SP, P, Y, X, A (LSB)
-        Regs    : out std_logic_vector(63 downto 0)
+        Regs     : out std_logic_vector(63 downto 0)
         );
 end R65C02;
 
@@ -41,8 +40,9 @@ end R65C02;
 -- Rts         (6) => fetch, cycle2, cycle3, cycleRead, cycleJump, cycleIncrEnd
 -- Rti         (6) => fetch, cycle2, stack1, stack2, stack3, cycleJump
 -- Jsr         (6) => fetch, cycle2, .. cycle5, cycle6, cycleJump
--- Jmp abs     (-) => fetch, cycle2, .., cycleJump
--- Jmp (ind)   (-) => fetch, cycle2, .., cycleJump
+-- Jmp abs     (3) => fetch, cycle2, cycleJump
+-- Jmp (ind)   (5) => fetch, cycle2, cycle3, cycleRead, cycleJump
+-- Jmp (ind,x) (5) => fetch, cycle2, cycle3, cycleRead, cycleJump
 -- Brk / irq   (6) => fetch, cycle2, stack2, stack3, stack4
 -- -----------------------------------------------------------------------
 
@@ -566,7 +566,6 @@ architecture Behavioral of R65C02 is
         );
     signal opcInfo        : decodedBitsDef;
     signal nextOpcInfo    : decodedBitsDef; -- Next opcode (decoded)
-    signal nextOpcInfoReg : decodedBitsDef; -- Next opcode (decoded) pipelined
     signal theOpcode      : unsigned(7 downto 0);
     signal nextOpcode     : unsigned(7 downto 0);
 
@@ -701,7 +700,7 @@ begin
 --hardware interrupts IRQ & NMI will push the B flag as being 0.
 
 
-    processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, D, I, Z, C)
+    processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, D, I, Z, C, R)
         variable lowBits  : unsigned(5 downto 0);
         variable nineBits : unsigned(8 downto 0);
         variable rmwBits  : unsigned(8 downto 0);
@@ -717,6 +716,7 @@ begin
         rmwBits  := (others => '-');
         tsxBits  := (others => '-');
         R <= '1';
+        B <= '0';
 
         -- Shift unit
         case opcInfo(aluMode1From to aluMode1To) is
@@ -907,14 +907,6 @@ begin
 
     nextOpcInfo <= opcodeInfoTable(to_integer(nextOpcode));
 
--- DMB Remove Pipelining
---  process(clk)
---  begin
---    if rising_edge(clk) then
-    nextOpcInfoReg <= nextOpcInfo;
---    end if;
---  end process;
-
     -- Read bits and flags from opcodeInfoTable and store in opcInfo.
     -- This info is used to control the execution of the opcode.
     calcOpcInfo: process(clk)
@@ -982,6 +974,8 @@ begin
         case theCpuCycle is
 
             when opcodeFetch =>
+                -- DMB: Implement single cycle NOPs (columns 3,7,B,F) by
+                -- looking ahead at opcode (bypassing the normal decoding)
                 if nextOpcode(1 downto 0) = "11" then
                     nextCpuCycle <= opcodeFetch;
                 else
@@ -1047,6 +1041,7 @@ begin
                         nextCpuCycle <= cycleRead2;
                     end if;
                 end if;
+
             when cyclePreIndirect =>
                 nextCpuCycle <= cycleIndirect;
 
