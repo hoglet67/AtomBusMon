@@ -41,9 +41,9 @@ end R65C02;
 -- Rti         (6) => fetch, cycle2, stack1, stack2, stack3, cycleJump
 -- Jsr         (6) => fetch, cycle2, .. cycle5, cycle6, cycleJump
 -- Jmp abs     (3) => fetch, cycle2, cycleJump
--- Jmp (ind)   (5) => fetch, cycle2, cycle3, cycleRead, cycleJump
--- Jmp (ind,x) (5) => fetch, cycle2, cycle3, cycleRead, cycleJump
--- Brk / irq   (6) => fetch, cycle2, stack2, stack3, stack4
+-- Jmp (ind)   (6) => fetch, cycle2, cycle3, cycleRead, cycleRead2, cycleJump
+-- Jmp (ind,x) (6) => fetch, cycle2, cycle3, cycleRead, cycleRead2, cycleJump
+-- Brk         (7) => fetch, cycle2, stack2, stack3, stack4, cycleRead2, cycleJump
 -- -----------------------------------------------------------------------
 
 architecture Behavioral of R65C02 is
@@ -1058,9 +1058,7 @@ begin
                 end if;
 
             when cycleRead =>
-                if opcInfo(opcJump) = '1' then
-                    nextCpuCycle <= cycleJump;
-                elsif indexOut(8) = '1' then
+                if opcInfo(opcJump) = '1' or indexOut(8) = '1' then
                     nextCpuCycle <= cycleRead2;
                 elsif opcInfo(opcRmw) = '1' then
                     nextCpuCycle <= cycleRmw;
@@ -1070,7 +1068,9 @@ begin
                 end if;
 
             when cycleRead2 =>
-                if opcInfo(opcRmw) = '1' then
+                if opcInfo(opcJump) = '1' then
+                    nextCpuCycle <= cycleJump;
+                elsif opcInfo(opcRmw) = '1' then
                     nextCpuCycle <= cycleRmw;
                 end if;
 
@@ -1104,7 +1104,7 @@ begin
                 end if;
 
             when cycleStack4 =>
-                nextCpuCycle <= cycleRead;
+                nextCpuCycle <= cycleRead2;
 
             when cycleJump =>
                 if opcInfo(opcIncrAfter) = '1' then
@@ -1460,16 +1460,16 @@ begin
                 nextAddr <= nextAddrZPIndexed;
             when cycleRead =>
                 nextAddr <= nextAddrPc;
-                if opcInfo(opcJump) = '1' then
-                    nextAddr <= nextAddrIncr;
-                elsif indexOut(8) = '1' then
+                if indexOut(8) = '1' then
                     nextAddr <= nextAddrIncrH;
-                elsif opcInfo(opcRmw) = '1' then
+                elsif opcInfo(opcRmw) = '1' or opcInfo(opcJump) = '1' then
                     nextAddr <= nextAddrHold;
                 end if;
             when cycleRead2 =>
                 nextAddr <= nextAddrPc;
-                if opcInfo(opcRmw) = '1' then
+                if opcInfo(opcJump) = '1' then
+                    nextAddr <= nextAddrIncr;
+                elsif opcInfo(opcRmw) = '1' then
                     nextAddr <= nextAddrHold;
                 end if;
             when cycleRmw =>
@@ -1542,11 +1542,7 @@ begin
                     when nextAddrAbs =>
                         myAddr <= di & T;
                     when nextAddrAbsIndexed =>
-                        if theOpcode = x"7C" then
-                            myAddr <= (di & T) + (x"00"& X);
-                        else
-                            myAddr <= di & indexOut(7 downto 0);
-                        end if;
+                        myAddr <= di & indexOut(7 downto 0);
                     when nextAddrZeroPage =>
                         myAddr <= "00000000" & di;
                     when nextAddrZPIndexed =>
