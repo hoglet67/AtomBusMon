@@ -453,6 +453,10 @@ modes_t modes[MAXBKPTS];
 #define WATCH_EXEC      9
 #define TRANSIENT      10
 
+// Mask to test if the breakpoint/watchpoint is a Z80 IO
+#if defined(CPU_Z80)
+#define MASK_IO ((1 << BRKPT_IO_READ) |  (1 << WATCH_IO_READ) |  (1 << BRKPT_IO_WRITE) |  (1 << WATCH_IO_WRITE))
+#endif
 
 static const char MODE0[] PROGMEM = "Mem Rd Brkpt";
 static const char MODE1[] PROGMEM = "Mem Rd Watch";
@@ -1228,7 +1232,11 @@ void clearBreakpoint(bknum_t n) {
 void genericBreakpoint(char *params, unsigned int mode) {
   bknum_t i;
   addr_t addr;
+#if defined(CPU_Z80)
+  addr_t mask = (mode & MASK_IO) ? 0xFF : 0xFFFF;
+#else
   addr_t mask = 0xFFFF;
+#endif
   trigger_t trigger = TRIGGER_UNDEFINED;
   params = parsehex4required(params, &addr);
   if (checkargs(params)) {
