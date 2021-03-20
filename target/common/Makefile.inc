@@ -22,7 +22,7 @@ OBJCOPY=avr-objcopy
 
 PROG = avr_progmem
 
-CFLAGS=$(CPU_CFLAGS) -DF_CPU=${F_CPU}UL -DBAUD=${BAUD} -mmcu=$(MCU) -Wall -Os -mcall-prologues
+CFLAGS=$(CPU_CFLAGS) -DF_CPU=${F_CPU}UL -DBAUD=${BAUD} -std=c99 -mmcu=$(MCU) -Wall -Os -mcall-prologues
 
 OBJECTS=AtomBusMon.o status.o $(CPU_OBJECTS)
 
