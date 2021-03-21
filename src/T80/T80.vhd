@@ -380,6 +380,7 @@ architecture rtl of T80 is
 	signal Halt                 : std_logic;
 	signal XYbit_undoc          : std_logic;
 	signal DOR                  : std_logic_vector(127 downto 0);
+	signal IVector              : std_logic_vector(7 downto 0);
 
 begin
 
@@ -578,6 +579,12 @@ begin
 							IR <= "11111111";
 						elsif Halt_FF = '1' or (IntCycle = '1' and IStatus = "10") or NMICycle = '1' then
 							IR <= "00000000";
+							-- DMB: It's important to catch the interrupt vector at
+							-- the start of T3, not the middle as the old code
+							-- (using WZ) did. This caused a issue with the Z80
+							-- Second Processor on the GODIL due to the pullups
+							-- (esp on D0)
+							IVector <= DInst;
 						else
 							IR <= DInst;
 						end if;
@@ -631,9 +638,9 @@ begin
 							PC <= "0000000001100110";
 						elsif MCycle = "011" and IntCycle = '1' and IStatus = "10" then
 							A(15 downto 8) <= I;
-							A(7 downto 0) <= WZ(7 downto 0);
+							A(7 downto 0) <= IVector;
 							PC(15 downto 8) <= unsigned(I);
-							PC(7 downto 0) <= unsigned(WZ(7 downto 0));
+							PC(7 downto 0) <= unsigned(IVector);
 						else
 							case Set_Addr_To is
 							when aXY =>
