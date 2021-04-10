@@ -88,7 +88,8 @@ char *cmdStrings[] = {
 #endif
   "clear",
   "trigger",
-  "timermode"
+  "timermode",
+  "timeout"
 };
 
 // Must be kept in step with cmdStrings (just above)
@@ -142,7 +143,8 @@ void (*cmdFuncs[])(char *params) = {
 #endif
   doCmdClear,
   doCmdTrigger,
-  doCmdTimerMode
+  doCmdTimerMode,
+  doCmdTimeout
 };
 
 #if defined(EXTENDED_HELP)
@@ -205,7 +207,7 @@ static const uint8_t helpMeta[] PROGMEM = {
    8, 13, // compare
   22,  1, // mem
   26,  2, // rd
-  42,  3, // wr
+  43,  3, // wr
 #if defined(CPU_Z80)
   20,  1, // io
   19,  2, // in
@@ -222,23 +224,24 @@ static const uint8_t helpMeta[] PROGMEM = {
   31,  7, // srec
   30, 14, // special
   28,  7, // reset
-  35,  6, // trace
+  36,  6, // trace
    1,  7, // blist
    6,  4, // breakx
-  41,  4, // watchx
+  42,  4, // watchx
    4,  4, // breakr
-  39,  4, // watchr
+  40,  4, // watchr
    5,  4, // breakw
-  40,  4, // watchw
+  41,  4, // watchw
 #if defined(CPU_Z80)
    2,  4, // breaki
-  37,  4, // watchi
+  38,  4, // watchi
    3,  4, // breako
-  38,  4, // watcho
+  39,  4, // watcho
 #endif
    7,  0, // clear
-  36,  5, // trigger
-  34, 17, // timermode
+  37,  5, // trigger
+  35, 17, // timermode
+  34, 14, // timeout
    0,  0
 };
 
@@ -613,6 +616,9 @@ static const char * triggerStrings[NUM_TRIGGERS] = {
 // The current memory address (e.g. used when disassembling)
 addr_t memAddr = 0;
 
+// The current memory timeout value, in microseconds.
+uint16_t memTimeout = 0x1000;
+
 // The address of the next instruction
 addr_t nextAddr = 0;
 
@@ -781,9 +787,13 @@ uint8_t checkargs(char *params) {
  ********************************************************/
 
 // Send a single hardware command
+//
 void hwCmd(cmd_t cmd, cmd_t param) {
   uint8_t status = STATUS_DIN;
-  uint16_t timeout = 10000;
+  // An interation of the inner loop with a 32-bit loop variable
+  // is 9 instructions. So use F_CPU to scale to the timeout
+  // value is approx microseconds.
+  uint32_t timeout =  ((uint32_t) memTimeout) * (F_CPU / 1000000) / 9;
   cmd |= param;
   CTRL_PORT &= ~CMD_MASK;
   CTRL_PORT ^= cmd | CMD_EDGE;
@@ -2074,6 +2084,18 @@ void doCmdTimerMode(char *params) {
   logstr("; reset address=");
   loghex4(timer_resetaddr);
   logstr("\n");
+}
+
+void doCmdTimeout(char *params) {
+  parsehex4(params, &memTimeout);
+  // Small timeouts values cause bogus timeout errors, so enforce a minimum
+  // of 16us, which is less much than one character time at 115,200 (86us)
+  if (memTimeout < 0x10) {
+     memTimeout = 0x10;
+  }
+  logstr("timeout=");
+  loghex4(memTimeout);
+  logstr(" microseconds (hex)\n");
 }
 
 void doCmdTrace(char *params) {
