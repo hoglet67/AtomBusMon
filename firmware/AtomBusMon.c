@@ -793,7 +793,7 @@ void hwCmd(cmd_t cmd, cmd_t param) {
   // An interation of the inner loop with a 32-bit loop variable
   // is 9 instructions. So use F_CPU to scale to the timeout
   // value is approx microseconds.
-  uint32_t timeout =  ((uint32_t) memTimeout) * (F_CPU / 1000000) / 9;
+  uint32_t timeout =  ((uint32_t) memTimeout) * ((F_CPU / 1000000) / 9);
   cmd |= param;
   CTRL_PORT &= ~CMD_MASK;
   CTRL_PORT ^= cmd | CMD_EDGE;
