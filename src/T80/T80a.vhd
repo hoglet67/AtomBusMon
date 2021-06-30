@@ -85,8 +85,17 @@ entity T80a is
         IOWait          : integer := 1      -- 0 => Single I/O cycle, 1 => Std I/O cycle
         );
     port(
+        -- DMB
+        TS              : out std_logic_vector(2 downto 0);
+        Regs            : out std_logic_vector(255 downto 0);
+        PdcData         : out std_logic_vector(7 downto 0);
+        CEN             : in std_logic;
+        Din             : in std_logic_vector(7 downto 0);
+        Dout            : out std_logic_vector(7 downto 0);
+        Den             : out std_logic;
+        -- Original Signals
         RESET_n         : in std_logic;
-        R800_mode       : in std_logic;
+        R800_mode       : in std_logic := '0';
         CLK_n           : in std_logic;
         WAIT_n          : in std_logic;
         INT_n           : in std_logic;
@@ -100,16 +109,16 @@ entity T80a is
         RFSH_n          : out std_logic;
         HALT_n          : out std_logic;
         BUSAK_n         : out std_logic;
-        A               : out std_logic_vector(15 downto 0);
-        D               : inout std_logic_vector(7 downto 0)
+        A               : out std_logic_vector(15 downto 0)
+--      D               : inout std_logic_vector(7 downto 0)
         );
 end T80a;
 
 architecture rtl of T80a is
 
-    signal CEN          : std_logic;
     signal Reset_s      : std_logic;
     signal IntCycle_n   : std_logic;
+    signal NMICycle_n   : std_logic;
     signal IORQ         : std_logic;
     signal NoRead       : std_logic;
     signal Write        : std_logic;
@@ -136,10 +145,9 @@ architecture rtl of T80a is
     signal Wait_s       : std_logic;
     signal MCycle       : std_logic_vector(2 downto 0);
     signal TState       : std_logic_vector(2 downto 0);
+    signal HALT_n_int   : std_logic;
 
 begin
-
-    CEN <= '1';
 
     BUSAK_n <= BUSAK_n_i;                                                -- 30/10/19 Charlie Ingley - IORQ/RD/WR changes
     MREQ_rw <= MREQ and (Req_Inhibit or MReq_Inhibit);                   -- added MREQ timing control
@@ -148,21 +156,34 @@ begin
     IORQ_n_i <= not ((IORQ_int and not IORQ_int_inhibit(2)) or IORQ_rw); -- changed IORQ generation
     RD_n_i <= not (RD and (MREQ_rw or IORQ_rw));                         -- changed RD/IORQ generation
     WR_n_i <= not (Write and ((WR_t2 and MREQ_rw) or IORQ_rw));          -- added WR/IORQ timing control
+    HALT_n <= HALT_n_int;
 
-    MREQ_n <= MREQ_n_i when BUSAK_n_i = '1' else 'Z';
-    IORQ_n <= IORQ_n_i when BUSAK_n_i = '1' else 'Z';
-    RD_n <= RD_n_i when BUSAK_n_i = '1' else 'Z';
-    WR_n <= WR_n_i when BUSAK_n_i = '1' else 'Z';
-    RFSH_n <= RFSH_n_i when BUSAK_n_i = '1' else 'Z';
-    A <= A_i when BUSAK_n_i = '1' else (others => 'Z');
-    D <= DO when Write = '1' and BUSAK_n_i = '1' else (others => 'Z');
+    --Remove tristate as in ICE-Z80 this is implmeneted in Z80CpuMon
+    --MREQ_n <= MREQ_n_i when BUSAK_n_i = '1' else 'Z';
+    --IORQ_n <= IORQ_n_i when BUSAK_n_i = '1' else 'Z';
+    --RD_n <= RD_n_i when BUSAK_n_i = '1' else 'Z';
+    --WR_n <= WR_n_i when BUSAK_n_i = '1' else 'Z';
+    --RFSH_n <= RFSH_n_i when BUSAK_n_i = '1' else 'Z';
+    --A <= A_i when BUSAK_n_i = '1' else (others => 'Z');
+    --D <= DO when Write = '1' and BUSAK_n_i = '1' else (others => 'Z');
+
+    MREQ_n <= MREQ_n_i;
+    IORQ_n <= IORQ_n_i;
+    RD_n <= RD_n_i;
+    WR_n <= WR_n_i;
+    RFSH_n <= RFSH_n_i;
+    A <= A_i;
+    Dout <= DO;
+    Den  <= Write and BUSAK_n_i;
 
     process (RESET_n, CLK_n)
     begin
         if RESET_n = '0' then
             Reset_s <= '0';
         elsif CLK_n'event and CLK_n = '1' then
-            Reset_s <= '1';
+            if CEN = '1' then
+                Reset_s <= '1';
+            end if;
         end if;
     end process;
 
@@ -178,7 +199,7 @@ begin
             NoRead => NoRead,
             Write => Write,
             RFSH_n => RFSH_n_i,
-            HALT_n => HALT_n,
+            HALT_n => HALT_n_int,
             WAIT_n => Wait_s,
             INT_n => INT_n,
             NMI_n => NMI_n,
@@ -187,19 +208,29 @@ begin
             BUSAK_n => BUSAK_n_i,
             CLK_n => CLK_n,
             A => A_i,
-            DInst => D,
+            DInst => Din,
             DI => DI_Reg,
             DO => DO,
             MC => MCycle,
             TS => TState,
-            IntCycle_n => IntCycle_n);
+            IntCycle_n => IntCycle_n,
+            -- DMB
+            NMICycle_n => NMICycle_n,
+            REG => Regs(211 downto 0),
+            DIRSet => '0',
+            DIR => (others => '0')
+            );
+
+    Regs(255 downto 212) <= (others => '0');
 
     process (CLK_n)
     begin
         if CLK_n'event and CLK_n = '0' then
-            Wait_s <= WAIT_n;
-            if TState = "011" and BUSAK_n_i = '1' then
-                DI_Reg <= to_x01(D);
+            if CEN = '1' then
+                Wait_s <= WAIT_n;
+                if TState = "011" and BUSAK_n_i = '1' then
+                    DI_Reg <= to_x01(Din);
+                end if;
             end if;
         end if;
     end process;
@@ -210,13 +241,15 @@ begin
         if Reset_s = '0' then
             WR_t2 <= '0';
         elsif CLK_n'event and CLK_n = '0' then
-            if MCycle /= "001" then
-                if TState = "010" then  -- WR starts on falling edge of T2 for MREQ
-                    WR_t2 <=  Write;
+            if CEN = '1' then
+                if MCycle /= "001" then
+                    if TState = "010" then  -- WR starts on falling edge of T2 for MREQ
+                        WR_t2 <=  Write;
+                    end if;
                 end if;
-            end if;
-            if TState = "011" then        -- end WR
-                WR_t2 <= '0';
+                if TState = "011" then        -- end WR
+                    WR_t2 <= '0';
+                end if;
             end if;
         end if;
     end process;
@@ -227,10 +260,12 @@ begin
         if Reset_s = '0' then
             Req_Inhibit <= '1';  -- Charlie Ingley 30/10/19 - changed Req_Inhibit polarity
         elsif CLK_n'event and CLK_n = '1' then
-            if MCycle = "001" and TState = "010" and WAIT_n = '1' then  -- by Fabio Belavenuto - fix behavior of Wait_n
-                Req_Inhibit <= '0';
-            else
-                Req_Inhibit <= '1';
+            if CEN = '1' then
+                if MCycle = "001" and TState = "010" and WAIT_n = '1' then  -- by Fabio Belavenuto - fix behavior of Wait_n
+                    Req_Inhibit <= '0';
+                else
+                    Req_Inhibit <= '1';
+                end if;
             end if;
         end if;
     end process;
@@ -241,10 +276,12 @@ begin
         if Reset_s = '0' then
             MReq_Inhibit <= '1'; -- Charlie Ingley 30/10/19 - changed Req_Inhibit polarity
         elsif CLK_n'event and CLK_n = '0' then
-            if MCycle = "001" and TState = "010" and WAIT_n = '1' then  -- by Fabio Belavenuto - fix behavior of Wait_n
-                MReq_Inhibit <= '0';
-            else
-                MReq_Inhibit <= '1';
+            if CEN = '1' then
+                if MCycle = "001" and TState = "010" and WAIT_n = '1' then  -- by Fabio Belavenuto - fix behavior of Wait_n
+                    MReq_Inhibit <= '0';
+                else
+                    MReq_Inhibit <= '1';
+                end if;
             end if;
         end if;
     end process;
@@ -256,26 +293,28 @@ begin
             RD <= '0';
             MREQ <= '0';
         elsif CLK_n'event and CLK_n = '0' then
-            if MCycle = "001" then
-                if TState = "001" then
-                    RD <= IntCycle_n;
-                    MREQ <= IntCycle_n;
-                end if;
-                if TState = "011" then
-                    RD <= '0';
-                    MREQ <= '1';
-                end if;
-                if TState = "100" then
-                    MREQ <= '0';
-                end if;
-            else
-                if TState = "001" and NoRead = '0' then
-                    RD <= not Write;
-                    MREQ <= not IORQ;
-                end if;
-                if TState = "011" then
-                    RD <= '0';
-                    MREQ <= '0';
+            if CEN = '1' then
+                if MCycle = "001" then
+                    if TState = "001" then
+                        RD <= IntCycle_n;
+                        MREQ <= IntCycle_n;
+                    end if;
+                    if TState = "011" then
+                        RD <= '0';
+                        MREQ <= '1';
+                    end if;
+                    if TState = "100" then
+                        MREQ <= '0';
+                    end if;
+                else
+                    if TState = "001" and NoRead = '0' then
+                        RD <= not Write;
+                        MREQ <= not IORQ;
+                    end if;
+                    if TState = "011" then
+                        RD <= '0';
+                        MREQ <= '0';
+                    end if;
                 end if;
             end if;
         end if;
@@ -287,12 +326,14 @@ begin
         if Reset_s = '0' then
             IORQ_int <= '0';
         elsif CLK_n'event and CLK_n = '1' then
-            if MCycle = "001" then
-                if TState = "001" then
-                    IORQ_int <= not IntCycle_n;
-                end if;
-                if TState = "010" then
-                    IORQ_int <= '0';
+            if CEN = '1' then
+                if MCycle = "001" then
+                    if TState = "001" then
+                        IORQ_int <= not IntCycle_n;
+                    end if;
+                    if TState = "010" then
+                        IORQ_int <= '0';
+                    end if;
                 end if;
             end if;
         end if;
@@ -303,12 +344,14 @@ begin
         if Reset_s = '0' then
             IORQ_int_inhibit <= "111";
         elsif CLK_n'event and CLK_n = '0' then
-            if IntCycle_n = '0' then
-                if MCycle = "001" then
-                    IORQ_int_inhibit <= IORQ_int_inhibit(1 downto 0) & '0';
-                end if;
-                if MCycle = "010" then
-                    IORQ_int_inhibit <= "111";
+            if CEN = '1' then
+                if IntCycle_n = '0' then
+                    if MCycle = "001" then
+                        IORQ_int_inhibit <= IORQ_int_inhibit(1 downto 0) & '0';
+                    end if;
+                    if MCycle = "010" then
+                        IORQ_int_inhibit <= "111";
+                    end if;
                 end if;
             end if;
         end if;
@@ -320,11 +363,13 @@ begin
         if Reset_s = '0' then
             IORQ_t1 <= '1';
         elsif CLK_n'event and CLK_n = '0' then
-            if TState = "001" then
-                IORQ_t1 <= not IntCycle_n;
-            end if;
-            if TState = "011" then
-                IORQ_t1 <= '1';
+            if CEN = '1' then
+                if TState = "001" then
+                    IORQ_t1 <= not IntCycle_n;
+                end if;
+                if TState = "011" then
+                    IORQ_t1 <= '1';
+                end if;
             end if;
         end if;
     end process;
@@ -335,8 +380,16 @@ begin
         if RESET_n = '0' then
             IORQ_t2 <= '1';
         elsif CLK_n'event and CLK_n = '1' then
-            IORQ_t2 <= IORQ_t1;
+            if CEN = '1' then
+                IORQ_t2 <= IORQ_t1;
+            end if;
         end if;
     end process;
+
+-- DMB
+
+    TS <= TState;
+
+    PdcData <= (not HALT_n_int) & (not NMICycle_n) & (not IntCycle_n) & "00000";
 
 end;

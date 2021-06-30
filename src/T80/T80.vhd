@@ -117,6 +117,7 @@ entity T80 is
 		MC         : out std_logic_vector(2 downto 0);
 		TS         : out std_logic_vector(2 downto 0);
 		IntCycle_n : out std_logic;
+		NMICycle_n : out std_logic;
 		IntE       : out std_logic;
 		Stop       : out std_logic;
 		R800_mode  : in  std_logic := '0';
@@ -682,7 +683,7 @@ begin
 						F(Flag_N) <= DI_Reg(7);
 						F(Flag_C) <= ioq(8);
 						F(Flag_H) <= ioq(8);
-						ioq := (ioq and x"7") xor ('0'&BusA);
+						ioq := (ioq and ('0'&x"07")) xor ('0'&BusA);
 						F(Flag_P) <= not (ioq(0) xor ioq(1) xor ioq(2) xor ioq(3) xor ioq(4) xor ioq(5) xor ioq(6) xor ioq(7));
 					end if;
 
@@ -1193,6 +1194,7 @@ begin
 	HALT_n <= not Halt_FF;
 	BUSAK_n <= not (BusAck and RESET_n);
 	IntCycle_n <= not IntCycle;
+	NMICycle_n <= not NMICycle;
 	IntE <= IntE_FF1;
 	IORQ <= IORQ_i;
 	Stop <= I_DJNZ;
