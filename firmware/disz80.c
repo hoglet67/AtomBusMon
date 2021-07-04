@@ -887,11 +887,14 @@ char * disassem (char *ptr, unsigned int *ip) {
   return ptr;
 }
 
-addr_t disassemble(addr_t addr) {
+addr_t disassemble(addr_t addr, uint8_t m) {
   static char buffer[64];
 
   char *ptr;
   addr_t addr2 = addr;
+
+  // Ignore the current CPU state in the disassemble connamd
+  uint8_t pdc = (m == MODE_DIS_CMD) ? 0 : PDC_DIN;
 
   // 0123456789012345678901234567890123456789
   // AAAA : HH HH HH HH : LD   RR,($XXXX)
@@ -905,11 +908,12 @@ addr_t disassemble(addr_t addr) {
 
   // Opcode
   ptr = buffer + 21;
-  if (PDC_DIN & 0x80) {
+
+  if (pdc & 0x80) {
     strcpy_P(ptr, msg_HALT);
-  } else if (PDC_DIN & 0x40) {
+  } else if (pdc & 0x40) {
     strcpy(ptr, msg_NMI);
-  } else if (PDC_DIN & 0x20) {
+  } else if (pdc & 0x20) {
     strcpy(ptr, msg_INT);
   } else {
     ptr = disassem(ptr, &addr2);

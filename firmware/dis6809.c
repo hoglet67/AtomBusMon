@@ -647,7 +647,7 @@ static char *strcc(char *ptr, uint8_t val) {
 
 /* disassemble one instruction at address addr and return the address of the next instruction */
 
-addr_t disassemble(addr_t addr) {
+addr_t disassemble(addr_t addr, uint8_t m) {
   uint8_t d = get_memb(addr);
   uint8_t s;
   int8_t i;

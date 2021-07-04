@@ -922,7 +922,7 @@ void writeIOByteInc() {
 
 addr_t disMem(addr_t addr) {
   loadAddr(addr);
-  return disassemble(addr);
+  return disassemble(addr, MODE_NORMAL);
 }
 
 void genericDump(char *params, data_t (*readFunc)()) {
@@ -1526,7 +1526,7 @@ void doCmdDis(char *params) {
   memAddr = startAddr;
   loadAddr(memAddr);
   do {
-    memAddr = disassemble(memAddr);
+     memAddr = disassemble(memAddr, MODE_DIS_CMD);
     i++;
   } while ((!endAddr && i < 10) || (endAddr && memAddr > startAddr && memAddr <= endAddr));
 }
