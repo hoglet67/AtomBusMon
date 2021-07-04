@@ -530,9 +530,9 @@ static const unsigned char cmd_ED40[192] PROGMEM = {
     NOP,0,0
   };
 
-static const char word_EX_HALT[] PROGMEM = "**HALT**";
-static const char word_EX_INT[] PROGMEM = "**INT**";
-static const char word_EX_NMI[] PROGMEM = "**NMI**";
+static const char msg_HALT[] PROGMEM = "**HALT**\n";
+static const char msg_INT[] PROGMEM = "**INT**\n";
+static const char msg_NMI[] PROGMEM = "**NMI**\n";
 
 unsigned char cmd_halt[] = { HALT,0,0 };
 unsigned char cmd_nop[]  = { NOP,0,0 };
@@ -906,16 +906,16 @@ addr_t disassemble(addr_t addr) {
   // Opcode
   ptr = buffer + 21;
   if (PDC_DIN & 0x80) {
-    strcpy_P(ptr, PSTR("**HALT**"));
+    strcpy_P(ptr, msg_HALT);
   } else if (PDC_DIN & 0x40) {
-    strcpy(ptr, PSTR("**NMI**"));
+    strcpy(ptr, msg_NMI);
   } else if (PDC_DIN & 0x20) {
-    strcpy(ptr, PSTR("**INT**"));
+    strcpy(ptr, msg_INT);
   } else {
     ptr = disassem(ptr, &addr2);
+    *ptr++ = '\n';
+    *ptr++ = '\0';
   }
-  *ptr++ = '\n';
-  *ptr++ = '\0';
 
   // Hex
   loadAddr(addr);
