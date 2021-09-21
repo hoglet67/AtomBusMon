@@ -16,6 +16,9 @@ NAME=${DIR}/icemulti
 
 mkdir -p ${DIR}
 
+for FORMAT in mcs bin
+do
+
 promgen                                          \
  -u      0 loader/MultiBootLoader.bit            \
  -u  54000 unknown/UnknownAdapter.bit            \
@@ -23,6 +26,8 @@ promgen                                          \
  -u  FC000 icez80/icez80.bit                     \
  -u 150000 ice65c02/ice65c02.bit                 \
  -u 1A4000 ice6809/ice6809.bit                   \
- -o $NAME.mcs  -p mcs -w -spi -s 8192
+ -o $NAME.$FORMAT  -p $FORMAT -w -spi -s 8192
+
+done
 
 rm -f $NAME.cfi $NAME.prm

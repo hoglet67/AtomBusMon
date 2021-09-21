@@ -30,6 +30,7 @@ build: $(TARGET).mcs
 
 $(TARGET).mcs: $(TARGET).bit
 	promgen -u 0 $(TARGET).bit -o $(TARGET).mcs -p mcs -w -spi -s 8192
+	promgen -u 0 $(TARGET).bit -o $(TARGET).bin -p bin -w -spi -s 8192
 	rm -f $(TARGET).cfi $(TARGET).prm
 
 working/$(PROJECT).bit:
