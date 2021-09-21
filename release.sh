@@ -16,8 +16,9 @@ pushd target
 make clean
 make
 
-cp --parents */*/*.bit ../${DIR}
-cp --parents */*/*.mcs ../${DIR}
+cp --parents */*/ice*.bit ../${DIR}
+cp --parents */*/ice*.bin ../${DIR}
+cp --parents */*/ice*.mcs ../${DIR}
 
 popd
 
@@ -27,5 +28,3 @@ popd
 
 echo "Built release in: "${DIR}
 unzip -l releases/${NAME}.zip
-
- 
