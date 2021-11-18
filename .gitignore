@@ -8,6 +8,7 @@ nohup.out
 target/**/*.o
 target/**/*.bit
 target/**/*.mcs
+target/**/*.bin
 target/**/avr_progmem.*
 target/*/ipcore/WatchEvents.asy
 target/*/ipcore/WatchEvents.gise
