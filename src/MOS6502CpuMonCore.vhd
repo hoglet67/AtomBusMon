@@ -67,7 +67,10 @@ entity MOS6502CpuMonCore is
         -- OHO_DY1 connected to test connector
         tmosi           : out   std_logic;
         tdin            : out   std_logic;
-        tcclk           : out   std_logic
+        tcclk           : out   std_logic;
+
+        -- Test connector signals
+        test            : inout std_logic_vector(3 downto 0)
     );
 end MOS6502CpuMonCore;
 
@@ -390,5 +393,11 @@ begin
     memory_done <= '1' when state = rd or state = wr or (op3 = '0' and state = exec1) or state = exec2 else '0';
 
     memory_din <= Din;
+
+    -- Test outputs
+    test(0) <= SS_Single;     -- GODIL J5 pin 1 (46)
+    test(1) <= 'Z';           -- GODIL J5 pin 2 (47)
+    test(2) <= 'Z';           -- GODIL J5 pin 3 (48)
+    test(3) <= 'Z';           -- GODIL J5 pin 4 (56)
 
 end behavioral;

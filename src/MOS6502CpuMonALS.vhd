@@ -79,18 +79,21 @@ entity MOS6502CpuMonALS is
         avr_TxD          : out   std_logic;
 
         -- Switches
-        sw1               : in   std_logic;
-        sw2               : in   std_logic;
+        sw1              : in   std_logic;
+        sw2              : in   std_logic;
 
         -- LEDs
-        led1              : out  std_logic;
-        led2              : out  std_logic;
-        led3              : out  std_logic;
+        led1             : out  std_logic;
+        led2             : out  std_logic;
+        led3             : out  std_logic;
 
         -- OHO_DY1 LED display
-        tmosi             : out  std_logic;
-        tdin              : out  std_logic;
-        tcclk             : out  std_logic
+        tmosi            : out  std_logic;
+        tdin             : out  std_logic;
+        tcclk            : out  std_logic;
+
+        -- Test connector signals
+        test             : inout std_logic_vector(3 downto 0)
     );
 end MOS6502CpuMonALS;
 
@@ -166,7 +169,10 @@ begin
             -- OHO_DY1 LED display
             tmosi            => tmosi,
             tdin             => tdin,
-            tcclk            => tcclk
+            tcclk            => tcclk,
+
+            -- Test signals
+            test             => test
             );
 
     -- 6502 Outputs

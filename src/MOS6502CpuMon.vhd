@@ -48,14 +48,14 @@ entity MOS6502CpuMon is
         Rdy             : in    std_logic;
 
         -- External trigger inputs
-        trig             : in    std_logic_vector(1 downto 0);
+        trig            : in    std_logic_vector(1 downto 0);
 
         -- Jumpers
-        fakeTube_n      : in     std_logic;
+        fakeTube_n      : in    std_logic;
 
         -- Serial Console
-        avr_RxD         : in     std_logic;
-        avr_TxD         : out    std_logic;
+        avr_RxD         : in    std_logic;
+        avr_TxD         : out   std_logic;
 
         -- Switches
         sw_reset_cpu    : in    std_logic;
@@ -67,9 +67,12 @@ entity MOS6502CpuMon is
         led_trig1       : out   std_logic;
 
         -- OHO_DY1 connected to test connector
-        tmosi            : out   std_logic;
-        tdin             : out   std_logic;
-        tcclk            : out   std_logic
+        tmosi           : out   std_logic;
+        tdin            : out   std_logic;
+        tcclk           : out   std_logic;
+
+        -- Test connector signals
+        test            : inout std_logic_vector(3 downto 0)
     );
 end MOS6502CpuMon;
 
@@ -141,7 +144,8 @@ begin
         led_trig1    => led_trig1,
         tmosi        => tmosi,
         tdin         => tdin,
-        tcclk        => tcclk
+        tcclk        => tcclk,
+        test         => test
     );
 
     sync_gen : process(cpu_clk)
