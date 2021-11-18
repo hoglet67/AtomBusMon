@@ -116,7 +116,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal SS_Step        : std_logic;
     signal SS_Step_held   : std_logic;
     signal CountCycle     : std_logic;
-    signal special        : std_logic_vector(2 downto 0);
+    signal int_ctrl       : std_logic_vector(7 downto 0);
     signal skipNextOpcode : std_logic;
 
     signal Regs           : std_logic_vector(255 downto 0);
@@ -150,6 +150,7 @@ type state_type is (idle, nop_t1, nop_t2, nop_t3, nop_t4, rd_t1, rd_wa, rd_t2, r
     signal BUSRQ_n_sync   : std_logic;
     signal INT_n_sync     : std_logic;
     signal NMI_n_sync     : std_logic;
+    signal RESET_n_sync   : std_logic;
 
     signal Read_n         : std_logic;
     signal Read_n0        : std_logic;
@@ -218,7 +219,7 @@ begin
         WrIO_n       => WriteIO_n,
         Sync         => Sync,
         Rdy          => open,
-        nRSTin       => RESET_n,
+        nRSTin       => RESET_n_sync,
         nRSTout      => cpu_reset_n,
         CountCycle   => CountCycle,
         trig         => trig,
@@ -242,7 +243,7 @@ begin
         DataOut      => memory_dout,
         DataIn       => memory_din,
         Done         => memory_done,
-        Special      => special,
+        int_ctrl     => int_ctrl,
         SS_Single    => SS_Single,
         SS_Step      => SS_Step
     );
@@ -283,9 +284,31 @@ begin
     int_gen : process(CLK_n)
     begin
         if rising_edge(CLK_n) then
-            BUSRQ_n_sync <= BUSRQ_n;
-            NMI_n_sync   <= NMI_n or special(1);
-            INT_n_sync   <= INT_n or special(0);
+
+            if int_ctrl(1) = '1' then
+                BUSRQ_n_sync <= int_ctrl(0);
+            else
+                BUSRQ_n_sync <= BUSRQ_n or (int_ctrl(0) and SS_single);
+            end if;
+
+            if int_ctrl(3) = '1' then
+                INT_n_sync <= int_ctrl(2);
+            else
+                INT_n_sync <= INT_n or (int_ctrl(2) and SS_single);
+            end if;
+
+            if int_ctrl(5) = '1' then
+                NMI_n_sync <= int_ctrl(4);
+            else
+                NMI_n_sync <= NMI_n or (int_ctrl(4) and SS_single);
+            end if;
+
+            if int_ctrl(7) = '1' then
+                RESET_n_sync <= int_ctrl(6);
+            else
+                RESET_n_sync <= RESET_n or (int_ctrl(6) and SS_single);
+            end if;
+
         end if;
     end process;
 
@@ -401,7 +424,7 @@ begin
     BUSAK_n    <= BUSAK_n_int when state = idle else mon_busak_n;
 
     -- Force the address and databus to tristate when reset is asserted
-    tristate_ad_n <= '0'         when RESET_n = '0' else
+    tristate_ad_n <= '0'         when RESET_n_sync = '0' else
                      BUSAK_n_int when state = idle  else
                      mon_busak_n1;
 

@@ -71,8 +71,8 @@ entity BusMonCore is
         DataIn           : in std_logic_vector(7 downto 0);
         Done             : in std_logic;
 
-        -- Special outputs (function is CPU specific)
-        Special          : out std_logic_vector(2 downto 0);
+        -- External Interrupt Control
+        int_ctrl         : out std_logic_vector(7 downto 0) := x"00";
 
         -- Single Step interface
         SS_Single        : out std_logic;
@@ -459,8 +459,8 @@ begin
     -- 0111xx Unused
     -- 011x1x Unused
     -- 011xx1 Unused
-    -- 100xxx Special
-    -- 1010xx Timer Mode
+    -- 10xxxx Int Ctrl
+    -- 1100xx Timer Mode
     --     00 - count cpu cycles where clken = 1 and CountCycle = 1
     --     01 - count cpu cycles where clken = 1 (ignoring CountCycle)
     --     10 - free running timer, using busmon_clk as the source
@@ -551,11 +551,11 @@ begin
                         exec <= '1';
                     end if;
 
-                    if (cmd(5 downto 3) = "100") then
-                        Special <= cmd(2 downto 0);
+                    if (cmd(5 downto 4) = "10") then
+                        int_ctrl(to_integer(unsigned(cmd(3 downto 2))) * 2 + 1 downto to_integer(unsigned(cmd(3 downto 2))) * 2) <= cmd(1 downto 0);
                     end if;
 
-                    if (cmd(5 downto 2) = "1010") then
+                    if (cmd(5 downto 2) = "1100") then
                         timer_mode <= cmd(1 downto 0);
                     end if;
 

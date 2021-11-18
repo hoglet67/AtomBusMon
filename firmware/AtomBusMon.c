@@ -16,14 +16,33 @@
 
 #define VERSION "0.996"
 
+// The X commands allows the various interrupt inputs to be overridded
+// They are named after the data sheet pin name
+
 #if defined(CPU_Z80)
   #define NAME "ICE-Z80"
+  #define XCMD0 "xbusrq"
+  #define XCMD1 "xint"
+  #define XCMD2 "xnmi"
+  #define XCMD3 "xres"
 #elif defined(CPU_6502)
   #define NAME "ICE-6502"
+  #define XCMD0 "xirq"
+  #define XCMD1 "xnmi"
+  #define XCMD2 "xres"
+  #define XCMD3 "xso "
 #elif defined(CPU_65C02)
   #define NAME "ICE-65C02"
+  #define XCMD0 "xirq"
+  #define XCMD1 "xnmi"
+  #define XCMD2 "xres"
+  #define XCMD3 "xso "
 #elif defined(CPU_6809)
   #define NAME "ICE-6809"
+  #define XCMD0 "xfiq"
+  #define XCMD1 "xirq"
+  #define XCMD2 "xnmi"
+  #define XCMD3 "xres"
 #else
   #error "Unsupported CPU type"
 #endif
@@ -70,7 +89,6 @@ char *cmdStrings[] = {
   "load",
   "save",
   "srec",
-  "special",
   "reset",
   "trace",
   "blist",
@@ -89,7 +107,11 @@ char *cmdStrings[] = {
   "clear",
   "trigger",
   "timermode",
-  "timeout"
+  "timeout",
+  XCMD0,
+  XCMD1,
+  XCMD2,
+  XCMD3
 };
 
 // Must be kept in step with cmdStrings (just above)
@@ -125,7 +147,6 @@ void (*cmdFuncs[])(char *params) = {
   doCmdLoad,
   doCmdSave,
   doCmdSRec,
-  doCmdSpecial,
   doCmdReset,
   doCmdTrace,
   doCmdList,
@@ -144,7 +165,11 @@ void (*cmdFuncs[])(char *params) = {
   doCmdClear,
   doCmdTrigger,
   doCmdTimerMode,
-  doCmdTimeout
+  doCmdTimeout,
+  doCmdXCmd0,
+  doCmdXCmd1,
+  doCmdXCmd2,
+  doCmdXCmd3
 };
 
 #if defined(EXTENDED_HELP)
@@ -167,6 +192,7 @@ static const char ARGS14[] PROGMEM = "[ <value> ]";
 static const char ARGS15[] PROGMEM = "[ <command> ]";
 static const char ARGS16[] PROGMEM = "<op1> [ <op2> [ <op3> ] ]";
 static const char ARGS17[] PROGMEM = "[ <source> [ <prescale> [ <reset address> ] ] ]";
+static const char ARGS18[] PROGMEM = "e|c|d|f";
 
 static const char * const argsStrings[] PROGMEM = {
   ARGS00,
@@ -187,6 +213,7 @@ static const char * const argsStrings[] PROGMEM = {
   ARGS15,
   ARGS16,
   ARGS17,
+  ARGS18
 };
 
 // Must be kept in step with cmdStrings (just above)
@@ -197,7 +224,7 @@ static const uint8_t helpMeta[] PROGMEM = {
   17, 15, // help
    9,  8, // continue
   24,  1, // next
-  32,  6, // step
+  31,  6, // step
   27,  7, // regs
   12, 10, // dis
   16,  7, // flush
@@ -207,7 +234,7 @@ static const uint8_t helpMeta[] PROGMEM = {
    8, 13, // compare
   22,  1, // mem
   26,  2, // rd
-  43,  3, // wr
+  42,  3, // wr
 #if defined(CPU_Z80)
   20,  1, // io
   19,  2, // in
@@ -218,30 +245,33 @@ static const uint8_t helpMeta[] PROGMEM = {
   15, 16, // exec
   23, 14, // mode
 #endif
-  33, 12, // test
+  32, 12, // test
   21,  0, // load
   29,  9, // save
-  31,  7, // srec
-  30, 14, // special
+  30,  7, // srec
   28,  7, // reset
-  36,  6, // trace
+  35,  6, // trace
    1,  7, // blist
    6,  4, // breakx
-  42,  4, // watchx
+  41,  4, // watchx
    4,  4, // breakr
-  40,  4, // watchr
+  39,  4, // watchr
    5,  4, // breakw
-  41,  4, // watchw
+  40,  4, // watchw
 #if defined(CPU_Z80)
    2,  4, // breaki
-  38,  4, // watchi
+  37,  4, // watchi
    3,  4, // breako
-  39,  4, // watcho
+  38,  4, // watcho
 #endif
    7,  0, // clear
-  37,  5, // trigger
-  35, 17, // timermode
-  34, 14, // timeout
+  36,  5, // trigger
+  34, 17, // timermode
+  33, 14, // timeout
+  43, 18, // xcmd0
+  44, 18, // xcmd1
+  45, 18, // xcmd2
+  46, 18, // xcmd3
    0,  0
 };
 
@@ -286,8 +316,8 @@ static const uint8_t helpMeta[] PROGMEM = {
 // 011xx1 Unused
 // 011x1x Unused
 // 0111xx Unused
-// 100xxx Special
-// 1010xx Timer Mode
+// 10xxxx Int Ctrl
+// 1100xx Timer Mode
 //     00 - count cpu cycles where clken = 1 and CountCycle = 1
 //     01 - count cpu cycles where clken = 1 (ignoring CountCycle)
 //     10 - free running timer, using busmon_clk as the source
@@ -310,8 +340,8 @@ static const uint8_t helpMeta[] PROGMEM = {
 #define CMD_WR_IO         0x16
 #define CMD_WR_IO_INC     0x17
 #define CMD_EXEC_GO       0x18
-#define CMD_SPECIAL       0x20
-#define CMD_TIMER_MODE    0x28
+#define CMD_INT_CTRL      0x20
+#define CMD_TIMER_MODE    0x30
 
 /********************************************************
  * AVR Status Register Definitions
@@ -610,6 +640,24 @@ static const char * triggerStrings[NUM_TRIGGERS] = {
 #define TRIGGER_UNDEFINED 31
 
 /********************************************************
+ * Interrupt controls
+ ********************************************************/
+
+static const uint8_t cmd_map[] = { 1, 3, 0, 2 };
+
+static const char INTCTRL0[] PROGMEM = "Enabled";
+static const char INTCTRL1[] PROGMEM = "Conditional";
+static const char INTCTRL2[] PROGMEM = "Forced";
+static const char INTCTRL3[] PROGMEM = "Disabled";
+
+static const char *int_ctrl_strings[] = {
+   INTCTRL0,
+   INTCTRL1,
+   INTCTRL2,
+   INTCTRL3
+};
+
+/********************************************************
  * Other global variables
  ********************************************************/
 
@@ -637,14 +685,15 @@ uint8_t cmd_id = 0xff;
 #define MASK_CLOCK_ERROR   1
 #define MASK_TIMEOUT_ERROR 2
 
-// Current special setting
-uint8_t special = 0x00;
-
 // Current timer mode setting
 uint8_t timer_mode = 0x00;
 uint8_t timer_prescale = 0x01;
 addr_t  timer_resetaddr = 0xffff;
 unsigned long timer_offset = 0;
+
+// Current interrupts controls
+uint8_t int_ctrl = 0;
+
 
 /********************************************************
  * User Command Processor
@@ -2032,31 +2081,50 @@ void doCmdSRec(char *params) {
   }
 }
 
-void logSpecial(char *function, uint8_t value) {
-  logs(function);
-  if (value) {
-    logstr(" inhibited\n");
-  } else {
-    logstr(" enabled\n");
-  }
+void set_int_ctrl(uint8_t offset, char *params) {
+   // (C) 01 Conditional
+   // (D) 11 Disabled
+   // (E) 00 Enabled
+   // (F) 10 Forced
+   while (*params == ' ') {
+      params++;
+   }
+   if (!*params) {
+      uint8_t tmp = int_ctrl;
+      for (int i = 0; i < 4; i++) {
+         logs(cmdStrings[NUM_CMDS - 4 + i]);
+         logstr(" = ");
+         logpgmstr(int_ctrl_strings[tmp & 3]);
+         logc('\n');
+         tmp >>= 2;
+      }
+   } else {
+      *params &= 0xdf;
+      if (*params >= 'C' && *params <= 'F') {
+         uint8_t val = cmd_map[*params - 'C'];
+         hwCmd(CMD_INT_CTRL, (offset << 1) | val);
+         int_ctrl &= (0x03 << offset) ^ 0xFF;
+         int_ctrl |= (val  << offset);
+      } else {
+         logstr("Illegal option\n");
+      }
+   }
 }
 
-void doCmdSpecial(char *params) {
-  uint8_t tmp = 0xff;
-  parsehex2(params, &tmp);
-#if defined(CPU_6809)
-  if (tmp <= 7) {
-#else
-  if (tmp <= 3) {
-#endif
-    special = tmp;
-    hwCmd(CMD_SPECIAL, special);
-  }
-#if defined(CPU_6809)
-  logSpecial("FIRQ", special & 4);
-#endif
-  logSpecial("NMI", special & 2);
-  logSpecial("IRQ", special & 1);
+void doCmdXCmd0(char *params) {
+   set_int_ctrl(0, params);
+}
+
+void doCmdXCmd1(char *params) {
+   set_int_ctrl(2, params);
+}
+
+void doCmdXCmd2(char *params) {
+   set_int_ctrl(4, params);
+}
+
+void doCmdXCmd3(char *params) {
+   set_int_ctrl(6, params);
 }
 
 void doCmdTimerMode(char *params) {
