@@ -203,7 +203,7 @@ begin
     begin
         if CLK_n'event and CLK_n = '0' then
             if CEN = '1' then
-                Wait_s <= WAIT_n;
+                Wait_s <= WAIT_n or (IORQ_n_i and MREQ_n_i);
                 if TState = "011" and BUSAK_n_i = '1' then
                     DI_Reg <= to_x01(Din);
                 end if;

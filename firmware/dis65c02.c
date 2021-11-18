@@ -187,7 +187,7 @@ static const unsigned char dopaddr[256] PROGMEM =
 /*F0*/ BRA, INDY,  IND, IMP,  ZP,   ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  ABS,    ABSX,  ABSX, IMP
 };
 
-addr_t disassemble(addr_t addr)
+addr_t disassemble(addr_t addr, uint8_t m)
 {
 
   char buffer[40];

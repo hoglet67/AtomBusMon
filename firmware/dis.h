@@ -6,6 +6,10 @@
 #define PDC_DDR          DDRA
 #define PDC_DIN          PINA
 
-addr_t disassemble(addr_t addr);
+#define MODE_NORMAL      0
+#define MODE_DIS_CMD     1
+
+addr_t disassemble(addr_t addr, uint8_t m);
+
 
 #endif
