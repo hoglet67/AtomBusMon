@@ -14,7 +14,7 @@
  * VERSION and NAME are used in the start-up message
  ********************************************************/
 
-#define VERSION "0.997"
+#define VERSION "0.998"
 
 // The X commands allows the various interrupt inputs to be overridded
 // They are named after the data sheet pin name
