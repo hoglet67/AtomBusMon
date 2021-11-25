@@ -149,7 +149,7 @@ static const unsigned char dopname[256] PROGMEM =
 
 static const unsigned char dopaddr[256] PROGMEM =
 {
-/*00*/ IMP, INDX,  IMP, IMP,  IMP,  ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  IMP,    ABS,   ABS,  IMP,
+/*00*/ IMM, INDX,  IMP, IMP,  IMP,  ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  IMP,    ABS,   ABS,  IMP,
 /*10*/ BRA, INDY,  IMP, IMP,  IMP,  ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  IMP,    ABSX,  ABSX, IMP,
 /*20*/ ABS, INDX,  IMP, IMP,  ZP,   ZP,    ZP,   IMP,   IMP,  IMM,   IMPA,  IMP,  ABS,    ABS,   ABS,  IMP,
 /*30*/ BRA, INDY,  IMP, IMP,  IMP,  ZPX,   ZPX,  IMP,   IMP,  ABSY,  IMP,   IMP,  IMP,    ABSX,  ABSX, IMP,
