@@ -300,6 +300,7 @@ begin
     begin
         if cpu_reset_n = '0' then
             state <= idle;
+            exec_held <= '0';
         elsif rising_edge(cpu_clk) then
             -- Extend the control signals from BusMonitorCore which
             -- only last one cycle.
