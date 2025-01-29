@@ -369,7 +369,7 @@ architecture Behavioral of R65C02 is
         "1000" & "100010" & readIndX  & aluInT   & aluEor, -- 41 EOR (zp,x)
         "0000" & "000000" & immediate & aluInXXX & aluXXX, -- 42 NOP ------- 65C02
         "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 43 NOP ------- 65C02
-        "0000" & "000000" & immediate & aluInXXX & aluXXX, -- 44 NOP ------- 65C02
+        "0000" & "000000" & readZp    & aluInXXX & aluXXX, -- 44 NOP ------- 65C02
         "1000" & "100010" & readZp    & aluInT   & aluEor, -- 45 EOR zp
         "0000" & "100011" & rmwZp     & aluInT   & aluLsr, -- 46 LSR zp
         "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 47 NOP ------- 65C02
@@ -385,7 +385,7 @@ architecture Behavioral of R65C02 is
         "1000" & "100010" & readIndY  & aluInT   & aluEor, -- 51 EOR (zp),y
         "1000" & "100010" & readInd   & aluInT   & aluEor, -- 52 EOR (zp) -------- 65C02
         "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 53 NOP ------- 65C02
-        "0000" & "000000" & immediate & aluInXXX & aluXXX, -- 54 NOP ------- 65C02
+        "0000" & "000000" & readZpX   & aluInXXX & aluXXX, -- 54 NOP ------- 65C02
         "1000" & "100010" & readZpX   & aluInT   & aluEor, -- 55 EOR zp,x
         "0000" & "100011" & rmwZpX    & aluInT   & aluLsr, -- 56 LSR zp,x
         "0000" & "000000" & implied   & aluInXXX & aluXXX, -- 57 NOP ------- 65C02
@@ -518,7 +518,7 @@ architecture Behavioral of R65C02 is
         "0000" & "100011" & readIndY  & aluInT   & aluCmp, -- D1 CMP (zp),y
         "0000" & "100011" & readInd   & aluInT   & aluCmp, -- D2 CMP (zp) ------ 65C02
         "0000" & "000000" & implied   & aluInXXX & aluXXX, -- D3 NOP ----- 65C02
-        "0000" & "000000" & immediate & aluInXXX & aluXXX, -- D4 NOP ----- 65C02
+        "0000" & "000000" & readZpX   & aluInXXX & aluXXX, -- D4 NOP ----- 65C02
         "0000" & "100011" & readZpX   & aluInT   & aluCmp, -- D5 CMP zp,x
         "0000" & "100010" & rmwZpX    & aluInT   & aluDec, -- D6 DEC zp,x
         "0000" & "000000" & implied   & aluInXXX & aluXXX, -- D7 NOP ----- 65C02
@@ -551,7 +551,7 @@ architecture Behavioral of R65C02 is
         "1000" & "110011" & readIndY  & aluInT   & aluSbc, -- F1 SBC (zp),y
         "1000" & "110011" & readInd   & aluInT   & aluSbc, -- F2 SBC (zp) ------ 65C02
         "0000" & "000000" & implied   & aluInXXX & aluXXX, -- F3 NOP ----- 65C02
-        "0000" & "000000" & immediate & aluInXXX & aluXXX, -- F4 NOP ----- 65C02
+        "0000" & "000000" & readZpX   & aluInXXX & aluXXX, -- F4 NOP ----- 65C02
         "1000" & "110011" & readZpX   & aluInT   & aluSbc, -- F5 SBC zp,x
         "0000" & "100010" & rmwZpX    & aluInT   & aluInc, -- F6 INC zp,x
         "0000" & "000000" & implied   & aluInXXX & aluXXX, -- F7 NOP  ---- 65C02
@@ -775,7 +775,7 @@ begin
         varC := ninebits(8);
 
         case opcInfo(aluMode2From to aluMode2To) is
-            --    Flags Affected: n v — — — — z c
+            --    Flags Affected: n v - - - - z c
             --    n Set if most significant bit of result is set; else cleared.
             --    v Set if signed overflow; cleared if valid signed result.
             --    z Set if result is zero; else cleared.
