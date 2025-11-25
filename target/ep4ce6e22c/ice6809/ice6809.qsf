@@ -1,0 +1,113 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2020  Intel Corporation. All rights reserved.
+# Your use of Intel Corporation's design tools, logic functions
+# and other software and tools, and any partner logic
+# functions, and any output files from any of the foregoing
+# (including device programming or simulation files), and any
+# associated documentation or information are expressly subject
+# to the terms and conditions of the Intel Program License
+# Subscription Agreement, the Intel Quartus Prime License Agreement,
+# the Intel FPGA IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Intel and sold by Intel or its authorized distributors.  Please
+# refer to the applicable agreement for further details, at
+# https://fpgasoftware.intel.com/eula.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 20.1.0 Build 711 06/05/2020 SJ Lite Edition
+# Date created = 14:44:09  November 25, 2025
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		MC6809CpuMonCycloneIV_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE6E22C7
+set_global_assignment -name TOP_LEVEL_ENTITY MC6809CpuMonCycloneIV
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 20.1.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "14:44:09  NOVEMBER 25, 2025"
+set_global_assignment -name LAST_QUARTUS_VERSION "13.0 SP1"
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/avr_adr_pack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/AVRuCPackage.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/spi_mod_comp_pack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/std_library.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/SynthCtrlPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/alu_avr.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/AVR_Core_CompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/avr_core.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/bit_processor.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/io_adr_dec.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/io_reg_file.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/pm_fetch_dec.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/reg_file.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGCompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGDataPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGOCDPrgTop.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGProgrammerPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGTAPCtrlSMPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/OCDProgcp2.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/OCDProgTCK.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/Resync1b_cp2.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/Resync1b_TCK.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/ArbiterAndMux.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/MemAccessCompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/MemAccessCtrlPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/MemRdMux.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/RAMAdrDcd.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Memory/XDM_Generic.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Memory/XPM_T6809.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/portx.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/SynchronizerCompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/SynchronizerDFF.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/SynchronizerLatch.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/Timer_Counter.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/uart.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/resync/rsnc_bit.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/resync/rsnc_comp_pack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/spi_mod/spi_mod.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/spi_mod/spi_slv_sel_comp_pack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/spi_mod/spi_slv_sel.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/AVR8.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/AVR_uC_CompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/external_mux.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/ExtIRQ_Controller.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/RAMDataReg.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/ResetGenerator.vhd
+set_global_assignment -name VHDL_FILE ../../../src/BusMonCore.vhd
+set_global_assignment -name VHDL_FILE ../../../src/DCM/DCM0Altera.vhd
+set_global_assignment -name VHDL_FILE ../../../src/MC6809CpuMonCycloneIV.vhd
+set_global_assignment -name VHDL_FILE ../../../src/MC6809CpuMon.vhd
+set_global_assignment -name VHDL_FILE ../../../src/oho_dy1/Oho_Dy1.vhd
+set_global_assignment -name VHDL_FILE ../../../src/oho_dy1/OhoPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/SYS09/cpu09l.vhd
+set_global_assignment -name VHDL_FILE WatchEvents.vhd
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name NOMINAL_CORE_SUPPLY_VOLTAGE 1.2V
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_timing
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_symbol
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_signal_integrity
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_boundary_scan
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

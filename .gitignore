@@ -27,3 +27,7 @@ target/*/ipcore/edit_WatchEvents.tcl
 target/*/ipcore/tmp/
 _impact.cmd
 _impact.log
+target/*/*/*.qws
+target/*/*/db
+target/*/*/incremental_db
+target/*/*/output_files
