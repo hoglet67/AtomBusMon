@@ -25,14 +25,20 @@ OBJECTS=AtomBusMon.o status.o $(CPU_OBJECTS)
 
 build: output_files/$(TARGET).sof
 
-output_files/$(TARGET).sof: $(PROG).mem
+output_files/$(TARGET).sof: $(PROG).mif
 	quartus_sh --flow compile $(TARGET)
 
-$(PROG).mem: $(PROG).bin
-	od -An -tx1 -w16 -v <$(PROG).bin >$(PROG).mem
+$(PROG).mif: $(PROG).bin
+	echo "WIDTH=16;" > $(PROG).mif
+	echo "DEPTH=9216;" >> $(PROG).mif
+	echo "ADDRESS_RADIX=UNS;" >> $(PROG).mif
+	echo "DATA_RADIX=HEX;" >> $(PROG).mif
+	echo "CONTENT BEGIN" >> $(PROG).mif
+	od -An -tx2 -w2 -v $(PROG).bin | nl -v 0 | awk '{print $$1 " : " $$2 ";"}' >> $(PROG).mif
+	echo "END;" >> $(PROG).mif
 
 $(PROG).bin : $(PROG).out
-	$(OBJCOPY) -R .comment --reverse-bytes=2 -O binary $(PROG).out $(PROG).bin
+	$(OBJCOPY) -R .comment -O binary $(PROG).out $(PROG).bin
 
 $(PROG).out : $(OBJECTS)
 	$(CC) $(CFLAGS) -o $(PROG).out -Wl,-Map,$(PROG).map $^
@@ -44,7 +50,7 @@ $(PROG).out : $(OBJECTS)
 	$(CC) $(CFLAGS) -Os -c $<
 
 clean:
-	rm -f $(PROG).mem $(PROG).bin $(PROG).out $(PROG).map *.o
+	rm -f $(PROG).mif $(PROG).bin $(PROG).out $(PROG).map *.o
 
 clobber: clean
 	rm -rf output_files/ db/ incremental_db/

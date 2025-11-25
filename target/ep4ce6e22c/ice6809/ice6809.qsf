@@ -72,7 +72,7 @@ set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/MemAccessCt
 set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/MemRdMux.vhd
 set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/RAMAdrDcd.vhd
 set_global_assignment -name VHDL_FILE ../../../src/AVR8/Memory/XDM_Generic.vhd
-set_global_assignment -name VHDL_FILE ../../../src/AVR8/Memory/XPM_T6809.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Memory/XPM_Altera.vhd
 set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/portx.vhd
 set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/SynchronizerCompPack.vhd
 set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/SynchronizerDFF.vhd
