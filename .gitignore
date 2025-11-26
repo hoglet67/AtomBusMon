@@ -31,3 +31,4 @@ target/*/*/*.qws
 target/*/*/db
 target/*/*/incremental_db
 target/*/*/output_files
+PLLJ_PLLSPE_INFO.txt
