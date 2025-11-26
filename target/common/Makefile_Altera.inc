@@ -23,7 +23,10 @@ CFLAGS=$(CPU_CFLAGS) -DF_CPU=${F_CPU}UL -DBAUD=${BAUD} -std=c99 -mmcu=$(MCU) -Wa
 
 OBJECTS=AtomBusMon.o status.o $(CPU_OBJECTS)
 
-build: output_files/$(TARGET).sof
+build: output_files/$(TARGET).pof
+
+output_files/$(TARGET).pof: output_files/$(TARGET).sof
+	quartus_cpf -c -d epcs4 $< $@
 
 output_files/$(TARGET).sof: $(PROG).mif
 	quartus_sh --flow compile $(TARGET)
