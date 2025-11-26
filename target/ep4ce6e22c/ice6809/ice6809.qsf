@@ -39,7 +39,7 @@
 
 set_global_assignment -name FAMILY "Cyclone IV E"
 set_global_assignment -name DEVICE EP4CE6E22C8
-set_global_assignment -name TOP_LEVEL_ENTITY MC6809CpuMonCycloneIV
+set_global_assignment -name TOP_LEVEL_ENTITY MC6809CpuMonEP4CE6E22C
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 20.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "14:44:09  NOVEMBER 25, 2025"
 set_global_assignment -name LAST_QUARTUS_VERSION "13.0 SP1"
@@ -93,7 +93,7 @@ set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/ResetGenerator.vhd
 set_global_assignment -name VHDL_FILE ../../../src/BusMonCore.vhd
 set_global_assignment -name VHDL_FILE ../../../src/altera/DCM0.vhd
 set_global_assignment -name VHDL_FILE ../../../src/altera/WatchEvents_CycloneIV.vhd
-set_global_assignment -name VHDL_FILE ../../../src/MC6809CpuMonCycloneIV.vhd
+set_global_assignment -name VHDL_FILE ../../../src/MC6809CpuMonEP4CE6E22C.vhd
 set_global_assignment -name VHDL_FILE ../../../src/MC6809CpuMon.vhd
 set_global_assignment -name VHDL_FILE ../../../src/oho_dy1/Oho_Dy1.vhd
 set_global_assignment -name VHDL_FILE ../../../src/oho_dy1/OhoPack.vhd

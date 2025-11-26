@@ -7,12 +7,12 @@
 -- /___/  \  /
 -- \   \   \/
 --  \   \
---  /   /         Filename  : MC6809CpuMonCycloneIV.vhd
+--  /   /         Filename  : MC6809CpuMonEP4CE6E22C.vhd
 -- /___/   /\     Timestamp : 24/10/2019
 -- \   \  /  \
 --  \___\/\___\
 --
---Design Name: MC6809CpuMonALS
+--Design Name: MC6809CpuMonEP4CE6E22C
 --Device: XC6SLX9
 
 library ieee;
@@ -20,10 +20,10 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
-entity MC6809CpuMonCycloneIV is
+entity MC6809CpuMonEP4CE6E22C is
     generic (
-       num_comparators   : integer := 8;        -- default value correct for ALS
-       avr_prog_mem_size : integer := 1024 * 9  -- default value correct for ALS
+       num_comparators   : integer := 8;        -- default value correct for EP4CE6E22C
+       avr_prog_mem_size : integer := 1024 * 9  -- default value correct for EP4CE6E22C
        );
     port (
         clock            : in    std_logic;
@@ -77,9 +77,9 @@ entity MC6809CpuMonCycloneIV is
         led3             : out   std_logic
 
     );
-end MC6809CpuMonCycloneIV;
+end MC6809CpuMonEP4CE6E22C;
 
-architecture behavioral of MC6809CpuMonCycloneIV is
+architecture behavioral of MC6809CpuMonEP4CE6E22C is
 
     signal R_W_n_int     : std_logic;
 
