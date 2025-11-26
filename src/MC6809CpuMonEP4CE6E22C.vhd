@@ -8,12 +8,12 @@
 -- \   \   \/
 --  \   \
 --  /   /         Filename  : MC6809CpuMonEP4CE6E22C.vhd
--- /___/   /\     Timestamp : 24/10/2019
+-- /___/   /\     Timestamp : 26/11/2025
 -- \   \  /  \
 --  \___\/\___\
 --
 --Design Name: MC6809CpuMonEP4CE6E22C
---Device: XC6SLX9
+--Device: EP4CE6E22C8
 
 library ieee;
 use ieee.std_logic_1164.all;
