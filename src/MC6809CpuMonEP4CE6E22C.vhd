@@ -67,6 +67,12 @@ entity MC6809CpuMonEP4CE6E22C is
         avr_RxD          : in    std_logic;
         avr_TxD          : out   std_logic;
 
+        -- Serial Flash
+        flash_cs_n       : out   std_logic;
+        flash_clk        : out   std_logic;
+        flash_di         : out   std_logic;
+        flash_do         : in    std_logic;
+
         -- Switches
         sw1              : in    std_logic;
         sw2              : in    std_logic;
@@ -171,5 +177,10 @@ begin
     OEAL_n  <= TSC;
     OED_n   <= TSC or not (Q or E);
     DIRD    <= R_W_n_int;
+
+    -- Unused serial flash:
+    flash_cs_n <= '1';
+    flash_clk  <= '1';
+    flash_di   <= '1';
 
 end behavioral;

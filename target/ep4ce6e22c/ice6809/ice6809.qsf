@@ -124,6 +124,10 @@ set_location_assignment PIN_89  -to sw2
 set_location_assignment PIN_1   -to led1
 set_location_assignment PIN_2   -to led2
 set_location_assignment PIN_3   -to led3
+set_location_assignment PIN_87  -to flash_cs_n
+set_location_assignment PIN_75  -to flash_clk
+set_location_assignment PIN_74  -to flash_di
+set_location_assignment PIN_84  -to flash_do
 
 # DIP Pins 1..20 (VSS=1, VCC=7) mapped to Connector B
 set_location_assignment PIN_38  -to NMI_n
@@ -223,3 +227,6 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[4]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[5]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[6]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to flash_cs_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to flash_clk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to flash_di
