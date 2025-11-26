@@ -74,13 +74,10 @@ entity MC6809CpuMonEP4CE6E22C is
         flash_do         : in    std_logic;
 
         -- Switches
-        sw1              : in    std_logic;
-        sw2              : in    std_logic;
+        sw               : in    std_logic_vector(5 downto 1);
 
         -- LEDs
-        led1             : out   std_logic;
-        led2             : out   std_logic;
-        led3             : out   std_logic
+        led              : out   std_logic_vector(5 downto 1)
 
     );
 end MC6809CpuMonEP4CE6E22C;
@@ -95,13 +92,32 @@ architecture behavioral of MC6809CpuMonEP4CE6E22C is
     signal led_trig0    : std_logic;
     signal led_trig1    : std_logic;
 
+    -- 50MHz clock, toggle every 25,000,000 =
+    signal blinky_count : unsigned(24 downto 0) := (others => '0');
+    signal led_blinky   : std_logic := '0';
+
 begin
 
-    sw_reset_cpu <= not sw1;
-    sw_reset_avr <= not sw2;
-    led1         <= led_bkpt;
-    led2         <= led_trig0;
-    led3         <= led_trig1;
+    sw_reset_cpu <= not sw(1);
+    sw_reset_avr <= not sw(2);
+    led(1)       <= sw(1) and sw(2);
+    led(2)       <= led_bkpt;
+    led(3)       <= led_trig0;
+    led(4)       <= led_trig1;
+    led(5)       <= led_blinky;
+
+    -- 1Hz Blinky LED
+    process(clock)
+    begin
+        if rising_edge(clock) then
+            if blinky_count = to_unsigned(24999999, blinky_count'length) then
+                blinky_count <= (others => '0');
+                led_blinky <= not led_blinky;
+            else
+                blinky_count <= blinky_count + 1;
+            end if;
+        end if;
+    end process;
 
     wrapper : entity work.MC6809CpuMon
       generic map (

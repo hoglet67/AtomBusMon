@@ -119,11 +119,16 @@ set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
 set_location_assignment PIN_24  -to clock
 set_location_assignment PIN_10  -to avr_TxD
 set_location_assignment PIN_23  -to avr_RxD
-set_location_assignment PIN_114 -to sw1
-set_location_assignment PIN_89  -to sw2
-set_location_assignment PIN_1   -to led1
-set_location_assignment PIN_2   -to led2
-set_location_assignment PIN_3   -to led3
+set_location_assignment PIN_114 -to sw[1]
+set_location_assignment PIN_89  -to sw[2]
+set_location_assignment PIN_88  -to sw[3]
+set_location_assignment PIN_80  -to sw[4]
+set_location_assignment PIN_73  -to sw[5]
+set_location_assignment PIN_1   -to led[1]
+set_location_assignment PIN_2   -to led[2]
+set_location_assignment PIN_3   -to led[3]
+set_location_assignment PIN_7   -to led[4]
+set_location_assignment PIN_11  -to led[5]
 set_location_assignment PIN_87  -to flash_cs_n
 set_location_assignment PIN_75  -to flash_clk
 set_location_assignment PIN_74  -to flash_di
@@ -216,9 +221,11 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OEAH_n
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OED_n
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to DIRD
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to avr_TxD
-set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led1
-set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led2
-set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led3
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[5]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[0]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[1]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[2]
