@@ -4,10 +4,7 @@ ROOT       = ../../..
 # The common directory for makefile includes, etc.
 COMMON     = ../../common
 
-# The project .bit file produced by the Xilinx .xise project
-PROJECT    = icez80
-
-# The target .bit file to be generated including the monitor program
+# The target bitstream file to be generated including the monitor program
 TARGET     = icez80
 
 # Frequuency that the AVR runs at
