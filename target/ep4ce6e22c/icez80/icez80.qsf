@@ -140,47 +140,47 @@ set_location_assignment PIN_75  -to flash_clk
 set_location_assignment PIN_74  -to flash_di
 set_location_assignment PIN_84  -to flash_do
 
-# DIP Pins 1..20 (VSS=1, VCC=7) mapped to Connector B
-set_location_assignment PIN_38  -to Addr[11]
-set_location_assignment PIN_39  -to Addr[12]
-set_location_assignment PIN_42  -to Addr[13]
-set_location_assignment PIN_43  -to Addr[14]
-set_location_assignment PIN_44  -to Addr[15]
-set_location_assignment PIN_46  -to CLK_n
-set_location_assignment PIN_49  -to Data[4]
-set_location_assignment PIN_50  -to Data[3]
-set_location_assignment PIN_51  -to Data[5]
-set_location_assignment PIN_52  -to Data[6]
-set_location_assignment PIN_53  -to Data[2]
-set_location_assignment PIN_54  -to Data[7]
-set_location_assignment PIN_55  -to Data[0]
-set_location_assignment PIN_58  -to Data[1]
-set_location_assignment PIN_59  -to INT_n
-set_location_assignment PIN_60  -to NMI_n
-set_location_assignment PIN_64  -to HALT_n
-set_location_assignment PIN_65  -to MREQ_n
-set_location_assignment PIN_66  -to IORQ_n
+# DIP Pins 1..20 (+5V=11) mapped to Connector A
+set_location_assignment PIN_144 -to Addr[11]
+set_location_assignment PIN_143 -to Addr[12]
+set_location_assignment PIN_142 -to Addr[13]
+set_location_assignment PIN_141 -to Addr[14]
+set_location_assignment PIN_138 -to Addr[15]
+set_location_assignment PIN_137 -to CLK_n
+set_location_assignment PIN_136 -to Data[4]
+set_location_assignment PIN_135 -to Data[3]
+set_location_assignment PIN_133 -to Data[5]
+set_location_assignment PIN_132 -to Data[6]
+set_location_assignment PIN_129 -to Data[2]
+set_location_assignment PIN_128 -to Data[7]
+set_location_assignment PIN_127 -to Data[0]
+set_location_assignment PIN_126 -to Data[1]
+set_location_assignment PIN_125 -to INT_n
+set_location_assignment PIN_124 -to NMI_n
+set_location_assignment PIN_121 -to HALT_n
+set_location_assignment PIN_120 -to MREQ_n
+set_location_assignment PIN_119 -to IORQ_n
 
-# DIP Pins 40..21 (VSS=1, VCC=7) mapped to connector A
-set_location_assignment PIN_144 -to Addr[10]
-set_location_assignment PIN_143 -to Addr[9]
-set_location_assignment PIN_142 -to Addr[8]
-set_location_assignment PIN_141 -to Addr[7]
-set_location_assignment PIN_138 -to Addr[6]
-set_location_assignment PIN_137 -to Addr[5]
-set_location_assignment PIN_136 -to Addr[4]
-set_location_assignment PIN_135 -to Addr[3]
-set_location_assignment PIN_133 -to Addr[2]
-set_location_assignment PIN_132 -to Addr[1]
-set_location_assignment PIN_129 -to Addr[0]
-set_location_assignment PIN_128 -to RFSH_n
-set_location_assignment PIN_127 -to M1_n
-set_location_assignment PIN_126 -to RESET_n
-set_location_assignment PIN_125 -to BUSRQ_n
-set_location_assignment PIN_124 -to WAIT_n
-set_location_assignment PIN_121 -to BUSAK_n
-set_location_assignment PIN_120 -to WR_n
-set_location_assignment PIN_119 -to RD_n
+# DIP Pins 40..21 (GND=29) mapped to connector B
+set_location_assignment PIN_38  -to Addr[10]
+set_location_assignment PIN_39  -to Addr[9]
+set_location_assignment PIN_42  -to Addr[8]
+set_location_assignment PIN_43  -to Addr[7]
+set_location_assignment PIN_44  -to Addr[6]
+set_location_assignment PIN_46  -to Addr[5]
+set_location_assignment PIN_49  -to Addr[4]
+set_location_assignment PIN_50  -to Addr[3]
+set_location_assignment PIN_51  -to Addr[2]
+set_location_assignment PIN_52  -to Addr[1]
+set_location_assignment PIN_53  -to Addr[0]
+set_location_assignment PIN_54  -to RFSH_n
+set_location_assignment PIN_55  -to M1_n
+set_location_assignment PIN_58  -to RESET_n
+set_location_assignment PIN_59  -to BUSRQ_n
+set_location_assignment PIN_60  -to WAIT_n
+set_location_assignment PIN_64  -to BUSAK_n
+set_location_assignment PIN_65  -to WR_n
+set_location_assignment PIN_66  -to RD_n
 
 # Level shifter controls mapped to spare pins on Connectors A and B
 set_location_assignment PIN_113 -to OEA1_n
