@@ -44,7 +44,7 @@ entity MC6809CpuMonEP4CE6E22C is
         HALT_n           : in    std_logic;
         BS               : out   std_logic;
         BA               : out   std_logic;
-        R_W_n            : out   std_logic_vector(1 downto 0);
+        R_W_n            : out   std_logic;
 
         Addr             : out   std_logic_vector(15 downto 0);
         Data             : inout std_logic_vector(7 downto 0);
@@ -81,7 +81,7 @@ end MC6809CpuMonEP4CE6E22C;
 
 architecture behavioral of MC6809CpuMonEP4CE6E22C is
 
-    signal R_W_n_int     : std_logic;
+    signal R_W_n_int    : std_logic;
 
     signal sw_reset_cpu : std_logic;
     signal sw_reset_avr : std_logic;
@@ -163,7 +163,7 @@ begin
     );
 
     -- 6809 Outputs
-    R_W_n <= R_W_n_int & R_W_n_int;
+    R_W_n <= R_W_n_int;
 
     -- Level Shifter Controls
     OERW_n  <= TSC;

@@ -115,11 +115,111 @@ set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_
 set_global_assignment -name STRATIX_CONFIGURATION_DEVICE EPCS4
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
 
-set_location_assignment PIN_24 -to clock
-set_location_assignment PIN_10 -to avr_TxD
-set_location_assignment PIN_23 -to avr_RxD
-set_location_assignment PIN_73 -to sw1
-set_location_assignment PIN_80 -to sw2
-set_location_assignment PIN_1 -to led1
-set_location_assignment PIN_2 -to led2
-set_location_assignment PIN_3 -to led3
+# On-board peripherals
+set_location_assignment PIN_24  -to clock
+set_location_assignment PIN_10  -to avr_TxD
+set_location_assignment PIN_23  -to avr_RxD
+set_location_assignment PIN_114 -to sw1
+set_location_assignment PIN_89  -to sw2
+set_location_assignment PIN_1   -to led1
+set_location_assignment PIN_2   -to led2
+set_location_assignment PIN_3   -to led3
+
+# DIP Pins 1..20 (VSS=1, VCC=7) mapped to Connector B
+set_location_assignment PIN_38  -to NMI_n
+set_location_assignment PIN_39  -to IRQ_n
+set_location_assignment PIN_42  -to FIRQ_n
+set_location_assignment PIN_43  -to BS
+set_location_assignment PIN_44  -to BA
+set_location_assignment PIN_46  -to Addr[0]
+set_location_assignment PIN_49  -to Addr[1]
+set_location_assignment PIN_50  -to Addr[2]
+set_location_assignment PIN_51  -to Addr[3]
+set_location_assignment PIN_52  -to Addr[4]
+set_location_assignment PIN_53  -to Addr[5]
+set_location_assignment PIN_54  -to Addr[6]
+set_location_assignment PIN_55  -to Addr[7]
+set_location_assignment PIN_58  -to Addr[8]
+set_location_assignment PIN_59  -to Addr[9]
+set_location_assignment PIN_60  -to Addr[10]
+set_location_assignment PIN_64  -to Addr[11]
+set_location_assignment PIN_65  -to Addr[12]
+
+# DIP Pins 40..21 (VSS=1, VCC=7) mapped to connector A
+set_location_assignment PIN_144 -to HALT_n
+set_location_assignment PIN_143 -to TSC
+set_location_assignment PIN_142 -to LIC
+set_location_assignment PIN_141 -to RES_n
+set_location_assignment PIN_138 -to AVMA
+set_location_assignment PIN_137 -to Q
+set_location_assignment PIN_136 -to E
+set_location_assignment PIN_135 -to BUSY
+set_location_assignment PIN_133 -to R_W_n
+set_location_assignment PIN_132 -to Data[0]
+set_location_assignment PIN_129 -to Data[1]
+set_location_assignment PIN_128 -to Data[2]
+set_location_assignment PIN_127 -to Data[3]
+set_location_assignment PIN_126 -to Data[4]
+set_location_assignment PIN_125 -to Data[5]
+set_location_assignment PIN_124 -to Data[6]
+set_location_assignment PIN_121 -to Data[7]
+set_location_assignment PIN_120 -to Addr[15]
+set_location_assignment PIN_119 -to Addr[14]
+set_location_assignment PIN_115 -to Addr[13]
+
+# Level shifter controls mapped to spare pins on Connectors A and B
+set_location_assignment PIN_113 -to OEAL_n
+set_location_assignment PIN_112 -to OEAH_n
+set_location_assignment PIN_111 -to OED_n
+set_location_assignment PIN_110 -to DIRD
+set_location_assignment PIN_72  -to OERW_n
+
+# Misc mapped to Connector C
+set_location_assignment PIN_106 -to trig[1]
+set_location_assignment PIN_104 -to trig[0]
+set_location_assignment PIN_86  -to id[3]
+set_location_assignment PIN_83  -to id[2]
+set_location_assignment PIN_28  -to id[1]
+set_location_assignment PIN_31  -to id[0]
+set_location_assignment PIN_33  -to mode
+
+# Output drive strengths
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to BUSY
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to AVMA
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to LIC
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to BS
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to BA
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to R_W_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OERW_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OEAL_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OEAH_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OED_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to DIRD
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to avr_TxD
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led1
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led2
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led3
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[7]
