@@ -1,0 +1,252 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2020  Intel Corporation. All rights reserved.
+# Your use of Intel Corporation's design tools, logic functions
+# and other software and tools, and any partner logic
+# functions, and any output files from any of the foregoing
+# (including device programming or simulation files), and any
+# associated documentation or information are expressly subject
+# to the terms and conditions of the Intel Program License
+# Subscription Agreement, the Intel Quartus Prime License Agreement,
+# the Intel FPGA IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Intel and sold by Intel or its authorized distributors.  Please
+# refer to the applicable agreement for further details, at
+# https://fpgasoftware.intel.com/eula.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 20.1.0 Build 711 06/05/2020 SJ Lite Edition
+# Date created = 14:44:09  November 25, 2025
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		MOS6502CpuMonCycloneIV_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE6E22C8
+set_global_assignment -name TOP_LEVEL_ENTITY MOS6502CpuMonEP4CE6E22C
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 20.1.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "14:44:09  NOVEMBER 25, 2025"
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
+
+set_global_assignment -name VHDL_FILE ../../../src/AlanD/R65Cx2.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/avr_adr_pack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/AVRuCPackage.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/spi_mod_comp_pack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/std_library.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/SynthCtrlPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/alu_avr.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/AVR_Core_CompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/avr_core.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/bit_processor.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/io_adr_dec.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/io_reg_file.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/pm_fetch_dec.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Core/reg_file.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGCompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGDataPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGOCDPrgTop.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGProgrammerPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/JTAGTAPCtrlSMPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/OCDProgcp2.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/OCDProgTCK.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/Resync1b_cp2.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/JTAG_OCD_Prg/Resync1b_TCK.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/ArbiterAndMux.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/MemAccessCompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/MemAccessCtrlPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/MemRdMux.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/MemArbAndMux/RAMAdrDcd.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Memory/XDM_Generic.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Memory/XPM_Altera.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/portx.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/SynchronizerCompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/SynchronizerDFF.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/SynchronizerLatch.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/Timer_Counter.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/Peripheral/uart.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/resync/rsnc_bit.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/resync/rsnc_comp_pack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/spi_mod/spi_mod.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/spi_mod/spi_slv_sel_comp_pack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/spi_mod/spi_slv_sel.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/AVR8.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/AVR_uC_CompPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/external_mux.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/ExtIRQ_Controller.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/RAMDataReg.vhd
+set_global_assignment -name VHDL_FILE ../../../src/AVR8/uC/ResetGenerator.vhd
+set_global_assignment -name VHDL_FILE ../../../src/altera/DCM0.vhd
+set_global_assignment -name VHDL_FILE ../../../src/altera/WatchEvents_CycloneIV.vhd
+set_global_assignment -name VHDL_FILE ../../../src/BusMonCore.vhd
+set_global_assignment -name VHDL_FILE ../../../src/MOS6502CpuMonEP4CE6E22C.vhd
+set_global_assignment -name VHDL_FILE ../../../src/MOS6502CpuMonCore.vhd
+set_global_assignment -name VHDL_FILE ../../../src/MOS6502CpuMon.vhd
+set_global_assignment -name VHDL_FILE ../../../src/oho_dy1/Oho_Dy1.vhd
+set_global_assignment -name VHDL_FILE ../../../src/oho_dy1/OhoPack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/T6502/T65_ALU.vhd
+set_global_assignment -name VHDL_FILE ../../../src/T6502/T65_MCode.vhd
+set_global_assignment -name VHDL_FILE ../../../src/T6502/T65_Pack.vhd
+set_global_assignment -name VHDL_FILE ../../../src/T6502/T65.vhd
+
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name NOMINAL_CORE_SUPPLY_VOLTAGE 1.2V
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_timing
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_symbol
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_signal_integrity
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_boundary_scan
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+
+set_global_assignment -name STRATIX_CONFIGURATION_DEVICE EPCS4
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+
+# Top Level VHDL Parameters
+set_parameter -name UseAlanDCore false
+set_parameter -name UseT65Core true
+
+# On-board peripherals
+set_location_assignment PIN_24  -to clock
+set_location_assignment PIN_10  -to avr_TxD
+set_location_assignment PIN_23  -to avr_RxD
+set_location_assignment PIN_114 -to sw[1]
+set_location_assignment PIN_89  -to sw[2]
+set_location_assignment PIN_88  -to sw[3]
+set_location_assignment PIN_80  -to sw[4]
+set_location_assignment PIN_73  -to sw[5]
+set_location_assignment PIN_1   -to led[1]
+set_location_assignment PIN_2   -to led[2]
+set_location_assignment PIN_3   -to led[3]
+set_location_assignment PIN_7   -to led[4]
+set_location_assignment PIN_11  -to led[5]
+set_location_assignment PIN_87  -to flash_cs_n
+set_location_assignment PIN_75  -to flash_clk
+set_location_assignment PIN_74  -to flash_di
+set_location_assignment PIN_84  -to flash_do
+
+# DIP Pins 1..20 (VSS=1;VCC=8) mapped to Connector A
+set_location_assignment PIN_144 -to VP_n
+set_location_assignment PIN_143 -to Rdy
+set_location_assignment PIN_142 -to Phi1Out
+set_location_assignment PIN_141 -to IRQ_n
+set_location_assignment PIN_138 -to ML_n
+set_location_assignment PIN_137 -to NMI_n
+set_location_assignment PIN_136 -to SYNC
+set_location_assignment PIN_135 -to Addr[0]
+set_location_assignment PIN_133 -to Addr[1]
+set_location_assignment PIN_132 -to Addr[2]
+set_location_assignment PIN_129 -to Addr[3]
+set_location_assignment PIN_128 -to Addr[4]
+set_location_assignment PIN_127 -to Addr[5]
+set_location_assignment PIN_126 -to Addr[6]
+set_location_assignment PIN_125 -to Addr[7]
+set_location_assignment PIN_124 -to Addr[8]
+set_location_assignment PIN_121 -to Addr[9]
+set_location_assignment PIN_120 -to Addr[10]
+set_location_assignment PIN_119 -to Addr[11]
+
+
+# DIP Pins 40..21 (GND=29) mapped to connector B
+set_location_assignment PIN_38  -to Res_n
+set_location_assignment PIN_39  -to Phi2Out
+set_location_assignment PIN_42  -to SO_n
+set_location_assignment PIN_43  -to PhiIn
+set_location_assignment PIN_44  -to BE
+set_location_assignment PIN_46  -to R_W_n[1]
+set_location_assignment PIN_49  -to R_W_n[0]
+set_location_assignment PIN_50  -to Data[0]
+set_location_assignment PIN_51  -to Data[1]
+set_location_assignment PIN_52  -to Data[2]
+set_location_assignment PIN_53  -to Data[3]
+set_location_assignment PIN_54  -to Data[4]
+set_location_assignment PIN_55  -to Data[5]
+set_location_assignment PIN_58  -to Data[6]
+set_location_assignment PIN_59  -to Data[7]
+set_location_assignment PIN_60  -to Addr[15]
+set_location_assignment PIN_64  -to Addr[14]
+set_location_assignment PIN_65  -to Addr[13]
+set_location_assignment PIN_66  -to Addr[12]
+
+# Level shifter controls mapped to spare pins on Connectors A and B
+set_location_assignment PIN_113 -to OEAL_n
+set_location_assignment PIN_112 -to OEAH_n
+set_location_assignment PIN_111 -to OED_n
+set_location_assignment PIN_110 -to DIRD
+set_location_assignment PIN_72  -to OERW_n
+
+# Misc mapped to Connector C
+set_location_assignment PIN_106 -to trig[1]
+set_location_assignment PIN_104 -to trig[0]
+set_location_assignment PIN_86  -to id[3]
+set_location_assignment PIN_83  -to id[2]
+set_location_assignment PIN_28  -to id[1]
+set_location_assignment PIN_31  -to id[0]
+set_location_assignment PIN_33  -to mode
+
+# Output drive strengths
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Phi1Out
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Phi2Out
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Sync
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Addr[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to R_W_n[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to R_W_n[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to ML_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VP_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OERW_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OEAH_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OEAL_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to OED_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to DIRD
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to avr_TxD
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to flash_cs_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to flash_clk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to flash_di
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to Data[7]

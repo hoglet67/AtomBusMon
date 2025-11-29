@@ -5,7 +5,7 @@ ROOT       = ../../..
 COMMON     = ../../common
 
 # The target bitstream file to be generated including the monitor program
-TARGET     = ice6809
+TARGET     = ice65c02
 
 # Frequuency that the AVR runs at
 F_CPU      = 24000000
@@ -15,7 +15,7 @@ F_CPU      = 24000000
 BAUD       = 115200
 
 # Size of the XPM Memory in words
-XPM_SIZE   = 9216
+XPM_SIZE   = 8192
 
 # Common include files
 include $(COMMON)/Makefile_$(TARGET).inc

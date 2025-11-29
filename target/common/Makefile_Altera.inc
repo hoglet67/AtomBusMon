@@ -33,7 +33,7 @@ output_files/$(TARGET).sof: $(PROG).mif
 
 $(PROG).mif: $(PROG).bin
 	echo "WIDTH=16;" > $(PROG).mif
-	echo "DEPTH=9216;" >> $(PROG).mif
+	echo "DEPTH=$(XPM_SIZE);" >> $(PROG).mif
 	echo "ADDRESS_RADIX=UNS;" >> $(PROG).mif
 	echo "DATA_RADIX=HEX;" >> $(PROG).mif
 	echo "CONTENT BEGIN" >> $(PROG).mif
