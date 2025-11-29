@@ -101,9 +101,9 @@ begin
     sw_reset_cpu <= not sw(1);
     sw_reset_avr <= not sw(2);
     led(1)       <= sw(1) and sw(2);
-    led(2)       <= led_bkpt;
-    led(3)       <= led_trig0;
-    led(4)       <= led_trig1;
+    led(2)       <= not led_bkpt;
+    led(3)       <= not led_trig0;
+    led(4)       <= not led_trig1;
     led(5)       <= led_blinky;
 
     -- 1Hz Blinky LED

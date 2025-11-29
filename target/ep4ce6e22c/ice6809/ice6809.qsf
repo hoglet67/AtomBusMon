@@ -42,7 +42,7 @@ set_global_assignment -name DEVICE EP4CE6E22C8
 set_global_assignment -name TOP_LEVEL_ENTITY MC6809CpuMonEP4CE6E22C
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 20.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "14:44:09  NOVEMBER 25, 2025"
-set_global_assignment -name LAST_QUARTUS_VERSION "13.0 SP1"
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
 set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/avr_adr_pack.vhd
 set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/AVRuCPackage.vhd
 set_global_assignment -name VHDL_FILE ../../../src/AVR8/CommonPacks/spi_mod_comp_pack.vhd
